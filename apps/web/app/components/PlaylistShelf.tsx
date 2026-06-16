@@ -7,9 +7,9 @@ import type { RGBAColor } from "@spindeck/picker";
 /* ============================================================
    常量
    ============================================================ */
-const SPINE_THICK = 0.14;
-const ALBUM_TALL = 4.2;
-const ALBUM_DEEP = 6.5;
+const SPINE_THICK = 0.13;
+const ALBUM_TALL = 5.0;
+const ALBUM_DEEP = 6.9;
 const GAP = 0.8;
 
 const COLORS = [
@@ -49,7 +49,7 @@ function spineCanvas(
   accent: string,
   gradient: RGBAColor[] | null,
 ): THREE.CanvasTexture {
-  const w = 64, h = 1024;
+  const w = 40, h = 1024;
   const c = document.createElement("canvas");
   c.width = w; c.height = h;
   const ctx = c.getContext("2d")!;
@@ -77,10 +77,10 @@ function spineCanvas(
   const nameChars = [...name.slice(0, 15)];
   const artistChars = [...artist.slice(0, 20)];
   const totalChars = nameChars.length + artistChars.length;
-  // 根据可用高度自适应行高（留出上下边距）
-  const padding = 60;
-  const gap = 16;
-  const lineH = Math.min(20, (h - padding * 2 - gap) / totalChars);
+  // 根据可用高度自适应行高（留出少量边距）
+  const padding = 8;
+  const gap = 4;
+  const lineH = Math.min(22, (h - padding * 2 - gap) / totalChars);
   const totalH = totalChars * lineH + gap;
   let y = h / 2 + totalH / 2 - lineH / 2;
 
@@ -106,7 +106,7 @@ function spineCanvas(
     ctx.translate(w / 2, y);
     ctx.rotate(-Math.PI / 2);
     ctx.fillStyle = txt === "#000" ? "rgba(0,0,0,0.6)" : "rgba(255,255,255,0.7)";
-    ctx.font = `bold ${lineH * 0.8}px sans-serif`;
+    ctx.font = `bold ${lineH * 0.95}px sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(ch, 0, 0);
