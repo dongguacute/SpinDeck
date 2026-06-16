@@ -3,3 +3,8 @@ export type Input = {
     url: string;
     provider: "QQMusic" | "NetEaseMusic" | "KugouMusic" | "AppleMusic" | "Spotify" | "YTMusic";
 }
+
+// 导出
+export type Output = {
+    content: string;
+}
