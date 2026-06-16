@@ -26,6 +26,26 @@ function getPixelColor(
 }
 
 /**
+ * 将 ImageData 中指定列的数据解析为 RGBAColor 数组
+ */
+function parseColumnFromImageData(
+    data: Uint8ClampedArray,
+    height: number
+): RGBAColor[] {
+    const colors: RGBAColor[] = new Array(height);
+    for (let y = 0; y < height; y++) {
+        const offset = y * 4;
+        colors[y] = {
+            r: data[offset],
+            g: data[offset + 1],
+            b: data[offset + 2],
+            a: data[offset + 3] / 255,
+        };
+    }
+    return colors;
+}
+
+/**
  * 取图片四条边中间位置的颜色
  *
  * @param input - 图片输入，content 支持 base64 Data URL 或网络图片 URL
@@ -64,4 +84,47 @@ export async function pickEdgeColors(input: ImageInput): Promise<EdgeColors> {
     const right = getPixelColor(ctx, width - 1, height / 2);
 
     return { top, bottom, left, right };
+}
+
+/**
+ * 获取图片最左边整栏像素颜色（从上到下），兼容渐变色场景。
+ *
+ * 与 `pickEdgeColors` 仅取边缘中间一个像素不同，此函数读取整列
+ * 所有像素，可完整捕获垂直渐变，适用于需要分析渐变边界色的场景。
+ *
+ * @param input - 图片输入，content 支持 base64 Data URL 或网络图片 URL
+ * @param columnIndex - 可选，列的 x 坐标（0-based），默认 0（最左列）
+ * @returns 从上到下的像素颜色数组，长度等于图片高度
+ *
+ * @example
+ * ```ts
+ * const column = await pickLeftColumnColors({ content: 'https://example.com/gradient.png' });
+ * // 顶部颜色
+ * console.log(column[0]);                    // { r: 255, g: 0, b: 0, a: 1 }
+ * // 底部颜色（渐变终点）
+ * console.log(column[column.length - 1]);    // { r: 0, g: 0, b: 255, a: 1 }
+ * ```
+ */
+export async function pickLeftColumnColors(
+    input: ImageInput,
+    columnIndex = 0
+): Promise<RGBAColor[]> {
+    const img = await loadImage(input.content);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+    if (!ctx) {
+        throw new Error('Failed to get 2D rendering context');
+    }
+
+    ctx.drawImage(img, 0, 0);
+
+    const { height } = canvas;
+    // 一次性读取整列 1px 宽的 ImageData，避免逐行调用
+    const imageData = ctx.getImageData(columnIndex, 0, 1, height);
+
+    return parseColumnFromImageData(imageData.data, height);
 }
