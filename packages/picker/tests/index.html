@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Picker 测试 — 3000x3000bb</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #1a1a2e;
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 24px;
+        }
+        h1 { font-size: 24px; margin-bottom: 8px; color: #fff; }
+        .subtitle { color: #888; margin-bottom: 24px; font-size: 14px; }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 24px;
+        }
+
+        /* 原图 */
+        .panel {
+            background: #16213e;
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid #0f3460;
+        }
+        .panel h2 {
+            font-size: 14px;
+            color: #e94560;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .panel img {
+            width: 100%;
+            border-radius: 8px;
+            display: block;
+        }
+
+        /* 结果区 */
+        .results { display: flex; flex-direction: column; gap: 24px; }
+
+        .color-group h3 {
+            font-size: 13px;
+            color: #aaa;
+            margin-bottom: 8px;
+        }
+
+        /* 边缘中点颜色条 */
+        .edge-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .color-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            background: #0f3460;
+            border-radius: 10px;
+            padding: 12px 16px;
+            border: 1px solid #1a508b;
+        }
+        .swatch {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            border: 2px solid #fff3;
+        }
+        .label { font-size: 12px; font-weight: 600; color: #e94560; text-transform: uppercase; }
+        .value { font-size: 11px; color: #ccc; font-family: 'SF Mono', 'Fira Code', monospace; }
+
+        /* 左列渐变预览 */
+        .gradient-preview {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .gradient-bar {
+            width: 40px;
+            height: 240px;
+            border-radius: 6px;
+            border: 2px solid #fff3;
+            background: linear-gradient(to bottom, var(--grad-top, red), var(--grad-bottom, blue));
+        }
+        .gradient-samples {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .sample-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+        }
+        .sample-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            border: 1px solid #fff3;
+            flex-shrink: 0;
+        }
+
+        /* 统计 */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+        .stat-item {
+            background: #0f3460;
+            border-radius: 8px;
+            padding: 10px 12px;
+            text-align: center;
+        }
+        .stat-label { font-size: 11px; color: #888; margin-bottom: 4px; }
+        .stat-value { font-size: 15px; font-weight: 700; color: #fff; }
+
+        .btn-row { display: flex; gap: 10px; margin-bottom: 16px; }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all .2s;
+        }
+        .btn-primary { background: #e94560; color: #fff; }
+        .btn-primary:hover { background: #ff6b81; }
+        .btn-secondary { background: #0f3460; color: #e0e0e0; border: 1px solid #1a508b; }
+        .btn-secondary:hover { background: #1a508b; }
+        .btn-row button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .loading { color: #e94560; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <h1>🎯 @spindeck/picker 测试</h1>
+    <p class="subtitle">测试图片：3000x3000bb.jpg | 分别测试边缘中点取色 &amp; 左列渐变取色</p>
+
+    <div class="btn-row">
+        <button class="btn-primary" id="btnEdge">测边缘中点颜色</button>
+        <button class="btn-secondary" id="btnColumn">测最左列渐变</button>
+        <button class="btn-secondary" id="btnBoth">同时测试</button>
+    </div>
+    <div id="loading" class="loading" style="display:none;">⏳ 加载中...</div>
+
+    <div class="layout">
+        <div class="panel">
+            <h2>📷 原图</h2>
+            <img id="sourceImg" src="img/3000x3000bb.jpg" alt="test image" />
+        </div>
+        <div class="results" id="results">
+            <p style="color:#888; padding:40px; text-align:center;">点击上方按钮开始测试</p>
+        </div>
+    </div>
+
+    <script type="module">
+        // ============================================================
+        // 内联核心逻辑（等同于 core.ts）
+        // ============================================================
+        function loadImage(src) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => resolve(img);
+                img.onerror = () => reject(new Error('图片加载失败'));
+                img.src = src;
+            });
+        }
+
+        function getPixelColor(ctx, x, y) {
+            const [r, g, b, a] = ctx.getImageData(Math.round(x), Math.round(y), 1, 1).data;
+            return { r, g, b, a: a / 255 };
+        }
+
+        function parseColumnFromImageData(data, height) {
+            const colors = new Array(height);
+            for (let y = 0; y < height; y++) {
+                const offset = y * 4;
+                colors[y] = { r: data[offset], g: data[offset + 1], b: data[offset + 2], a: data[offset + 3] / 255 };
+            }
+            return colors;
+        }
+
+        function pickEdgeColors(canvas, ctx, img) {
+            const { width, height } = canvas;
+            const top    = getPixelColor(ctx, Math.floor(width / 2), 0);
+            const bottom = getPixelColor(ctx, Math.floor(width / 2), height - 1);
+            const left   = getPixelColor(ctx, 0, Math.floor(height / 2));
+            const right  = getPixelColor(ctx, width - 1, Math.floor(height / 2));
+            return { top, bottom, left, right };
+        }
+
+        function pickLeftColumnColors(canvas, ctx, height, columnIndex = 0) {
+            const imageData = ctx.getImageData(columnIndex, 0, 1, height);
+            return parseColumnFromImageData(imageData.data, height);
+        }
+
+        // ============================================================
+        // 工具函数
+        // ============================================================
+        function rgbaToHex({ r, g, b }) {
+            return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+        }
+
+        function formatRGBA({ r, g, b, a }) {
+            return `rgba(${r}, ${g}, ${b}, ${(a * 100).toFixed(0)}%)`;
+        }
+
+        function renderEdgeResults(colors) {
+            const entries = [
+                { key: 'top',    label: '上边缘 ↑' },
+                { key: 'bottom', label: '下边缘 ↓' },
+                { key: 'left',   label: '左边缘 ←' },
+                { key: 'right',  label: '右边缘 →' },
+            ];
+
+            let html = '<div class="color-group"><h3>四条边中点颜色</h3><div class="edge-row">';
+            for (const { key, label } of entries) {
+                const c = colors[key];
+                const hex = rgbaToHex(c);
+                html += `
+                <div class="color-card">
+                    <div class="swatch" style="background:${hex}"></div>
+                    <span class="label">${label}</span>
+                    <span class="value">${hex}</span>
+                    <span class="value">r:${c.r} g:${c.g} b:${c.b}</span>
+                </div>`;
+            }
+            html += '</div></div>';
+            return html;
+        }
+
+        function renderColumnResults(column) {
+            const topColor    = column[0];
+            const bottomColor = column[column.length - 1];
+            const q1Color     = column[Math.floor(column.length * 0.25)];
+            const midColor    = column[Math.floor(column.length / 2)];
+            const q3Color     = column[Math.floor(column.length * 0.75)];
+
+            // 统计去重颜色数量
+            const hexSet = new Set(column.map(c => rgbaToHex(c)));
+
+            let html = '<div class="color-group"><h3>最左列渐变分析（共 ' + column.length + ' 像素）</h3>';
+
+            // 渐变条
+            html += `
+            <div class="gradient-preview" style="margin-bottom:16px;
+                --grad-top:${rgbaToHex(topColor)};
+                --grad-bottom:${rgbaToHex(bottomColor)}">
+                <div class="gradient-bar" style="
+                    background: linear-gradient(to bottom, ${rgbaToHex(topColor)}, ${rgbaToHex(bottomColor)});
+                "></div>
+                <div class="gradient-samples">
+            `;
+
+            const samples = [
+                { pos: '0%   (顶部)', color: topColor },
+                { pos: '25%',          color: q1Color },
+                { pos: '50%  (中部)', color: midColor },
+                { pos: '75%',          color: q3Color },
+                { pos: '100% (底部)', color: bottomColor },
+            ];
+
+            for (const s of samples) {
+                html += `
+                <div class="sample-row">
+                    <div class="sample-dot" style="background:${rgbaToHex(s.color)}"></div>
+                    <span style="color:#888;width:90px">${s.pos}</span>
+                    <span>${rgbaToHex(s.color)}</span>
+                    <span style="color:#666">r:${s.color.r} g:${s.color.g} b:${s.color.b}</span>
+                </div>`;
+            }
+
+            html += '</div></div>';
+
+            // 统计信息
+            html += '<div class="stats">';
+            html += `<div class="stat-item"><div class="stat-label">总像素</div><div class="stat-value">${column.length}</div></div>`;
+            html += `<div class="stat-item"><div class="stat-label">唯一颜色</div><div class="stat-value">${hexSet.size}</div></div>`;
+            html += `<div class="stat-item"><div class="stat-label">顶部</div><div class="stat-value" style="font-size:12px">${rgbaToHex(topColor)}</div></div>`;
+            html += `<div class="stat-item"><div class="stat-label">底部</div><div class="stat-value" style="font-size:12px">${rgbaToHex(bottomColor)}</div></div>`;
+            html += '</div>';
+
+            html += '</div>';
+            return html;
+        }
+
+        // ============================================================
+        // 主流程
+        // ============================================================
+        const imgSrc = document.getElementById('sourceImg').src;
+        const resultsEl = document.getElementById('results');
+        const loadingEl = document.getElementById('loading');
+
+        let canvas, ctx;
+
+        async function initCanvas() {
+            if (canvas) return; // 已初始化
+            const img = await loadImage(imgSrc);
+            canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            ctx = canvas.getContext('2d', { willReadFrequently: true });
+            ctx.drawImage(img, 0, 0);
+        }
+
+        async function testEdge() {
+            loadingEl.style.display = 'block';
+            resultsEl.innerHTML = '';
+            try {
+                await initCanvas();
+                const colors = pickEdgeColors(canvas, ctx, canvas);
+                resultsEl.innerHTML = renderEdgeResults(colors);
+            } catch (err) {
+                resultsEl.innerHTML = `<p style="color:#e94560">错误: ${err.message}</p>`;
+            }
+            loadingEl.style.display = 'none';
+        }
+
+        async function testColumn() {
+            loadingEl.style.display = 'block';
+            resultsEl.innerHTML = '';
+            try {
+                await initCanvas();
+                const column = pickLeftColumnColors(canvas, ctx, canvas.height);
+                resultsEl.innerHTML = renderColumnResults(column);
+            } catch (err) {
+                resultsEl.innerHTML = `<p style="color:#e94560">错误: ${err.message}</p>`;
+            }
+            loadingEl.style.display = 'none';
+        }
+
+        async function testBoth() {
+            loadingEl.style.display = 'block';
+            resultsEl.innerHTML = '';
+            try {
+                await initCanvas();
+                const colors = pickEdgeColors(canvas, ctx, canvas);
+                const column = pickLeftColumnColors(canvas, ctx, canvas.height);
+                resultsEl.innerHTML = renderEdgeResults(colors) + renderColumnResults(column);
+            } catch (err) {
+                resultsEl.innerHTML = `<p style="color:#e94560">错误: ${err.message}</p>`;
+            }
+            loadingEl.style.display = 'none';
+        }
+
+        document.getElementById('btnEdge').addEventListener('click', testEdge);
+        document.getElementById('btnColumn').addEventListener('click', testColumn);
+        document.getElementById('btnBoth').addEventListener('click', testBoth);
+    </script>
+</body>
+</html>
