@@ -17,6 +17,9 @@
     "test": "vitest run",
     "test:watch": "vitest"
   },
+  "dependencies": {
+    "ky": "^1.12.0"
+  },
   "devDependencies": {
     "typescript": "^5.9.3",
     "vitest": "^3.2.4"

@@ -11,6 +11,8 @@
   "dependencies": {
     "@react-router/node": "7.16.0",
     "@react-router/serve": "7.16.0",
+    "@spindeck/core": "workspace:*",
+    "@spindeck/picker": "workspace:*",
     "gsap": "^3.15.0",
     "isbot": "^5.1.36",
     "lucide-react": "^1.18.0",
