@@ -6,6 +6,7 @@ describe('getQQMusicList', () => {
         const testurl = "https://c6.y.qq.com/base/fcgi-bin/u?__=1HknfjYZ705L"
         const res = await getQQMusicList(testurl)
         expect(res).toBeDefined()
-        console.log(res)
+        // 完整输出，避免 [Array] 截断
+        console.log(JSON.stringify(res, null, 2))
     })
 })
