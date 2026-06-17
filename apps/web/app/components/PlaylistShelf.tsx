@@ -225,7 +225,6 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
     if (curSel !== null && curSel !== undefined && curSel < groups.length) {
       const selGroup = groups[curSel];
       selGroup.rotation.y = -Math.PI / 2;
-      selGroup.position.z = 1.2;
       // 隐藏书的 box，显示正方形封面
       meshes[curSel].visible = false;
       const cp = selGroup.userData?.coverPlane as THREE.Mesh | undefined;
@@ -470,45 +469,59 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
     if (next !== null && next !== undefined) {
       animatingRef.current = true;
 
+      // 翻转几乎和滑出同时开始，趁书移动掩护快速完成
+      const flipDuration = 0.5;
+      const flipStart = 0.08;
+
       const group = groups[next];
       const mesh = meshes[next];
-      // 翻书 + 显示正方形封面
-      gsap.to(group.rotation, {
-        y: -Math.PI / 2,
-        duration: 0.85,
-        ease: "power2.inOut",
-      });
-      gsap.to(group.position, {
-        z: 1.2,
-        duration: 0.85,
-        ease: "power2.out",
-        onComplete: () => { animatingRef.current = false; },
-      });
-
-      // 隐藏书的 box（避免和封面 plane 重叠），显示正方形封面
-      mesh.visible = false;
       const cp = group.userData?.coverPlane as THREE.Mesh | undefined;
+
+      // 1. 翻转前：封面 plane 就位但完全透明
       if (cp) {
         cp.visible = true;
-        gsap.to(cp.material, { opacity: 1, duration: 0.6, delay: 0.5 });
+        (cp.material as THREE.MeshBasicMaterial).opacity = 0;
       }
 
-      // 左侧书向左滑出画面
+      // 2. 翻转动画（box 全程可见，能看到 3D 旋转过程）
+      gsap.to(group.rotation, {
+        y: -Math.PI / 2,
+        duration: flipDuration,
+        delay: flipStart,
+        ease: "power2.inOut",
+        onComplete: () => {
+          // 翻转完成后隐藏 box，留封面 plane
+          mesh.visible = false;
+          animatingRef.current = false;
+        },
+      });
+
+      // 3. 翻转过半时封面渐显（约在旋转到 40% 时开始叠入）
+      if (cp) {
+        gsap.to(cp.material, {
+          opacity: 1,
+          duration: flipDuration * 0.55,
+          delay: flipStart + flipDuration * 0.4,
+          ease: "power2.in",
+        });
+      }
+
+      // 左侧书向左滑出画面（立即开始，慢速）
       for (let i = next - 1; i >= 0; i--) {
         gsap.to(groups[i].position, {
           x: originalPositions[i].x - slideDist,
-          duration: 0.8,
-          delay: (next - i) * 0.06,
+          duration: 1.0,
+          delay: (next - i) * 0.08,
           ease: "power3.out",
         });
       }
 
-      // 右侧书向右滑出画面
+      // 右侧书向右滑出画面（立即开始，慢速）
       for (let j = next + 1; j < groups.length; j++) {
         gsap.to(groups[j].position, {
           x: originalPositions[j].x + slideDist,
-          duration: 0.8,
-          delay: (j - next) * 0.06,
+          duration: 1.0,
+          delay: (j - next) * 0.08,
           ease: "power3.out",
         });
       }
@@ -521,23 +534,23 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
       const prevCp = prevGroup.userData?.coverPlane as THREE.Mesh | undefined;
       if (prevCp) {
         const mat = prevCp.material as THREE.MeshBasicMaterial;
-        gsap.to(mat, { opacity: 0, duration: 0.35 });
-        setTimeout(() => { prevCp.visible = false; }, 370);
+        gsap.to(mat, { opacity: 0, duration: 0.25 });
+        setTimeout(() => { prevCp.visible = false; }, 270);
       }
 
       // 所有书恢复原位
       for (let i = 0; i < groups.length; i++) {
-        const delay = Math.abs(prev - i) * 0.05;
+        const delay = Math.abs(prev - i) * 0.08;
         gsap.to(groups[i].rotation, {
           y: 0,
-          duration: 0.7,
+          duration: 0.5,
           delay,
           ease: "power2.inOut",
         });
         gsap.to(groups[i].position, {
           x: originalPositions[i].x,
           z: 0,
-          duration: 0.7,
+          duration: 1.0,
           delay,
           ease: "power2.inOut",
           onComplete: () => {
