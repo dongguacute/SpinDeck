@@ -333,9 +333,9 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
     const animate = () => {
       animId = requestAnimationFrame(animate);
 
-      // 非选中态才应用弧形弯曲
+      // 非选中态才应用弧形弯曲（极微弱，保持平直感）
       if (selectedIndexRef.current === null || selectedIndexRef.current === undefined) {
-        const curveStrength = 0.12;
+        const curveStrength = 0.02;
         for (const group of groups) {
           const nx = (group.position.x + mainGroup.position.x) / (totalW / 2);
           const baseRotY = nx * curveStrength;
