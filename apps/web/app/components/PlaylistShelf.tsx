@@ -475,12 +475,12 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
       // 翻书 + 显示正方形封面
       gsap.to(group.rotation, {
         y: -Math.PI / 2,
-        duration: 0.55,
+        duration: 0.85,
         ease: "power2.inOut",
       });
       gsap.to(group.position, {
         z: 1.2,
-        duration: 0.55,
+        duration: 0.85,
         ease: "power2.out",
         onComplete: () => { animatingRef.current = false; },
       });
@@ -490,15 +490,15 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
       const cp = group.userData?.coverPlane as THREE.Mesh | undefined;
       if (cp) {
         cp.visible = true;
-        gsap.to(cp.material, { opacity: 1, duration: 0.35, delay: 0.3 });
+        gsap.to(cp.material, { opacity: 1, duration: 0.6, delay: 0.5 });
       }
 
       // 左侧书向左滑出画面
       for (let i = next - 1; i >= 0; i--) {
         gsap.to(groups[i].position, {
           x: originalPositions[i].x - slideDist,
-          duration: 0.55,
-          delay: (next - i) * 0.04,
+          duration: 0.8,
+          delay: (next - i) * 0.06,
           ease: "power3.out",
         });
       }
@@ -507,8 +507,8 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
       for (let j = next + 1; j < groups.length; j++) {
         gsap.to(groups[j].position, {
           x: originalPositions[j].x + slideDist,
-          duration: 0.55,
-          delay: (j - next) * 0.04,
+          duration: 0.8,
+          delay: (j - next) * 0.06,
           ease: "power3.out",
         });
       }
@@ -521,23 +521,23 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
       const prevCp = prevGroup.userData?.coverPlane as THREE.Mesh | undefined;
       if (prevCp) {
         const mat = prevCp.material as THREE.MeshBasicMaterial;
-        gsap.to(mat, { opacity: 0, duration: 0.2 });
-        setTimeout(() => { prevCp.visible = false; }, 220);
+        gsap.to(mat, { opacity: 0, duration: 0.35 });
+        setTimeout(() => { prevCp.visible = false; }, 370);
       }
 
       // 所有书恢复原位
       for (let i = 0; i < groups.length; i++) {
-        const delay = Math.abs(prev - i) * 0.03;
+        const delay = Math.abs(prev - i) * 0.05;
         gsap.to(groups[i].rotation, {
           y: 0,
-          duration: 0.45,
+          duration: 0.7,
           delay,
           ease: "power2.inOut",
         });
         gsap.to(groups[i].position, {
           x: originalPositions[i].x,
           z: 0,
-          duration: 0.45,
+          duration: 0.7,
           delay,
           ease: "power2.inOut",
           onComplete: () => {
