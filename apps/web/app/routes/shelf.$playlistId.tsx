@@ -132,6 +132,7 @@ export default function ShelfPage() {
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [showDetail, setShowDetail] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   // 从 playlist 数据中读取刷新间隔，默认为 0（关闭）
   const refreshInterval = playlist?.refreshInterval ?? 0;
 
@@ -173,6 +174,10 @@ export default function ShelfPage() {
   const error = fetcher.data?.error;
   const songs = fetcher.data?.songs || [];
   console.log(`[shelf] render: loading=${loading} songs=${songs.length} error=${error || 'none'}`);
+
+  const handleSongSelect = (_song: SongInfo | null, index: number | null) => {
+    setSelectedIndex(index);
+  };
 
   return (
     <div className="relative w-screen h-screen overflow-hidden select-none touch-none" style={{ background: "var(--bg-primary)" }}>
@@ -399,7 +404,11 @@ export default function ShelfPage() {
       )}
 
       {/* 3D 书架 */}
-      <PlaylistShelf songs={songs} />
+      <PlaylistShelf
+        songs={songs}
+        onSongSelect={handleSongSelect}
+        selectedIndex={selectedIndex}
+      />
     </div>
   );
 }

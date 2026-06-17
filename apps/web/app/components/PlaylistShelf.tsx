@@ -1,8 +1,20 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import gsap from "gsap";
 import type { SongInfo } from "../lib/types";
 import type { RGBAColor } from "@spindeck/picker";
+
+/* ============================================================
+   场景状态引用
+   ============================================================ */
+interface SceneState {
+  groups: THREE.Group[];
+  meshes: THREE.Mesh[];
+  mainGroup: THREE.Group;
+  originalPositions: { x: number; y: number; z: number }[];
+  totalW: number;
+  camera: THREE.PerspectiveCamera;
+}
 
 /* ============================================================
    常量
@@ -16,15 +28,6 @@ const COLORS = [
   "#FF4757", "#FF6348", "#FFA502", "#2ED573", "#3742FA",
   "#1E90FF", "#7158E2", "#FF6B81", "#FFC312", "#12CBC4",
 ];
-
-/* ============================================================
-   ClientOnly
-   ============================================================ */
-function ClientOnly({ children }: { children: React.ReactNode }) {
-  const [ok, setOk] = useState(false);
-  useEffect(() => setOk(true), []);
-  return ok ? <>{children}</> : null;
-}
 
 /* ============================================================
    图片代理
@@ -125,10 +128,17 @@ function spineCanvas(
 /* ============================================================
    主页
    ============================================================ */
-interface Props { songs: SongInfo[] }
+interface Props {
+  songs: SongInfo[];
+  onSongSelect?: (song: SongInfo | null, index: number | null) => void;
+  selectedIndex: number | null;
+}
 
-export default function PlaylistShelf({ songs }: Props) {
+export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const sceneRef = useRef<SceneState | null>(null);
+  const selectedIndexRef = useRef<number | null>(null);
+  const animatingRef = useRef(false);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -162,12 +172,15 @@ export default function PlaylistShelf({ songs }: Props) {
     // --- 创建书本 ---
     const meshes: THREE.Mesh[] = [];
     const groups: THREE.Group[] = [];
+    const originalPositions: { x: number; y: number; z: number }[] = [];
     for (let i = 0; i < count; i++) {
       const song = songs[i];
       const color = COLORS[i % COLORS.length];
       const group = new THREE.Group();
-      group.position.set(-totalW / 2 + i * (SPINE_THICK + GAP) + SPINE_THICK / 2, 0, 0);
+      const posX = -totalW / 2 + i * (SPINE_THICK + GAP) + SPINE_THICK / 2;
+      group.position.set(posX, 0, 0);
       group.userData = { index: i, color, song };
+      originalPositions.push({ x: posX, y: 0, z: 0 });
 
       const geo = new THREE.BoxGeometry(SPINE_THICK, ALBUM_TALL, ALBUM_DEEP);
       const spine = spineCanvas(song.name, song.artist, color, null);
@@ -184,15 +197,103 @@ export default function PlaylistShelf({ songs }: Props) {
       const mesh = new THREE.Mesh(geo, mats);
       group.add(mesh);
       meshes.push(mesh);
+
+      // 正方形封面 plane（初始隐藏，选中时显示）
+      const coverPlaneGeo = new THREE.PlaneGeometry(ALBUM_DEEP, ALBUM_DEEP);
+      const coverPlaneMat = new THREE.MeshBasicMaterial({
+        color,
+        transparent: true,
+        opacity: 0,
+        side: THREE.DoubleSide,
+      });
+      const coverPlane = new THREE.Mesh(coverPlaneGeo, coverPlaneMat);
+      // 在 group local 坐标中面向 +X，放在书的 +X 面外侧
+      coverPlane.rotation.y = Math.PI / 2;
+      coverPlane.position.set(SPINE_THICK / 2 + 0.03, 0, 0);
+      coverPlane.visible = false;
+      group.add(coverPlane);
+      group.userData.coverPlane = coverPlane;
+
       groups.push(group);
       mainGroup.add(group);
     }
+
+    // 存储场景引用
+    sceneRef.current = { groups, meshes, mainGroup, originalPositions, totalW, camera };
+
+    // 如果场景重建时仍有选中状态，立即应用（无动画）
+    const curSel = selectedIndex;
+    if (curSel !== null && curSel !== undefined && curSel < groups.length) {
+      const selGroup = groups[curSel];
+      selGroup.rotation.y = -Math.PI / 2;
+      selGroup.position.z = 1.2;
+      // 显示正方形封面 plane
+      const cp = selGroup.userData?.coverPlane as THREE.Mesh | undefined;
+      if (cp) {
+        cp.visible = true;
+        (cp.material as THREE.MeshBasicMaterial).opacity = 1;
+      }
+      // 左右书滑出画面
+      const sd = Math.max(totalW + 8, 14);
+      for (let i = curSel - 1; i >= 0; i--) {
+        groups[i].position.x = originalPositions[i].x - sd;
+      }
+      for (let j = curSel + 1; j < groups.length; j++) {
+        groups[j].position.x = originalPositions[j].x + sd;
+      }
+      selectedIndexRef.current = curSel;
+    }
+
+    // --- 射线点击检测 ---
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    const handleClick = (e: MouseEvent) => {
+      if (animatingRef.current) return;
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(meshes);
+      const cur = selectedIndexRef.current;
+      if (intersects.length > 0) {
+        const hitMesh = intersects[0].object as THREE.Mesh;
+        const idx = meshes.indexOf(hitMesh);
+        if (idx >= 0) {
+          if (cur === idx) {
+            onSongSelect?.(null, null);
+          } else {
+            onSongSelect?.(songs[idx], idx);
+          }
+        }
+      } else if (cur !== null && cur !== undefined) {
+        onSongSelect?.(null, null);
+      }
+    };
+    renderer.domElement.addEventListener("click", handleClick);
+
+    // 鼠标悬停光标
+    const handleMouseMove = (e: MouseEvent) => {
+      if (animatingRef.current) return;
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(meshes);
+      if (selectedIndexRef.current !== null && selectedIndexRef.current !== undefined) {
+        renderer.domElement.style.cursor = "default";
+      } else {
+        renderer.domElement.style.cursor = intersects.length > 0 ? "pointer" : "grab";
+      }
+    };
+    renderer.domElement.addEventListener("mousemove", handleMouseMove);
 
     // --- 拖拽 ---
     let dragging = false, startX = 0, groupStart = 0, vel = 0, lastX = 0;
 
     renderer.domElement.style.cursor = "grab";
     const onDown = (e: PointerEvent) => {
+      if (selectedIndexRef.current !== null) return;
       dragging = true; startX = e.clientX;
       groupStart = mainGroup.position.x;
       vel = 0; lastX = mainGroup.position.x;
@@ -214,7 +315,7 @@ export default function PlaylistShelf({ songs }: Props) {
     window.addEventListener("pointerup", onUp);
 
     const onMove = (e: PointerEvent) => {
-      if (!dragging) return;
+      if (!dragging || selectedIndexRef.current !== null) return;
       let nx = groupStart + (e.clientX - startX) * 0.012;
       const m = Math.max(0, totalW / 2 + 2);
       nx = THREE.MathUtils.clamp(nx, -m, m);
@@ -228,22 +329,18 @@ export default function PlaylistShelf({ songs }: Props) {
     const animate = () => {
       animId = requestAnimationFrame(animate);
 
-      // 弧形排列 + 动态旋转：每本书根据位置计算Y轴旋转
-      const curveStrength = 0.12; // 弧形弯曲强度
-      for (const group of groups) {
-        // 相对于屏幕中心的归一化位置 (-1 ~ 1)
-        const nx = (group.position.x + mainGroup.position.x) / (totalW / 2);
-        // 基础弧形旋转
-        const baseRotY = nx * curveStrength;
-        // 拖动时额外的动态旋转（速度越快越明显）
-        const dynamicRotY = vel * 3 * Math.sign(nx) * 0.01;
-        // 平滑插值到目标旋转
-        const targetRotY = baseRotY + dynamicRotY;
-        group.rotation.y += (targetRotY - group.rotation.y) * 0.15;
-
-        // 轻微的Z轴位移，增加纵深感
-        const targetZ = Math.abs(nx) * 0.5;
-        group.position.z += (targetZ - group.position.z) * 0.1;
+      // 非选中态才应用弧形弯曲
+      if (selectedIndexRef.current === null || selectedIndexRef.current === undefined) {
+        const curveStrength = 0.12;
+        for (const group of groups) {
+          const nx = (group.position.x + mainGroup.position.x) / (totalW / 2);
+          const baseRotY = nx * curveStrength;
+          const dynamicRotY = vel * 3 * Math.sign(nx) * 0.01;
+          const targetRotY = baseRotY + dynamicRotY;
+          group.rotation.y += (targetRotY - group.rotation.y) * 0.15;
+          const targetZ = Math.abs(nx) * 0.5;
+          group.position.z += (targetZ - group.position.z) * 0.1;
+        }
       }
 
       renderer.render(scene, camera);
@@ -307,6 +404,17 @@ export default function PlaylistShelf({ songs }: Props) {
         coverMat,
       ];
 
+      // 更新正方形封面 plane 的纹理
+      const cp = groups[i]?.userData?.coverPlane as THREE.Mesh | undefined;
+      if (cp && coverTex) {
+        cp.material = new THREE.MeshBasicMaterial({
+          map: coverTex,
+          transparent: true,
+          opacity: 0,
+          side: THREE.DoubleSide,
+        });
+      }
+
       console.log(`[Shelf] #${i} 完成 cover=${!!coverTex} mainColor=${mainColor}`);
     }
 
@@ -326,6 +434,8 @@ export default function PlaylistShelf({ songs }: Props) {
     // --- 清理 ---
     return () => {
       cancelAnimationFrame(animId);
+      renderer.domElement.removeEventListener("click", handleClick);
+      renderer.domElement.removeEventListener("mousemove", handleMouseMove);
       renderer.domElement.removeEventListener("pointerdown", onDown);
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
@@ -335,8 +445,107 @@ export default function PlaylistShelf({ songs }: Props) {
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }
+      sceneRef.current = null;
+      prevIndexRef.current = null;
     };
   }, [songs]);
+
+  // --- 响应选中状态变化，执行 3D 动画 ---
+  const prevIndexRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const state = sceneRef.current;
+    if (!state) return;
+
+    const prev = prevIndexRef.current;
+    const next = selectedIndex;
+    selectedIndexRef.current = next;
+
+    if (prev === next) return;
+
+    const { groups, originalPositions, totalW } = state;
+    // 确保书的边缘完全超出屏幕（书深 6.9，屏幕可见宽度约 14）
+    const slideDist = Math.max(totalW + 8, 14);
+
+    if (next !== null && next !== undefined) {
+      animatingRef.current = true;
+
+      const group = groups[next];
+      // 翻书 + 显示正方形封面
+      gsap.to(group.rotation, {
+        y: -Math.PI / 2,
+        duration: 0.55,
+        ease: "power2.inOut",
+      });
+      gsap.to(group.position, {
+        z: 1.2,
+        duration: 0.55,
+        ease: "power2.out",
+        onComplete: () => { animatingRef.current = false; },
+      });
+
+      // 显示正方形封面 plane
+      const cp = group.userData?.coverPlane as THREE.Mesh | undefined;
+      if (cp) {
+        cp.visible = true;
+        gsap.to(cp.material, { opacity: 1, duration: 0.35, delay: 0.3 });
+      }
+
+      // 左侧书向左滑出画面
+      for (let i = next - 1; i >= 0; i--) {
+        gsap.to(groups[i].position, {
+          x: originalPositions[i].x - slideDist,
+          duration: 0.55,
+          delay: (next - i) * 0.04,
+          ease: "power3.out",
+        });
+      }
+
+      // 右侧书向右滑出画面
+      for (let j = next + 1; j < groups.length; j++) {
+        gsap.to(groups[j].position, {
+          x: originalPositions[j].x + slideDist,
+          duration: 0.55,
+          delay: (j - next) * 0.04,
+          ease: "power3.out",
+        });
+      }
+    } else if (prev !== null && prev !== undefined) {
+      animatingRef.current = true;
+
+      // 隐藏之前选中的封面 plane
+      const prevGroup = groups[prev];
+      const prevCp = prevGroup.userData?.coverPlane as THREE.Mesh | undefined;
+      if (prevCp) {
+        const mat = prevCp.material as THREE.MeshBasicMaterial;
+        gsap.to(mat, { opacity: 0, duration: 0.2 });
+        setTimeout(() => { prevCp.visible = false; }, 220);
+      }
+
+      // 所有书恢复原位
+      for (let i = 0; i < groups.length; i++) {
+        const delay = Math.abs(prev - i) * 0.03;
+        gsap.to(groups[i].rotation, {
+          y: 0,
+          duration: 0.45,
+          delay,
+          ease: "power2.inOut",
+        });
+        gsap.to(groups[i].position, {
+          x: originalPositions[i].x,
+          z: 0,
+          duration: 0.45,
+          delay,
+          ease: "power2.inOut",
+          onComplete: () => {
+            if (i === groups.length - 1) animatingRef.current = false;
+          },
+        });
+      }
+    }
+
+    prevIndexRef.current = next;
+  }, [selectedIndex]);
 
   return <div ref={containerRef} className="absolute inset-0 z-[1]" />;
 }
