@@ -19,7 +19,7 @@ interface SceneState {
 /* ============================================================
    常量
    ============================================================ */
-const SPINE_THICK = 0.13;
+const SPINE_THICK = 0.18;
 const ALBUM_TALL = 5.0;
 const ALBUM_DEEP = 6.9;
 const GAP = 0.8;
@@ -247,8 +247,12 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
+    // 防止拖拽后误触发 click
+    let wasDragged = false;
+
     const handleClick = (e: MouseEvent) => {
       if (animatingRef.current) return;
+      if (wasDragged) { wasDragged = false; return; }
       const rect = renderer.domElement.getBoundingClientRect();
       mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
@@ -319,6 +323,7 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
       const m = Math.max(0, totalW / 2 + 2);
       nx = THREE.MathUtils.clamp(nx, -m, m);
       vel = nx - lastX; lastX = nx;
+      if (Math.abs(nx - groupStart) > 0.3) wasDragged = true;
       mainGroup.position.x = nx;
     };
     window.addEventListener("pointermove", onMove);
