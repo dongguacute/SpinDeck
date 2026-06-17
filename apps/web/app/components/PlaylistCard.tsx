@@ -67,7 +67,15 @@ export default function PlaylistCard({ playlist, onDelete, onUpdateRefresh }: Pr
     <>
       <Link
         to={`/shelf/${playlist.id}`}
-        className="group relative rounded-2xl overflow-hidden bg-white/[0.04] border border-white/[0.06] hover:border-white/[0.12] active:border-white/[0.16] active:scale-[0.98] transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/40 block cursor-pointer select-none touch-manipulation"
+        className="group relative rounded-2xl overflow-hidden border active:scale-[0.98] transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/40 block cursor-pointer select-none touch-manipulation"
+        style={{
+          background: "var(--surface-color)",
+          borderColor: "var(--border-color)",
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--border-hover)")}
+        onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--border-color)")}
+        onMouseDown={(e) => (e.currentTarget.style.borderColor = "color-mix(in srgb, var(--border-hover), black 20%))")}
+        onMouseUp={(e) => (e.currentTarget.style.borderColor = "var(--border-hover)")}
       >
         {/* 封面区域 */}
         <div className="aspect-square relative overflow-hidden">
@@ -78,8 +86,8 @@ export default function PlaylistCard({ playlist, onDelete, onUpdateRefresh }: Pr
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-white/[0.06] to-white/[0.02]">
-              <Disc3 className="w-12 h-12 text-white/10" />
+            <div className="w-full h-full flex items-center justify-center" style={{ background: "linear-gradient(to bottom right, var(--surface-hover), var(--surface-color))" }}>
+              <Disc3 className="w-12 h-12" style={{ color: "var(--text-muted)" }} />
             </div>
           )}
 
@@ -91,9 +99,12 @@ export default function PlaylistCard({ playlist, onDelete, onUpdateRefresh }: Pr
               openModal();
             }}
             className={`absolute top-2 right-2 z-10 w-9 h-9 flex items-center justify-center rounded-xl backdrop-blur-md transition-colors cursor-pointer active:scale-95 ${
-              hasRefresh ? 'text-emerald-400/70' : 'text-white/40'
+              hasRefresh ? 'text-emerald-400/70' : ''
             }`}
-            style={{ backgroundColor: hasRefresh ? 'rgba(16,185,129,0.15)' : 'rgba(0,0,0,0.3)' }}
+            style={{
+              backgroundColor: hasRefresh ? 'rgba(16,185,129,0.15)' : 'color-mix(in srgb, var(--bg-primary), transparent 70%)',
+              color: hasRefresh ? undefined : 'var(--text-muted)',
+            }}
             title="歌单设置"
           >
             <Settings2 className="w-4 h-4" style={hasRefresh ? { animation: 'spin 3s linear infinite' } : undefined} />
@@ -107,11 +118,11 @@ export default function PlaylistCard({ playlist, onDelete, onUpdateRefresh }: Pr
 
         {/* 信息区域 */}
         <div className="p-3.5 sm:p-4">
-          <h3 className="text-white/90 font-medium text-sm truncate leading-snug">
+          <h3 className="font-medium text-sm truncate leading-snug" style={{ color: "var(--text-primary)", opacity: 0.9 }}>
             {playlist.name}
           </h3>
           <div className="flex items-center justify-between mt-1.5">
-            <p className="text-white/30 text-xs">
+            <p className="text-xs" style={{ color: "var(--text-secondary)", opacity: 0.35 }}>
               {playlist.songCount > 0
                 ? `${playlist.songCount} 首歌曲`
                 : "空歌单"}
@@ -128,27 +139,27 @@ export default function PlaylistCard({ playlist, onDelete, onUpdateRefresh }: Pr
 
       {/* 设置弹窗 - 手机端底部滑出，PC端居中弹窗 */}
       {(showSettingsModal || isClosing) && (
-        <div 
-          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4" 
+        <div
+          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4"
           onClick={() => !isClosing && closeModal()}
         >
-          <div 
-            className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${showSettingsModal ? 'opacity-100' : 'opacity-0'}`} 
+          <div
+            className={`absolute inset-0 backdrop-blur-sm transition-opacity duration-300 ${showSettingsModal ? 'opacity-100' : 'opacity-0'}`}
+            style={{ background: "color-mix(in srgb, var(--bg-primary), transparent 40%)" }}
           />
-          
+
           {/* 弹窗内容 - PC 居中，手机底部全宽，支持下滑关闭 */}
-          <div 
-            className={`relative w-full sm:max-w-sm bg-[#141414] border-t sm:border border-t-white/[0.08] sm:border-white/[0.08] rounded-t-3xl sm:rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto transition-all duration-300 ease-out ${
+          <div
+            className={`relative w-full sm:max-w-sm border rounded-t-3xl sm:rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto transition-all duration-300 ease-out ${
               isClosing
                 ? 'translate-y-full opacity-0'
                 : isOpening
                   ? 'translate-y-full sm:scale-95 sm:opacity-0'
                   : (dragY === 0 ? 'translate-y-0 sm:scale-100 opacity-100' : '')
             }`}
-            style={{
-              transform: dragY > 0 && !isClosing ? `translateY(${dragY}px)` : undefined,
-              transition: dragY > 0 && !isClosing ? 'none' : undefined,
-            }}
+            style={{ background: "var(--bg-tertiary)", borderColor: "var(--border-color)" }}
+            transform={dragY > 0 && !isClosing ? `translateY(${dragY}px)` : undefined}
+            transition={dragY > 0 && !isClosing ? "none" : undefined}
             onClick={(e) => e.stopPropagation()}
             onTouchStart={(e) => {
               if (isClosing) return;
@@ -174,10 +185,10 @@ export default function PlaylistCard({ playlist, onDelete, onUpdateRefresh }: Pr
               const startY = Number(el.dataset.startY);
               const startTime = Number(el.dataset.startTime);
               if (!startY || !startTime) { setDragY(0); return; }
-              
+
               const deltaTime = Date.now() - startTime;
               const velocity = dragY / deltaTime;
-              
+
               // 超过阈值或快速滑动则触发关闭动画
               if (dragY > 80 || velocity > 0.5) {
                 closeModal();
@@ -187,32 +198,35 @@ export default function PlaylistCard({ playlist, onDelete, onUpdateRefresh }: Pr
           >
             {/* 手机端拖拽指示器 */}
             <div className="flex sm:hidden justify-center pt-3 pb-1">
-              <div className="w-10 h-1 rounded-full bg-white/20" />
+              <div className="w-10 h-1 rounded-full" style={{ background: "var(--text-secondary)", opacity: 0.2 }} />
             </div>
 
             {/* 标题栏 - 增大触控区域 */}
             <div className="flex items-center justify-between p-5 pb-4 sm:p-6 sm:pb-5">
-              <h3 className="text-white/90 text-base font-semibold flex items-center gap-2">
-                <Settings2 className="w-4 h-4 text-white/40" />歌单设置
+              <h3 className="text-base font-semibold flex items-center gap-2" style={{ color: "var(--text-primary)", opacity: 0.9 }}>
+                <Settings2 className="w-4 h-4" style={{ color: "var(--text-muted)" }} />歌单设置
               </h3>
               <button
                 onClick={() => closeModal()}
-                className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-white/[0.06] active:bg-white/[0.1] text-white/30 hover:text-white/60 transition-colors cursor-pointer"
+                className="w-8 h-8 flex items-center justify-center rounded-xl text-sm font-medium transition-colors cursor-pointer"
+                style={{ color: "var(--text-muted)", opacity: 0.3 }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "var(--surface-color)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text-secondary)"; (e.currentTarget as HTMLButtonElement).style.opacity = "0.6"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text-muted)"; (e.currentTarget as HTMLButtonElement).style.opacity = "0.3"; }}
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* 歌单信息 */}
-            <div className="mx-5 mb-5 pb-4 border-b border-white/[0.06] sm:mx-6 sm:mb-6 sm:pb-5">
-              <p className="text-white/70 text-sm font-medium truncate">{playlist.name}</p>
-              <p className="text-white/25 text-xs mt-1">{cfg.label} · {playlist.songCount > 0 ? `${playlist.songCount} 首` : '空歌单'}</p>
+            <div className="mx-5 mb-5 pb-4 border-b sm:mx-6 sm:mb-6 sm:pb-5" style={{ borderColor: "var(--border-color)" }}>
+              <p className="text-sm font-medium truncate" style={{ color: "var(--text-secondary)", opacity: 0.7 }}>{playlist.name}</p>
+              <p className="text-xs mt-1" style={{ color: "var(--text-muted)", opacity: 0.25 }}>{cfg.label} · {playlist.songCount > 0 ? `${playlist.songCount} 首` : '空歌单'}</p>
             </div>
 
             {/* 自动刷新设置 */}
             {playlist.importUrl && onUpdateRefresh ? (
               <div className="px-5 pb-4 sm:px-6 sm:pb-5">
-                <label className="block text-white/40 text-xs font-medium mb-3">自动刷新间隔</label>
+                <label className="block text-xs font-medium mb-3" style={{ color: "var(--text-muted)" }}>自动刷新间隔</label>
                 <div className="space-y-2">
                   {REFRESH_OPTIONS.map((opt) => {
                     const isActive = (playlist.refreshInterval ?? 0) === opt.value;
@@ -224,11 +238,14 @@ export default function PlaylistCard({ playlist, onDelete, onUpdateRefresh }: Pr
                           setShowCustomInput(false);
                           closeModal();
                         }}
-                        className={`active:scale-[0.98] w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-colors cursor-pointer min-h-[48px] ${
+                        className="active:scale-[0.98] w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-colors cursor-pointer min-h-[48px] border border-transparent"
+                        style={
                           isActive
-                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                            : 'bg-white/[0.03] text-white/50 hover:bg-white/[0.05] hover:text-white/70 active:bg-white/[0.06] border border-transparent'
-                        }`}
+                            ? { backgroundColor: "rgba(16,185,129,0.1)", color: "#34d399", borderColor: "rgba(16,185,129,0.2)" }
+                            : { backgroundColor: "var(--surface-color)", color: "var(--text-secondary)", opacity: 0.5 }
+                        }
+                        onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.background = "var(--surface-hover)"; (e.currentTarget as HTMLButtonElement).style.opacity = "0.7"; } }}
+                        onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.background = "var(--surface-color)"; (e.currentTarget as HTMLButtonElement).style.opacity = "0.5"; } }}
                       >
                         <span>{opt.label}</span>
                         {isActive && <span className="w-2 h-2 rounded-full bg-emerald-400" />}
@@ -248,23 +265,26 @@ export default function PlaylistCard({ playlist, onDelete, onUpdateRefresh }: Pr
                             setCustomMinutes("");
                           }
                         }}
-                        className={`active:scale-[0.98] w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-colors cursor-pointer min-h-[48px] ${
+                        className={`active:scale-[0.98] w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-colors cursor-pointer min-h-[48px] border border-transparent`}
+                        style={
                           isCustomInterval || showCustomInput
-                            ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
-                            : 'bg-white/[0.03] text-white/50 hover:bg-white/[0.05] hover:text-white/70 active:bg-white/[0.06] border border-transparent'
-                        }`}
+                            ? { backgroundColor: "rgba(59,130,246,0.1)", color: "#60a5fa", borderColor: "rgba(59,130,246,0.2)" }
+                            : { backgroundColor: "var(--surface-color)", color: "var(--text-secondary)", opacity: 0.5 }
+                        }
+                        onMouseEnter={(e) => { if (!(isCustomInterval || showCustomInput)) { e.currentTarget.style.background = "var(--surface-hover)"; (e.currentTarget as HTMLButtonElement).style.opacity = "0.7"; } }}
+                        onMouseLeave={(e) => { if (!(isCustomInterval || showCustomInput)) { e.currentTarget.style.background = "var(--surface-color)"; (e.currentTarget as HTMLButtonElement).style.opacity = "0.5"; } }}
                       >
                         <div className="flex items-center gap-2">
                           <Clock className="w-3.5 h-3.5" />
                           <span>自定义</span>
                         </div>
                         {isCustomInterval && !showCustomInput && (
-                          <span className="text-[11px] opacity-70">{Math.round(currentInterval / 60000)} 分钟</span>
+                          <span className="text-[11px]" style={{ opacity: 0.7 }}>{Math.round(currentInterval / 60000)} 分钟</span>
                         )}
                       </button>
                     ) : (
-                      <div className="px-4 py-4 rounded-xl bg-white/[0.03] border border-white/[0.08] space-y-3">
-                        <label className="text-white/30 text-xs">输入刷新间隔（分钟）</label>
+                      <div className="px-4 py-4 rounded-xl border space-y-3" style={{ backgroundColor: "var(--surface-color)", borderColor: "var(--border-color)" }}>
+                        <label className="text-xs" style={{ color: "var(--text-muted)", opacity: 0.3 }}>输入刷新间隔（分钟）</label>
                         <div className="flex gap-2">
                           <input
                             type="number"
@@ -275,7 +295,13 @@ export default function PlaylistCard({ playlist, onDelete, onUpdateRefresh }: Pr
                             onKeyDown={(e) => e.key === "Enter" && handleCustomApply()}
                             placeholder="例：10"
                             autoFocus
-                            className="flex-1 bg-white/[0.06] border border-white/[0.1] rounded-lg px-4 py-3 text-base sm:text-sm text-white/80 placeholder:text-white/20 outline-none focus:border-white/20 transition-colors min-h-[44px] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                            className="flex-1 border rounded-lg px-4 py-3 text-base sm:text-sm outline-none focus:border-white/20 transition-colors min-h-[44px] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                            style={{
+                              backgroundColor: "var(--surface-hover)",
+                              borderColor: "var(--border-color)",
+                              color: "var(--text-primary)",
+                              opacity: 0.8,
+                            }}
                           />
                           <button
                             onClick={handleCustomApply}
@@ -285,7 +311,7 @@ export default function PlaylistCard({ playlist, onDelete, onUpdateRefresh }: Pr
                             确认
                           </button>
                         </div>
-                        <p className="text-white/15 text-[10px]">范围：1 - 1440 分钟（24 小时）</p>
+                        <p className="text-[10px]" style={{ color: "var(--text-muted)", opacity: 0.15 }}>范围：1 - 1440 分钟（24 小时）</p>
                       </div>
                     )}
                   </div>
@@ -293,18 +319,25 @@ export default function PlaylistCard({ playlist, onDelete, onUpdateRefresh }: Pr
               </div>
             ) : (
               <div className="py-10 text-center">
-                <p className="text-white/25 text-sm">手动创建的歌单暂无刷新选项</p>
+                <p className="text-sm" style={{ color: "var(--text-muted)", opacity: 0.25 }}>手动创建的歌单暂无刷新选项</p>
               </div>
             )}
 
             {/* 底部操作区 - 增大按钮高度 */}
-            <div className="mt-2 mx-5 pt-5 border-t border-white/[0.06] sm:mx-6 sm:mt-6 sm:pt-5 pb-7 sm:pb-6">
+            <div className="mt-2 mx-5 pt-5 border-t sm:mx-6 sm:mt-6 sm:pt-5 pb-7 sm:pb-6" style={{ borderColor: "var(--border-color)" }}>
               <button
                 onClick={() => {
                   onDelete(playlist.id);
                   closeModal();
                 }}
-                className="active:scale-[0.98] w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-red-500/[0.08] hover:bg-red-500/[0.15] active:bg-red-500/[0.2] text-red-400/70 hover:text-red-400 text-sm font-medium transition-colors cursor-pointer min-h-[52px]"
+                className="active:scale-[0.98] w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-medium transition-colors cursor-pointer min-h-[52px]"
+                style={{
+                  backgroundColor: "rgba(239,68,68,0.08)",
+                  color: "#f87171",
+                  opacity: 0.7,
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(239,68,68,0.15)"; e.currentTarget.style.color = "#f87171"; e.currentTarget.style.opacity = 1; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "rgba(239,68,68,0.08)"; e.currentTarget.style.color = "#f87171"; e.currentTarget.style.opacity = 0.7; }}
               >
                 <Trash2 className="w-4 h-4" />
                 删除歌单
