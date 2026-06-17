@@ -1,9 +1,70 @@
 import { useThemeStore, type Theme } from "../lib/theme-store";
-import { Sun, Moon, ArrowLeft } from "lucide-react";
+import { Sun, Moon, ArrowLeft, Monitor } from "lucide-react";
 import { Link } from "react-router";
+
+// 获取系统信息的辅助函数
+function getSystemInfo() {
+  const ua = navigator.userAgent;
+  let os = "未知系统";
+  let osVersion = "";
+
+  // 检测操作系统
+  if (ua.includes("Mac OS X")) {
+    os = "macOS";
+    const match = /Mac OS X (\d+[._]\d+(?:[._]\d+)?)/.exec(ua);
+    if (match) {
+      osVersion = match[1].replace(/_/g, ".");
+    }
+  } else if (ua.includes("Windows")) {
+    os = "Windows";
+    if (ua.includes("Windows NT 10.0")) osVersion = "10/11";
+    else if (ua.includes("Windows NT 6.3")) osVersion = "8.1";
+    else if (ua.includes("Windows NT 6.2")) osVersion = "8";
+    else if (ua.includes("Windows NT 6.1")) osVersion = "7";
+  } else if (ua.includes("Linux")) {
+    os = "Linux";
+    if (ua.includes("Android")) {
+      os = "Android";
+      const match = /Android (\d+(?:\.\d+)?)/.exec(ua);
+      if (match) {
+        osVersion = match[1];
+      }
+    }
+  } else if (ua.includes("iOS") || ua.includes("iPhone") || ua.includes("iPad")) {
+    os = "iOS";
+    const match = /OS (\d+(?:_\d+)?(?:_\d+)?)/.exec(ua);
+    if (match) {
+      osVersion = match[1].replace(/_/g, ".");
+    }
+  }
+
+  // 检测浏览器及内核版本
+  let browser = "未知浏览器";
+  let browserVersion = "";
+  if (ua.includes("Firefox") && !ua.includes("Seamonkey")) {
+    browser = "Firefox";
+    const match = /Firefox\/(\d+(?:\.\d+)?)/.exec(ua);
+    if (match) browserVersion = match[1];
+  } else if (ua.includes("Edg")) {
+    browser = "Edge";
+    const match = /Edg(?:e)?\/(\d+(?:\.\d+)?)/.exec(ua);
+    if (match) browserVersion = match[1];
+  } else if (ua.includes("Chrome") && !ua.includes("Edg")) {
+    browser = "Chromium";
+    const match = /Chrome\/(\d+(?:\.\d+)?)/.exec(ua);
+    if (match) browserVersion = match[1];
+  } else if (ua.includes("Safari") && !ua.includes("Chrome") && !ua.includes("Chromium")) {
+    browser = "Safari";
+    const match = /Version\/(\d+(?:\.\d+)?)/.exec(ua);
+    if (match) browserVersion = match[1];
+  }
+
+  return { os, osVersion, browser, browserVersion };
+}
 
 export default function Settings() {
   const { theme, setTheme } = useThemeStore();
+  const systemInfo = getSystemInfo();
 
   return (
     <div
@@ -171,6 +232,53 @@ export default function Settings() {
             <p className="text-xs mt-2" style={{ color: "var(--text-muted)" }}>
               管理你的音乐收藏，打造专属播放列表
             </p>
+          </div>
+        </section>
+
+        {/* 设备信息 */}
+        <section className="mt-8">
+          <h2
+            className="text-xs font-semibold uppercase tracking-wider mb-4"
+            style={{ color: "var(--text-muted)" }}
+          >
+            设备信息
+          </h2>
+          <div
+            className="rounded-2xl border overflow-hidden transition-colors duration-300"
+            style={{
+              background: "var(--bg-secondary)",
+              borderColor: "var(--border-color)",
+            }}
+          >
+            {/* 操作系统 */}
+            <div
+              className="flex items-center justify-between px-5 py-4"
+              style={{ borderBottom: "1px solid var(--border-color)" }}
+            >
+              <div className="flex items-center gap-3">
+                <Monitor className="w-5 h-5" style={{ color: "var(--text-secondary)" }} />
+                <span className="text-sm" style={{ color: "var(--text-primary)" }}>
+                  系统
+                </span>
+              </div>
+              <span className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
+                {systemInfo.os} {systemInfo.osVersion && `v${systemInfo.osVersion}`}
+              </span>
+            </div>
+
+            {/* 浏览器 */}
+            <div className="flex items-center justify-between px-5 py-4">
+              <div className="flex items-center gap-3">
+                <Monitor className="w-5 h-5" style={{ color: "var(--text-secondary)" }} />
+                <span className="text-sm" style={{ color: "var(--text-primary)" }}>
+                  浏览器
+                </span>
+              </div>
+              <span className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
+                {systemInfo.browser}
+                {systemInfo.browserVersion && ` v${systemInfo.browserVersion}`}
+              </span>
+            </div>
           </div>
         </section>
       </main>
