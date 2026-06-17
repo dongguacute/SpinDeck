@@ -24,7 +24,7 @@ export async function action({ request }: Route.ActionArgs) {
         album: s.album || "",
       }));
       return Response.json({
-        name: result.creator || "QQ音乐歌单",
+        name: result.name || "QQ音乐歌单",
         cover: result.cover || "",
         songCount: songs.length,
         songs,

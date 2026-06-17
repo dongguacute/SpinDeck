@@ -5,7 +5,11 @@ import CreatePlaylistModal from "../components/CreatePlaylistModal";
 import { usePlaylistStore } from "../lib/playlist-store";
 
 export default function Playlists() {
-  const { playlists, addPlaylist, removePlaylist } = usePlaylistStore();
+  const { playlists, addPlaylist, removePlaylist, updatePlaylist } = usePlaylistStore();
+
+  const handleUpdateRefresh = (id: string, interval: number) => {
+    updatePlaylist(id, { refreshInterval: interval });
+  };
   const [modalOpen, setModalOpen] = useState(false);
 
   return (
@@ -74,6 +78,7 @@ export default function Playlists() {
                 key={playlist.id}
                 playlist={playlist}
                 onDelete={removePlaylist}
+                onUpdateRefresh={handleUpdateRefresh}
               />
             ))}
           </div>

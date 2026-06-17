@@ -21,6 +21,7 @@ export interface Playlist {
   coverUrl: string;
   songCount: number;
   importUrl: string;
+  refreshInterval?: number; // 自动刷新间隔（毫秒）
   createdAt: number;
 }
 

@@ -12,6 +12,7 @@ export interface SongInfo {
 
 export interface PlaylistResult {
     platform: Input['provider'];
+    name: string;
     cover: string;
     creator: string;
     songs: SongInfo[];
@@ -93,6 +94,7 @@ export async function getQQMusicPlaylistSongs(url: string): Promise<PlaylistResu
 
     return {
         platform: 'QQMusic',
+        name: (cdInfo.dissname ?? '').replace(/&#[\w;]*.*$/, ''),
         cover: cdInfo.logo ?? cdInfo.diss_cover ?? '',
         creator: cdInfo.nickname ?? cdInfo.nick ?? '',
         songs,
