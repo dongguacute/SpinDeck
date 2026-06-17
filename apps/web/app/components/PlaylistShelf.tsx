@@ -197,23 +197,6 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
       const mesh = new THREE.Mesh(geo, mats);
       group.add(mesh);
       meshes.push(mesh);
-
-      // 正方形封面 plane（初始隐藏，选中时显示）
-      const coverPlaneGeo = new THREE.PlaneGeometry(ALBUM_DEEP, ALBUM_DEEP);
-      const coverPlaneMat = new THREE.MeshBasicMaterial({
-        color,
-        transparent: true,
-        opacity: 0,
-        side: THREE.DoubleSide,
-      });
-      const coverPlane = new THREE.Mesh(coverPlaneGeo, coverPlaneMat);
-      // 在 group local 坐标中面向 +X，放在书的 +X 面外侧
-      coverPlane.rotation.y = Math.PI / 2;
-      coverPlane.position.set(SPINE_THICK / 2 + 0.03, 0, 0);
-      coverPlane.visible = false;
-      group.add(coverPlane);
-      group.userData.coverPlane = coverPlane;
-
       groups.push(group);
       mainGroup.add(group);
     }
@@ -227,12 +210,6 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
       const selGroup = groups[curSel];
       selGroup.rotation.y = -Math.PI / 2;
       selGroup.position.z = 1.2;
-      // 显示正方形封面 plane
-      const cp = selGroup.userData?.coverPlane as THREE.Mesh | undefined;
-      if (cp) {
-        cp.visible = true;
-        (cp.material as THREE.MeshBasicMaterial).opacity = 1;
-      }
       // 左右书滑出画面
       const sd = Math.max(totalW + 8, 14);
       for (let i = curSel - 1; i >= 0; i--) {
@@ -404,17 +381,6 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
         coverMat,
       ];
 
-      // 更新正方形封面 plane 的纹理
-      const cp = groups[i]?.userData?.coverPlane as THREE.Mesh | undefined;
-      if (cp && coverTex) {
-        cp.material = new THREE.MeshBasicMaterial({
-          map: coverTex,
-          transparent: true,
-          opacity: 0,
-          side: THREE.DoubleSide,
-        });
-      }
-
       console.log(`[Shelf] #${i} 完成 cover=${!!coverTex} mainColor=${mainColor}`);
     }
 
@@ -484,13 +450,6 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
         onComplete: () => { animatingRef.current = false; },
       });
 
-      // 显示正方形封面 plane
-      const cp = group.userData?.coverPlane as THREE.Mesh | undefined;
-      if (cp) {
-        cp.visible = true;
-        gsap.to(cp.material, { opacity: 1, duration: 0.35, delay: 0.3 });
-      }
-
       // 左侧书向左滑出画面
       for (let i = next - 1; i >= 0; i--) {
         gsap.to(groups[i].position, {
@@ -512,15 +471,6 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
       }
     } else if (prev !== null && prev !== undefined) {
       animatingRef.current = true;
-
-      // 隐藏之前选中的封面 plane
-      const prevGroup = groups[prev];
-      const prevCp = prevGroup.userData?.coverPlane as THREE.Mesh | undefined;
-      if (prevCp) {
-        const mat = prevCp.material as THREE.MeshBasicMaterial;
-        gsap.to(mat, { opacity: 0, duration: 0.2 });
-        setTimeout(() => { prevCp.visible = false; }, 220);
-      }
 
       // 所有书恢复原位
       for (let i = 0; i < groups.length; i++) {
