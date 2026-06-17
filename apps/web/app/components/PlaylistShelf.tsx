@@ -21,7 +21,7 @@ interface SceneState {
    ============================================================ */
 const SPINE_THICK = 0.18;
 const ALBUM_TALL = 5.0;
-const ALBUM_DEEP = 6.9;
+const ALBUM_DEEP = 5.0; // 和 ALBUM_TALL 一致，±X 面天生正方形
 const GAP = 0.8;
 
 const COLORS = [
@@ -197,22 +197,6 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
       const mesh = new THREE.Mesh(geo, mats);
       group.add(mesh);
       meshes.push(mesh);
-
-      // 正方形封面 plane（初始隐藏，选中翻面后显示）
-      const coverPlaneGeo = new THREE.PlaneGeometry(ALBUM_TALL, ALBUM_TALL);
-      const coverPlaneMat = new THREE.MeshBasicMaterial({
-        color,
-        transparent: true,
-        opacity: 0,
-        side: THREE.DoubleSide,
-      });
-      const coverPlane = new THREE.Mesh(coverPlaneGeo, coverPlaneMat);
-      coverPlane.rotation.y = Math.PI / 2; // local 中面向 +X
-      coverPlane.position.set(SPINE_THICK / 2 + 0.03, 0, 0);
-      coverPlane.visible = false;
-      group.add(coverPlane);
-      group.userData.coverPlane = coverPlane;
-
       groups.push(group);
       mainGroup.add(group);
     }
@@ -225,13 +209,6 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
     if (curSel !== null && curSel !== undefined && curSel < groups.length) {
       const selGroup = groups[curSel];
       selGroup.rotation.y = -Math.PI / 2;
-      // 隐藏书的 box，显示正方形封面
-      meshes[curSel].visible = false;
-      const cp = selGroup.userData?.coverPlane as THREE.Mesh | undefined;
-      if (cp) {
-        cp.visible = true;
-        (cp.material as THREE.MeshBasicMaterial).opacity = 1;
-      }
       // 左右书滑出画面
       const sd = Math.max(totalW + 8, 14);
       for (let i = curSel - 1; i >= 0; i--) {
@@ -408,17 +385,6 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
         coverMat,
       ];
 
-      // 更新封面 plane 纹理
-      const cp = groups[i]?.userData?.coverPlane as THREE.Mesh | undefined;
-      if (cp && coverTex) {
-        cp.material = new THREE.MeshBasicMaterial({
-          map: coverTex,
-          transparent: true,
-          opacity: 0,
-          side: THREE.DoubleSide,
-        });
-      }
-
       console.log(`[Shelf] #${i} 完成 cover=${!!coverTex} mainColor=${mainColor}`);
     }
 
@@ -467,7 +433,7 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
 
     if (prev === next) return;
 
-    const { groups, meshes, originalPositions, totalW } = state;
+    const { groups, originalPositions, totalW } = state;
     // 确保书的边缘完全超出屏幕（书深 6.9，屏幕可见宽度约 14）
     const slideDist = Math.max(totalW + 8, 14);
 
@@ -479,37 +445,17 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
       const flipStart = 0.08;
 
       const group = groups[next];
-      const mesh = meshes[next];
-      const cp = group.userData?.coverPlane as THREE.Mesh | undefined;
 
-      // 1. 翻转前：封面 plane 就位但完全透明
-      if (cp) {
-        cp.visible = true;
-        (cp.material as THREE.MeshBasicMaterial).opacity = 0;
-      }
-
-      // 2. 翻转动画（box 全程可见，能看到 3D 旋转过程）
+      // box 的 ±X 面天生正方形，翻转后直接显示封面
       gsap.to(group.rotation, {
         y: -Math.PI / 2,
         duration: flipDuration,
         delay: flipStart,
         ease: "power2.inOut",
         onComplete: () => {
-          // 翻转完成后隐藏 box，留封面 plane
-          mesh.visible = false;
           animatingRef.current = false;
         },
       });
-
-      // 3. 翻转过半时封面渐显（约在旋转到 40% 时开始叠入）
-      if (cp) {
-        gsap.to(cp.material, {
-          opacity: 1,
-          duration: flipDuration * 0.55,
-          delay: flipStart + flipDuration * 0.4,
-          ease: "power2.in",
-        });
-      }
 
       // 左侧书向左滑出画面（立即开始，慢速）
       for (let i = next - 1; i >= 0; i--) {
@@ -532,16 +478,6 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
       }
     } else if (prev !== null && prev !== undefined) {
       animatingRef.current = true;
-
-      // 恢复书的 box，隐藏封面 plane
-      meshes[prev].visible = true;
-      const prevGroup = groups[prev];
-      const prevCp = prevGroup.userData?.coverPlane as THREE.Mesh | undefined;
-      if (prevCp) {
-        const mat = prevCp.material as THREE.MeshBasicMaterial;
-        gsap.to(mat, { opacity: 0, duration: 0.25 });
-        setTimeout(() => { prevCp.visible = false; }, 270);
-      }
 
       // 所有书恢复原位
       for (let i = 0; i < groups.length; i++) {
