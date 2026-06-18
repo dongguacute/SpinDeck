@@ -174,7 +174,7 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
 
     // --- 创建书本 ---
     const sharpGeo = new THREE.BoxGeometry(SPINE_THICK, ALBUM_TALL, ALBUM_DEEP);
-    const roundedGeo = new RoundedBoxGeometry(SPINE_THICK, ALBUM_TALL, ALBUM_DEEP, 2, 0.15);
+    const roundedGeo = new RoundedBoxGeometry(SPINE_THICK, ALBUM_TALL, ALBUM_DEEP, 2, 0.5);
 
     const meshes: THREE.Mesh[] = [];
     const groups: THREE.Group[] = [];
