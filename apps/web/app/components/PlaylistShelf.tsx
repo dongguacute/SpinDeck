@@ -445,14 +445,11 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
     if (next !== null && next !== undefined) {
       animatingRef.current = true;
 
-      // 翻开时立即切换为圆角几何体
-      state.meshes[next].geometry = state.roundedGeo;
-
-      // 翻转几乎和滑出同时开始，趁书移动掩护快速完成
       const flipDuration = 0.5;
       const flipStart = 0.08;
 
       const group = groups[next];
+      let swapped = false;
 
       // box 的 ±X 面天生正方形，翻转后直接显示封面
       gsap.to(group.rotation, {
@@ -460,6 +457,13 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
         duration: flipDuration,
         delay: flipStart,
         ease: "power2.inOut",
+        onUpdate: () => {
+          // 翻转到侧面时（约 -45°），趁看不到封面偷偷换成圆角
+          if (!swapped && group.rotation.y < -Math.PI / 4) {
+            state.meshes[next].geometry = state.roundedGeo;
+            swapped = true;
+          }
+        },
         onComplete: () => {
           animatingRef.current = false;
         },
@@ -487,6 +491,8 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
     } else if (prev !== null && prev !== undefined) {
       animatingRef.current = true;
 
+      let swappedBack = false;
+
       // 所有书恢复原位
       for (let i = 0; i < groups.length; i++) {
         const delay = Math.abs(prev - i) * 0.08;
@@ -495,6 +501,15 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
           duration: 0.5,
           delay,
           ease: "power2.inOut",
+          onUpdate: () => {
+            // 翻回侧面时，切回直角几何体
+            if (!swappedBack && groups[i].rotation.y > -Math.PI / 4) {
+              for (const m of state.meshes) {
+                m.geometry = state.sharpGeo;
+              }
+              swappedBack = true;
+            }
+          },
         });
         gsap.to(groups[i].position, {
           x: originalPositions[i].x,
@@ -505,10 +520,6 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
           onComplete: () => {
             if (i === groups.length - 1) {
               animatingRef.current = false;
-              // 所有书翻回后，全部恢复为直角几何体
-              for (const m of state.meshes) {
-                m.geometry = state.sharpGeo;
-              }
             }
           },
         });
