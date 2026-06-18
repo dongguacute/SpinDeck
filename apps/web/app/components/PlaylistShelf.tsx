@@ -451,7 +451,15 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
       const group = groups[next];
       let swapped = false;
 
-      // box 的 ±X 面天生正方形，翻转后直接显示封面
+      // 切换为 ZYX 旋转顺序：rotation.z 绕世界 Z 轴（屏幕平面内旋转）
+      group.rotation.order = "ZYX";
+
+      // 记录翻转前的位置，用于以书脊边缘为轴翻转
+      const initPx = group.position.x;
+      const initPz = group.position.z;
+      const pivotEdge = SPINE_THICK / 2; // 书脊右边缘（+X 面所在边缘）作为翻转轴
+
+      // 以书脊边缘为轴翻转（平面翻页效果，非立体中心旋转）
       gsap.to(group.rotation, {
         y: -Math.PI / 2,
         duration: flipDuration,
@@ -463,9 +471,34 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
             state.meshes[next].geometry = state.roundedGeo;
             swapped = true;
           }
+          // 同步移动位置：让书脊边缘保持固定，形成以边缘为轴的翻页效果
+          const theta = group.rotation.y;
+          group.position.x = initPx + pivotEdge * (1 - Math.cos(theta));
+          group.position.z = initPz + pivotEdge * Math.sin(theta);
         },
         onComplete: () => {
-          animatingRef.current = false;
+          // 翻转完成后：滑动到中间偏左 + 以左下角为原点左倾15°
+          const leanAngle = 15 * (Math.PI / 180);
+
+          // 书的中心目标：y=0（X 轴上），x=-2.0（中间偏左）
+          const centerX = -2.0;
+          const centerY = 0;
+
+          gsap.to(group.position, {
+            x: centerX,
+            y: centerY,
+            duration: 0.7,
+            ease: "power2.out",
+          });
+
+          gsap.to(group.rotation, {
+            z: leanAngle,
+            duration: 0.7,
+            ease: "power2.out",
+            onComplete: () => {
+              animatingRef.current = false;
+            },
+          });
         },
       });
 
@@ -498,6 +531,7 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
         const delay = Math.abs(prev - i) * 0.08;
         gsap.to(groups[i].rotation, {
           y: 0,
+          z: 0,
           duration: 0.5,
           delay,
           ease: "power2.inOut",
@@ -513,6 +547,7 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
         });
         gsap.to(groups[i].position, {
           x: originalPositions[i].x,
+          y: originalPositions[i].y,
           z: 0,
           duration: 1.0,
           delay,
