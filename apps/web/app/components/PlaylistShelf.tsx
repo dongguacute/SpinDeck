@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
+import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import gsap from "gsap";
 import type { SongInfo } from "../lib/types";
 import type { RGBAColor } from "@spindeck/picker";
@@ -14,6 +15,8 @@ interface SceneState {
   originalPositions: { x: number; y: number; z: number }[];
   totalW: number;
   camera: THREE.PerspectiveCamera;
+  roundedGeo: THREE.BufferGeometry;
+  sharpGeo: THREE.BufferGeometry;
 }
 
 /* ============================================================
@@ -170,6 +173,9 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
     scene.add(mainGroup);
 
     // --- 创建书本 ---
+    const sharpGeo = new THREE.BoxGeometry(SPINE_THICK, ALBUM_TALL, ALBUM_DEEP);
+    const roundedGeo = new RoundedBoxGeometry(SPINE_THICK, ALBUM_TALL, ALBUM_DEEP, 2, 0.15);
+
     const meshes: THREE.Mesh[] = [];
     const groups: THREE.Group[] = [];
     const originalPositions: { x: number; y: number; z: number }[] = [];
@@ -181,8 +187,6 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
       group.position.set(posX, 0, 0);
       group.userData = { index: i, color, song };
       originalPositions.push({ x: posX, y: 0, z: 0 });
-
-      const geo = new THREE.BoxGeometry(SPINE_THICK, ALBUM_TALL, ALBUM_DEEP);
       const spine = spineCanvas(song.name, song.artist, color, null);
 
       // 6 面材质：[+X, -X, +Y, -Y, +Z书脊, -Z]
@@ -194,7 +198,7 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
         new THREE.MeshBasicMaterial({ map: spine }),
         new THREE.MeshBasicMaterial({ color: "#1a1a1a" }),
       ];
-      const mesh = new THREE.Mesh(geo, mats);
+      const mesh = new THREE.Mesh(sharpGeo, mats);
       group.add(mesh);
       meshes.push(mesh);
       groups.push(group);
@@ -202,13 +206,14 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
     }
 
     // 存储场景引用
-    sceneRef.current = { groups, meshes, mainGroup, originalPositions, totalW, camera };
+    sceneRef.current = { groups, meshes, mainGroup, originalPositions, totalW, camera, roundedGeo, sharpGeo };
 
     // 如果场景重建时仍有选中状态，立即应用（无动画）
     const curSel = selectedIndex;
     if (curSel !== null && curSel !== undefined && curSel < groups.length) {
       const selGroup = groups[curSel];
       selGroup.rotation.y = -Math.PI / 2;
+      meshes[curSel].geometry = roundedGeo; // 翻开时切换为圆角几何体
       // 左右书滑出画面
       const sd = Math.max(totalW + 8, 14);
       for (let i = curSel - 1; i >= 0; i--) {
@@ -440,6 +445,9 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
     if (next !== null && next !== undefined) {
       animatingRef.current = true;
 
+      // 翻开时立即切换为圆角几何体
+      state.meshes[next].geometry = state.roundedGeo;
+
       // 翻转几乎和滑出同时开始，趁书移动掩护快速完成
       const flipDuration = 0.5;
       const flipStart = 0.08;
@@ -495,7 +503,13 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
           delay,
           ease: "power2.inOut",
           onComplete: () => {
-            if (i === groups.length - 1) animatingRef.current = false;
+            if (i === groups.length - 1) {
+              animatingRef.current = false;
+              // 所有书翻回后，全部恢复为直角几何体
+              for (const m of state.meshes) {
+                m.geometry = state.sharpGeo;
+              }
+            }
           },
         });
       }
