@@ -1,8 +1,6 @@
 import ky from "ky";
 import type { Input } from '../types/url';
 
-const BATCH_MAX = 50;
-
 export interface SongInfo {
     name: string;
     cover: string;
@@ -25,10 +23,14 @@ export async function getQQMusicList(url: string) {
         const redirectRes = await fetch(url, { redirect: 'manual' });
         const location = redirectRes.headers.get('location') || '';
         console.log(`[core] 短链重定向 → ${location}`);
+        if (!location) {
+            throw new Error('无法获取重定向地址，短链可能已失效');
+        }
         const urlObj = new URL(location);
         disstid = urlObj.searchParams.get('id') || location.split('=')[1] || '';
     } else {
-        disstid = url.split('=')[1] || '';
+        const urlObj = new URL(url);
+        disstid = urlObj.searchParams.get('id') || url.split('=')[1] || '';
     }
 
     console.log(`[core] disstid = ${disstid}`);
