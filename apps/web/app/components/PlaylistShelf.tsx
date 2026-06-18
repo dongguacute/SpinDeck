@@ -445,6 +445,23 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
     if (next !== null && next !== undefined) {
       animatingRef.current = true;
 
+      // 停止所有正在进行的动画（拖拽惯性、弯曲效果等）
+      gsap.killTweensOf(state.mainGroup.position);
+      for (let i = 0; i < groups.length; i++) {
+        gsap.killTweensOf(groups[i].position);
+        gsap.killTweensOf(groups[i].rotation);
+      }
+
+      // 重置所有书本到干净状态（消除拖拽导致的 rotation.y 弯曲和 position.z 偏移）
+      for (let i = 0; i < groups.length; i++) {
+        groups[i].rotation.set(0, 0, 0);
+        groups[i].position.set(
+          originalPositions[i].x,
+          originalPositions[i].y,
+          originalPositions[i].z,
+        );
+      }
+
       const flipDuration = 0.5;
       const flipStart = 0.08;
 
@@ -454,7 +471,7 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
       // 切换为 ZYX 旋转顺序：rotation.z 绕世界 Z 轴（屏幕平面内旋转）
       group.rotation.order = "ZYX";
 
-      // 记录翻转前的位置，用于以书脊边缘为轴翻转
+      // 记录翻转前的位置，用于以书脊边缘为轴翻转（现在保证是干净值）
       const initPx = group.position.x;
       const initPz = group.position.z;
       const pivotEdge = SPINE_THICK / 2; // 书脊右边缘（+X 面所在边缘）作为翻转轴
@@ -477,24 +494,35 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
           group.position.z = initPz + pivotEdge * Math.sin(theta);
         },
         onComplete: () => {
-          // 翻转完成后：滑动到中间偏左 + 以左下角为原点左倾15°
+          // 翻转完成后：从当前位置滑动到页面中线 + 左倾15°
           const leanAngle = 15 * (Math.PI / 180);
 
-          // 书的中心目标：y=0（X 轴上），x=-2.0（中间偏左）
-          const centerX = -2.0;
-          const centerY = 0;
+          // 书本视觉位置 = mainGroup.position + group.position
+          // 目标：书出现在画面中心偏左（世界坐标 -2.0），需要扣掉 mainGroup 的拖拽偏移
+          const worldCenterX = -2.0;
+          const localCenterX = worldCenterX - state.mainGroup.position.x;
+          const localCenterY = 0 - state.mainGroup.position.y;
+          const localCenterZ = 0 - state.mainGroup.position.z;
 
-          gsap.to(group.position, {
-            x: centerX,
-            y: centerY,
+          // 用普通JS对象做动画代理，确保起始值精确可控
+          const proxy = {
+            px: group.position.x,
+            py: group.position.y,
+            pz: group.position.z,
+            rz: 0,
+          };
+
+          gsap.to(proxy, {
+            px: localCenterX,
+            py: localCenterY,
+            pz: localCenterZ,
+            rz: leanAngle,
             duration: 0.7,
             ease: "power2.out",
-          });
-
-          gsap.to(group.rotation, {
-            z: leanAngle,
-            duration: 0.7,
-            ease: "power2.out",
+            onUpdate: () => {
+              group.position.set(proxy.px, proxy.py, proxy.pz);
+              group.rotation.z = proxy.rz;
+            },
             onComplete: () => {
               animatingRef.current = false;
             },
@@ -523,6 +551,14 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
       }
     } else if (prev !== null && prev !== undefined) {
       animatingRef.current = true;
+
+      // 停止所有正在进行的动画
+      gsap.killTweensOf(state.mainGroup.position);
+      for (let i = 0; i < groups.length; i++) {
+        gsap.killTweensOf(groups[i].position);
+        gsap.killTweensOf(groups[i].rotation);
+        groups[i].rotation.order = "XYZ"; // 恢复默认旋转顺序
+      }
 
       let swappedBack = false;
 
