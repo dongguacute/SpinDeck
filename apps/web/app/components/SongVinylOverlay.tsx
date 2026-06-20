@@ -2,7 +2,7 @@
  * 黑胶落针 UI：唱臂交互 + 光碟视觉反馈。
  * 播放控制全部走 @spindeck/player（落针/抬臂/会话），Mac 端经 /api/* 桥接到本地客户端。
  */
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Play } from "lucide-react";
 import type { SongInfo, PlatformType } from "../lib/types";
 import {
@@ -53,7 +53,6 @@ function clamp(v: number, min: number, max: number) {
 }
 
 export default function SongVinylOverlay({ song, platform, visible, pageSessionId }: Props) {
-  const gradientId = useId().replace(/:/g, "");
   const [vinylColor, setVinylColor] = useState(FALLBACK_COLOR);
   const [labelColor, setLabelColor] = useState(mixHex(FALLBACK_COLOR, "#000", 0.25));
   const [interactive, setInteractive] = useState(false);
@@ -256,6 +255,8 @@ export default function SongVinylOverlay({ song, platform, visible, pageSessionI
 
   const armDeg = ARM_REST_DEG + progress * (ARM_PLAY_DEG - ARM_REST_DEG);
   const slideX = -progress * SLIDE_PX;
+  const pickStroke = mixHex(vinylColor, "#000", 0.38);
+  const pickHighlight = mixHex(vinylColor, "#fff", 0.32);
 
   const stageClass = [
     "song-vinyl-stage",
@@ -305,35 +306,64 @@ export default function SongVinylOverlay({ song, platform, visible, pageSessionI
         >
           <svg
             className="song-tonearm"
-            viewBox="0 0 72 190"
+            viewBox="0 0 64 196"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
             aria-hidden
           >
-            <defs>
-              <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor="#7a7a7a" />
-                <stop offset="45%" stopColor="#e8e8e8" />
-                <stop offset="100%" stopColor="#9a9a9a" />
-              </linearGradient>
-            </defs>
-            <rect x="14" y="0" width="46" height="17" rx="3" fill="#141414" />
-            <rect x="14" y="0" width="46" height="4" rx="2" fill="#2a2a2a" />
-            <circle cx="37" cy="17" r="5.5" fill="#555" stroke="#2a2a2a" strokeWidth="1.5" />
+            <rect x="16" y="0" width="32" height="5" rx="2.5" fill="var(--tonearm-mount)" />
+            <circle cx="32" cy="9" r="3.5" stroke="var(--tonearm-pivot-stroke)" strokeWidth="1.25" />
+            <circle cx="32" cy="9" r="1.25" fill="var(--tonearm-pivot-fill)" />
             <g
               className="song-tonearm-arm-group"
               style={interactive ? { transform: `rotate(${armDeg}deg)` } : undefined}
             >
               <path
-                d="M37 22 L24 148"
-                stroke={`url(#${gradientId})`}
-                strokeWidth="3.5"
+                d="M32 13 C30 52 22 98 16 138"
+                stroke="var(--tonearm-arm)"
+                strokeWidth="3"
                 strokeLinecap="round"
               />
-              <g transform="translate(13, 136) rotate(28 12 18)">
-                <rect x="0" y="0" width="24" height="36" rx="3" fill="#101010" />
-                <rect x="3" y="3" width="18" height="8" rx="1.5" fill="#222" />
-                <line x1="12" y1="36" x2="8" y2="48" stroke="#bbb" strokeWidth="1.5" strokeLinecap="round" />
+              <g transform="translate(6, 128) rotate(18 13 30)">
+                <rect
+                  x="3"
+                  y="0"
+                  width="20"
+                  height="48"
+                  rx="10"
+                  fill={vinylColor}
+                  opacity="0.35"
+                />
+                <rect
+                  x="5"
+                  y="2"
+                  width="16"
+                  height="44"
+                  rx="8"
+                  fill={vinylColor}
+                  stroke={pickStroke}
+                  strokeWidth="1.2"
+                />
+                <rect
+                  x="8"
+                  y="10"
+                  width="10"
+                  height="3"
+                  rx="1.5"
+                  fill={pickHighlight}
+                  opacity="0.9"
+                />
+                <line
+                  x1="13"
+                  y1="46"
+                  x2="11"
+                  y2="68"
+                  stroke="var(--tonearm-needle)"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+                <circle cx="11" cy="70" r="2.75" fill={vinylColor} stroke={pickStroke} strokeWidth="1" />
+                <circle cx="11" cy="70" r="1.1" fill={pickHighlight} />
               </g>
             </g>
           </svg>
