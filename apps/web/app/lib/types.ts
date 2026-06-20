@@ -12,6 +12,12 @@ export interface SongInfo {
   artist: string;
   cover: string;
   album: string;
+  /** 平台内歌曲 ID（如 QQ 音乐 songmid），用于 deep link 播放 */
+  platformSongId?: string;
+  /** QQ 音乐 numeric songid */
+  platformNumericId?: number;
+  /** QQ 音乐 songtype，默认 0 */
+  platformSongType?: number;
 }
 
 export interface Playlist {

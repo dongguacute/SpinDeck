@@ -6,6 +6,9 @@ export interface SongInfo {
     cover: string;
     artist: string;
     album: string;
+    platformSongId: string;
+    platformNumericId?: number;
+    platformSongType?: number;
 }
 
 export interface PlaylistResult {
@@ -73,6 +76,14 @@ function parseSonglistToDetails(songlist: any[]): SongInfo[] {
                 : '',
             artist: singers.join(' / ') || '未知歌手',
             album: item.albumname ?? item.album_name ?? '',
+        platformSongId: item.songmid ?? item.media_mid ?? "",
+        platformNumericId:
+          typeof item.songid === "number"
+            ? item.songid
+            : typeof item.songid === "string" && item.songid
+              ? Number.parseInt(item.songid, 10)
+              : undefined,
+        platformSongType: typeof item.songtype === "number" ? item.songtype : 0,
         };
     });
 }

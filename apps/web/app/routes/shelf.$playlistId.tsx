@@ -3,122 +3,10 @@ import { ArrowLeft, Disc3, LoaderCircle, Info, X, ExternalLink, Clock, Music, Ro
 import { usePlaylistStore } from "../lib/playlist-store";
 import PlaylistShelf from "../components/PlaylistShelf";
 import SongVinylOverlay from "../components/SongVinylOverlay";
+import { beginShelfSession, prelaunchApp, stopSong } from "../lib/play-song";
 import type { SongInfo } from "../lib/types";
-import type { PlatformType } from "../lib/types";
 import { PLATFORM_CONFIG } from "../lib/types";
 import { useEffect, useState, useRef } from "react";
-
-/**
- * 获取当前设备操作系统信息
- */
-function getDeviceInfo(): "macos" | "windows" | "linux" | "android" | "ios" {
-  const ua = navigator.userAgent;
-  if (/Android/i.test(ua)) return "android";
-  if (/iPhone|iPad|iPod/i.test(ua)) return "ios";
-  if (/Mac OS X/i.test(ua)) return "macos";
-  if (/Windows/i.test(ua)) return "windows";
-  return "linux";
-}
-
-/**
- * 桌面端各平台的启动配置
- * 包含：URL Scheme、Web 回退地址、应用名称
- */
-interface LaunchConfig {
-  scheme: string;        // 原生应用 URL Scheme
-  webFallback: string;   // Web 回退地址
-  appName: string;       // 应用名称（用于提示）
-}
-
-const DESKTOP_LAUNCH_CONFIG: Record<PlatformType, LaunchConfig> = {
-  QQMusic: {
-    scheme: "qqmusicmac://",  // macOS 桌面版的 URL Scheme（iOS 版为 qqmusic://）
-    webFallback: "https://y.qq.com",
-    appName: "QQ音乐",
-  },
-  NetEaseMusic: {
-    scheme: "neteasecloudmusic://", // macOS 网易云音乐的 scheme
-    webFallback: "https://music.163.com",
-    appName: "网易云音乐",
-  },
-  KugouMusic: {
-    scheme: "kugoumusic://",
-    webFallback: "https://www.kugou.com",
-    appName: "酷狗音乐",
-  },
-  AppleMusic: {
-    scheme: "music://",
-    webFallback: "https://music.apple.com",
-    appName: "Apple Music",
-  },
-  Spotify: {
-    scheme: "spotify://",
-    webFallback: "https://open.spotify.com",
-    appName: "Spotify",
-  },
-  YTMusic: {
-    scheme: "",  // YouTube Music 无桌面原生应用
-    webFallback: "https://music.youtube.com",
-    appName: "YouTube Music",
-  },
-};
-
-/**
- * 在桌面端预启动播放应用
- * 尝试通过 URL Scheme 打开原生应用，失败时回退到 Web 版本
- */
-function prelaunchApp(platform: PlatformType): void {
-  const deviceOS = getDeviceInfo();
-  const config = DESKTOP_LAUNCH_CONFIG[platform];
-
-  console.log(`[Prelaunch] Platform: ${platform}, OS: ${deviceOS}`);
-
-  // 如果没有 URL Scheme（如 YouTube Music），直接打开 Web 版本
-  if (!config.scheme) {
-    console.log(`[Prelaunch] No native app for ${config.appName}, opening web`);
-    window.open(config.webFallback, "_blank");
-    return;
-  }
-
-  let hasFallenBack = false;
-  let appLaunched = false;
-
-  // 统一的回退函数
-  const fallbackToWeb = (reason: string) => {
-    if (hasFallenBack) return;
-    hasFallenBack = true;
-    clearTimeout(fallbackTimer);
-    window.removeEventListener("blur", handleBlur);
-    console.log(`[Prelaunch] Fallback to web (${reason})`);
-    window.open(config.webFallback, "_blank");
-  };
-
-  const handleBlur = () => {
-    appLaunched = true;
-    console.log("[Prelaunch] Page blurred, app is launching!");
-  };
-
-  window.addEventListener("blur", handleBlur);
-
-  // 先尝试启动原生应用
-  try {
-    window.location.href = config.scheme;
-  } catch (e) {
-    console.warn("[Prelaunch] Direct launch failed:", e);
-    fallbackToWeb("exception thrown");
-    return;
-  }
-
-  // 关键：使用较短的超时检测是否成功启动
-  // 原理：如果 scheme 未注册/应用未安装，浏览器会几乎立刻返回（不触发 blur）
-  //       如果应用成功启动，浏览器会失去焦点（触发 blur）
-  const fallbackTimer = setTimeout(() => {
-    window.removeEventListener("blur", handleBlur);
-    if (!appLaunched && !hasFallenBack) {
-      fallbackToWeb("app not detected (scheme may not be registered)");
-    }
-  }, 700);  // 700ms 内如果没有 blur 事件，认为应用未安装
-}
 
 export default function ShelfPage() {
   const { playlistId } = useParams<{ playlistId: string }>();
@@ -136,6 +24,7 @@ export default function ShelfPage() {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [selectedSong, setSelectedSong] = useState<SongInfo | null>(null);
   const [showVinyl, setShowVinyl] = useState(false);
+  const [pageSessionId, setPageSessionId] = useState("");
   // 从 playlist 数据中读取刷新间隔，默认为 0（关闭）
   const refreshInterval = playlist?.refreshInterval ?? 0;
 
@@ -172,6 +61,20 @@ export default function ShelfPage() {
       }
     };
   }, [playlist?.refreshInterval, playlist?.importUrl, playlist?.platform]);
+
+  // 进入书架：中断系统一切播放，重置会话（再次落针从头播）
+  useEffect(() => {
+    if (!playlist?.platform) return;
+    void beginShelfSession(playlist.platform).then(setPageSessionId);
+  }, [playlistId, playlist?.platform]);
+
+  // 离开书架页时暂停播放
+  useEffect(() => {
+    const platform = playlist?.platform;
+    return () => {
+      if (platform) void stopSong(platform);
+    };
+  }, [playlist?.platform]);
 
   const loading = fetcher.state !== "idle";
   const error = fetcher.data?.error;
@@ -425,8 +328,13 @@ export default function ShelfPage() {
       />
 
       {/* 黑胶唱片 + 唱臂（在封面之上，书本动画结束后从右侧滑入） */}
-      {selectedSong && (
-        <SongVinylOverlay song={selectedSong} visible={showVinyl} />
+      {selectedSong && playlist && (
+        <SongVinylOverlay
+          song={selectedSong}
+          platform={playlist.platform}
+          visible={showVinyl}
+          pageSessionId={pageSessionId}
+        />
       )}
     </div>
   );

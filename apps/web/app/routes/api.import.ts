@@ -22,6 +22,9 @@ export async function action({ request }: Route.ActionArgs) {
         artist: s.artist,
         cover: s.cover || "",
         album: s.album || "",
+        platformSongId: s.platformSongId || "",
+        platformNumericId: s.platformNumericId,
+        platformSongType: s.platformSongType,
       }));
       return Response.json({
         name: result.name || "QQ音乐歌单",
