@@ -3,6 +3,7 @@
  * 播放控制全部走 @spindeck/player（落针/抬臂/会话），Mac 端经 /api/* 桥接到本地客户端。
  */
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Play } from "lucide-react";
 import type { SongInfo, PlatformType } from "../lib/types";
 import {
@@ -19,6 +20,9 @@ interface Props {
   platform: PlatformType;
   visible: boolean;
   pageSessionId: string;
+  /** 唱臂 portal 容器（固定叠层，避免随封面切换跳动） */
+  tonearmPortalRef?: React.RefObject<HTMLDivElement | null>;
+  tonearmPortalReady?: boolean;
 }
 
 const FALLBACK_COLOR = "#6eb5d4";
@@ -52,7 +56,14 @@ function clamp(v: number, min: number, max: number) {
   return Math.min(max, Math.max(min, v));
 }
 
-export default function SongVinylOverlay({ song, platform, visible, pageSessionId }: Props) {
+export default function SongVinylOverlay({
+  song,
+  platform,
+  visible,
+  pageSessionId,
+  tonearmPortalRef,
+  tonearmPortalReady = false,
+}: Props) {
   const [vinylColor, setVinylColor] = useState(FALLBACK_COLOR);
   const [labelColor, setLabelColor] = useState(mixHex(FALLBACK_COLOR, "#000", 0.25));
   const [interactive, setInteractive] = useState(false);
@@ -268,107 +279,132 @@ export default function SongVinylOverlay({ song, platform, visible, pageSessionI
     .filter(Boolean)
     .join(" ");
 
+  const tonearmPortalClass = [
+    "song-tonearm-portal-stage",
+    visible ? "song-vinyl-stage--visible" : "song-vinyl-stage--hidden",
+    interactive && "song-vinyl-stage--interactive",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const tonearmEl = (
+    <div
+      className={`song-tonearm-wrap${dragging ? " song-tonearm-wrap--dragging" : ""}`}
+      style={
+        interactive
+          ? { transform: `translateY(-42%) translateX(${slideX}px)` }
+          : undefined
+      }
+      onPointerDown={onPointerDown}
+      title="拖动唱臂到唱片上，松手播放"
+    >
+      <svg
+        className="song-tonearm"
+        viewBox="0 0 64 196"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden
+      >
+        <rect x="16" y="0" width="32" height="5" rx="2.5" fill="var(--tonearm-mount)" />
+        <circle cx="32" cy="9" r="3.5" stroke="var(--tonearm-pivot-stroke)" strokeWidth="1.25" />
+        <circle cx="32" cy="9" r="1.25" fill="var(--tonearm-pivot-fill)" />
+        <g
+          className="song-tonearm-arm-group"
+          style={interactive ? { transform: `rotate(${armDeg}deg)` } : undefined}
+        >
+          <path
+            d="M32 13 C30 52 22 98 16 138"
+            stroke="var(--tonearm-arm)"
+            strokeWidth="3"
+            strokeLinecap="round"
+          />
+          <g transform="translate(6, 128) rotate(18 13 30)">
+            <rect
+              x="3"
+              y="0"
+              width="20"
+              height="48"
+              rx="10"
+              fill={vinylColor}
+              opacity="0.35"
+            />
+            <rect
+              x="5"
+              y="2"
+              width="16"
+              height="44"
+              rx="8"
+              fill={vinylColor}
+              stroke={pickStroke}
+              strokeWidth="1.2"
+            />
+            <rect
+              x="8"
+              y="10"
+              width="10"
+              height="3"
+              rx="1.5"
+              fill={pickHighlight}
+              opacity="0.9"
+            />
+            <line
+              x1="13"
+              y1="46"
+              x2="11"
+              y2="68"
+              stroke="var(--tonearm-needle)"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+            <circle cx="11" cy="70" r="2.75" fill={vinylColor} stroke={pickStroke} strokeWidth="1" />
+            <circle cx="11" cy="70" r="1.1" fill={pickHighlight} />
+          </g>
+        </g>
+      </svg>
+    </div>
+  );
+
+  const useTonearmPortal = visible && tonearmPortalReady && !!tonearmPortalRef?.current;
+  const portaledTonearm =
+    useTonearmPortal &&
+    createPortal(
+      <div className={tonearmPortalClass} aria-hidden={!visible}>
+        <div className="song-vinyl-group song-vinyl-group--arm-only">{tonearmEl}</div>
+      </div>,
+      tonearmPortalRef.current!,
+    );
+
   return (
-    <div className={stageClass} aria-hidden={!visible}>
-      <div className="song-vinyl-group">
-        <div
-          className={`song-cd-disc${spinActive ? " song-cd-disc--spin" : ""}`}
-          style={{
-            ["--vinyl-color" as string]: vinylColor,
-            ["--vinyl-label-color" as string]: labelColor,
-          }}
-        >
-          <div className="song-cd-grooves" aria-hidden />
-          <div className="song-cd-grooves song-cd-grooves--fine" aria-hidden />
-          <div className="song-cd-sheen" aria-hidden />
-
-          <div className="song-cd-play-icon" aria-hidden>
-            <Play className="w-16 h-16" strokeWidth={1.5} fill="currentColor" />
-          </div>
-
-          <div className="song-cd-center">
-            <p className="song-cd-title">{song.name}</p>
-            <p className="song-cd-artist">{song.artist}</p>
-          </div>
-
-          <div className="song-cd-hole" />
-        </div>
-
-        <div
-          className={`song-tonearm-wrap${dragging ? " song-tonearm-wrap--dragging" : ""}`}
-          style={
-            interactive
-              ? { transform: `translateY(-42%) translateX(${slideX}px)` }
-              : undefined
-          }
-          onPointerDown={onPointerDown}
-          title="拖动唱臂到唱片上，松手播放"
-        >
-          <svg
-            className="song-tonearm"
-            viewBox="0 0 64 196"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            aria-hidden
+    <>
+      <div className={stageClass} aria-hidden={!visible}>
+        <div className="song-vinyl-group">
+          <div
+            className={`song-cd-disc${spinActive ? " song-cd-disc--spin" : ""}`}
+            style={{
+              ["--vinyl-color" as string]: vinylColor,
+              ["--vinyl-label-color" as string]: labelColor,
+            }}
           >
-            <rect x="16" y="0" width="32" height="5" rx="2.5" fill="var(--tonearm-mount)" />
-            <circle cx="32" cy="9" r="3.5" stroke="var(--tonearm-pivot-stroke)" strokeWidth="1.25" />
-            <circle cx="32" cy="9" r="1.25" fill="var(--tonearm-pivot-fill)" />
-            <g
-              className="song-tonearm-arm-group"
-              style={interactive ? { transform: `rotate(${armDeg}deg)` } : undefined}
-            >
-              <path
-                d="M32 13 C30 52 22 98 16 138"
-                stroke="var(--tonearm-arm)"
-                strokeWidth="3"
-                strokeLinecap="round"
-              />
-              <g transform="translate(6, 128) rotate(18 13 30)">
-                <rect
-                  x="3"
-                  y="0"
-                  width="20"
-                  height="48"
-                  rx="10"
-                  fill={vinylColor}
-                  opacity="0.35"
-                />
-                <rect
-                  x="5"
-                  y="2"
-                  width="16"
-                  height="44"
-                  rx="8"
-                  fill={vinylColor}
-                  stroke={pickStroke}
-                  strokeWidth="1.2"
-                />
-                <rect
-                  x="8"
-                  y="10"
-                  width="10"
-                  height="3"
-                  rx="1.5"
-                  fill={pickHighlight}
-                  opacity="0.9"
-                />
-                <line
-                  x1="13"
-                  y1="46"
-                  x2="11"
-                  y2="68"
-                  stroke="var(--tonearm-needle)"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-                <circle cx="11" cy="70" r="2.75" fill={vinylColor} stroke={pickStroke} strokeWidth="1" />
-                <circle cx="11" cy="70" r="1.1" fill={pickHighlight} />
-              </g>
-            </g>
-          </svg>
+            <div className="song-cd-grooves" aria-hidden />
+            <div className="song-cd-grooves song-cd-grooves--fine" aria-hidden />
+            <div className="song-cd-sheen" aria-hidden />
+
+            <div className="song-cd-play-icon" aria-hidden>
+              <Play className="w-16 h-16" strokeWidth={1.5} fill="currentColor" />
+            </div>
+
+            <div className="song-cd-center">
+              <p className="song-cd-title">{song.name}</p>
+              <p className="song-cd-artist">{song.artist}</p>
+            </div>
+
+            <div className="song-cd-hole" />
+          </div>
+
+          {!useTonearmPortal && tonearmEl}
         </div>
       </div>
-    </div>
+      {portaledTonearm}
+    </>
   );
 }

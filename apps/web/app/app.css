@@ -62,6 +62,57 @@ html, body {
   margin-left: clamp(44px, 6vw, 84px);
 }
 
+/* 遮盖态唱臂 portal：叠在书（z-3）上方 */
+.song-tonearm-portal {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.song-tonearm-portal-stage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin-left: clamp(44px, 6vw, 84px);
+  pointer-events: none;
+}
+
+/* 与光碟同尺寸，保证唱臂 absolute 定位一致、不随封面切换偏移 */
+.song-vinyl-group--arm-only {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: clamp(340px, 56vw, 520px);
+  height: clamp(340px, 56vw, 520px);
+  flex-shrink: 0;
+}
+
+.song-tonearm-portal-stage.song-vinyl-stage--visible .song-tonearm-wrap {
+  animation: tonearmSlideIn 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
+}
+
+.song-tonearm-portal-stage.song-vinyl-stage--interactive .song-tonearm-wrap {
+  animation: none;
+  pointer-events: auto;
+  cursor: grab;
+  touch-action: none;
+  transition: transform 0.35s cubic-bezier(0.34, 1.15, 0.64, 1);
+}
+
+.song-tonearm-portal-stage.song-vinyl-stage--interactive .song-tonearm-arm-group {
+  transition: transform 0.35s cubic-bezier(0.34, 1.15, 0.64, 1);
+}
+
+.song-tonearm-portal-stage .song-tonearm-wrap--dragging {
+  transition: none !important;
+}
+
+.song-tonearm-portal-stage .song-tonearm-wrap--dragging .song-tonearm-arm-group {
+  transition: none !important;
+}
+
 .song-vinyl-stage--hidden {
   opacity: 0;
   visibility: hidden;

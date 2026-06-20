@@ -20,6 +20,8 @@ export default function ShelfPage() {
   }>();
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const tonearmPortalRef = useRef<HTMLDivElement>(null);
+  const [tonearmPortalReady, setTonearmPortalReady] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [selectedSong, setSelectedSong] = useState<SongInfo | null>(null);
@@ -356,7 +358,19 @@ export default function ShelfPage() {
         </div>
       )}
 
-      {/* 3D 书架 */}
+      {/* 光碟（z-2，封面遮盖时在书下方） */}
+      {selectedSong && playlist && (
+        <SongVinylOverlay
+          song={selectedSong}
+          platform={playlist.platform}
+          visible={showVinyl}
+          pageSessionId={pageSessionId}
+          tonearmPortalRef={tonearmPortalRef}
+          tonearmPortalReady={tonearmPortalReady}
+        />
+      )}
+
+      {/* 3D 书架（遮盖态 z-3，叠在光碟上） */}
       <PlaylistShelf
         songs={songs}
         onSongSelect={handleSongSelect}
@@ -367,15 +381,15 @@ export default function ShelfPage() {
         lockDeselect={inPlayback}
       />
 
-      {/* 黑胶 UI；pageSessionId 来自 beginShelfSession，用于区分重进页面 vs 同页暂停 */}
-      {selectedSong && playlist && (
-        <SongVinylOverlay
-          song={selectedSong}
-          platform={playlist.platform}
-          visible={showVinyl}
-          pageSessionId={pageSessionId}
-        />
-      )}
+      {/* 唱臂 portal（z-5，遮盖态叠在书上方可交互） */}
+      <div
+        ref={(el) => {
+          tonearmPortalRef.current = el;
+          setTonearmPortalReady(!!el);
+        }}
+        className="song-tonearm-portal"
+        aria-hidden
+      />
     </div>
   );
 }

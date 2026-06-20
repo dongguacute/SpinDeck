@@ -28,6 +28,11 @@ const ALBUM_DEEP = 5.0; // 和 ALBUM_TALL 一致，±X 面天生正方形
 const GAP = 0.8;
 const LEAN_ANGLE = 15 * (Math.PI / 180);
 const SELECTED_WORLD_X = -2.0;
+/** 向左移出光碟（仅 X，不改变高度） */
+const CLEAR_LEFT = 3.0;
+/** 从 resting 向右摆入，轻盖光碟左缘（约左半区的半边） */
+const COVER_X = -0.55;
+const COVER_Z = 0.16;
 
 const _pivotEuler = new THREE.Euler();
 const _pivotQuat = new THREE.Quaternion();
@@ -58,6 +63,104 @@ function pivotWorldFromGroup(
   _pivotQuat.setFromEuler(_pivotEuler);
   const rotated = getCoverPivotLocal().applyQuaternion(_pivotQuat);
   return mainGroupPos.clone().add(groupPos).add(rotated);
+}
+
+function clearPivotFromRest(restPivot: THREE.Vector3): THREE.Vector3 {
+  return new THREE.Vector3(restPivot.x - CLEAR_LEFT, restPivot.y, restPivot.z);
+}
+
+function coverPivotFromRest(restPivot: THREE.Vector3): THREE.Vector3 {
+  return new THREE.Vector3(restPivot.x + COVER_X, restPivot.y, restPivot.z + COVER_Z);
+}
+
+function applyCoverPose(
+  group: THREE.Group,
+  pivotWorld: THREE.Vector3,
+  rz: number,
+  mainGroupPos: THREE.Vector3,
+) {
+  group.position.copy(groupPosForPivot(pivotWorld, rz, mainGroupPos));
+  group.rotation.z = rz;
+}
+
+/** 左移脱离光碟 → 切换角度 → 向右上盖住光碟左边（或反向） */
+function animateCoverToggle(
+  group: THREE.Group,
+  mainPos: THREE.Vector3,
+  restPivot: THREE.Vector3,
+  toOverlay: boolean,
+  onComplete: () => void,
+) {
+  const clearPivot = clearPivotFromRest(restPivot);
+  const coverPivot = coverPivotFromRest(restPivot);
+
+  gsap.killTweensOf(group.position);
+  gsap.killTweensOf(group.rotation);
+
+  const proxy = {
+    px: toOverlay ? restPivot.x : coverPivot.x,
+    pz: toOverlay ? restPivot.z : coverPivot.z,
+    rz: toOverlay ? LEAN_ANGLE : 0,
+  };
+  const pivot = new THREE.Vector3();
+  const restY = restPivot.y;
+
+  const sync = () => {
+    pivot.set(proxy.px, restY, proxy.pz);
+    applyCoverPose(group, pivot, proxy.rz, mainPos);
+  };
+  sync();
+
+  const tl = gsap.timeline({ onComplete });
+
+  if (toOverlay) {
+    // 1. 纯左移，脱离光碟范围（高度不变）
+    tl.to(proxy, {
+      px: clearPivot.x,
+      duration: 0.26,
+      ease: "power4.out",
+      onUpdate: sync,
+    });
+    // 2. 以左下角为轴放平（视觉上向上展开）
+    tl.to(proxy, {
+      rz: 0,
+      duration: 0.15,
+      ease: "power3.inOut",
+      onUpdate: sync,
+    });
+    // 3. 向右摆入盖住光碟左边（高度仍不变）
+    tl.to(proxy, {
+      px: coverPivot.x,
+      pz: coverPivot.z,
+      duration: 0.38,
+      ease: "back.out(1.5)",
+      onUpdate: sync,
+    });
+  } else {
+    // 1. 纯左移撤出光碟
+    tl.to(proxy, {
+      px: clearPivot.x,
+      pz: clearPivot.z,
+      duration: 0.26,
+      ease: "power4.out",
+      onUpdate: sync,
+    });
+    // 2. 恢复倾斜
+    tl.to(proxy, {
+      rz: LEAN_ANGLE,
+      duration: 0.15,
+      ease: "power3.inOut",
+      onUpdate: sync,
+    });
+    // 3. 回到 resting（高度不变）
+    tl.to(proxy, {
+      px: restPivot.x,
+      pz: restPivot.z,
+      duration: 0.32,
+      ease: "power3.out",
+      onUpdate: sync,
+    });
+  }
 }
 
 const COLORS = [
@@ -287,9 +390,8 @@ export default function PlaylistShelf({
       );
       const pivotWorld = pivotWorldFromGroup(leanPos, LEAN_ANGLE, mainPos);
       coverPivotWorldRef.current = pivotWorld;
-      const pose = groupPosForPivot(pivotWorld, overlay ? 0 : LEAN_ANGLE, mainPos);
-      selGroup.position.copy(pose);
-      selGroup.rotation.z = overlay ? 0 : LEAN_ANGLE;
+      const posePivot = overlay ? coverPivotFromRest(pivotWorld) : pivotWorld;
+      applyCoverPose(selGroup, posePivot, overlay ? 0 : LEAN_ANGLE, mainPos);
       // 左右书滑出画面
       const sd = Math.max(totalW + 8, 14);
       for (let i = curSel - 1; i >= 0; i--) {
@@ -694,7 +796,7 @@ export default function PlaylistShelf({
     prevIndexRef.current = next;
   }, [selectedIndex]);
 
-  // 播放中点击封面：以左下角为原点，倾斜 ↔ 放平
+  // 播放中点击封面：左移 → 切换角度 → 右移遮盖
   useEffect(() => {
     const state = sceneRef.current;
     if (!state || selectedIndex === null || selectedIndex === undefined) {
@@ -713,31 +815,15 @@ export default function PlaylistShelf({
     prevCoverOverlayRef.current = overlay;
 
     const mainPos = state.mainGroup.position.clone();
-    let pivotWorld = coverPivotWorldRef.current;
-    if (!pivotWorld) {
-      pivotWorld = pivotWorldFromGroup(group.position.clone(), group.rotation.z, mainPos);
-      coverPivotWorldRef.current = pivotWorld;
+    let restPivot = coverPivotWorldRef.current;
+    if (!restPivot) {
+      restPivot = pivotWorldFromGroup(group.position.clone(), group.rotation.z, mainPos);
+      coverPivotWorldRef.current = restPivot;
     }
 
-    const targetRz = overlay ? 0 : LEAN_ANGLE;
-
-    gsap.killTweensOf(group.position);
-    gsap.killTweensOf(group.rotation);
-
     animatingRef.current = true;
-    const proxy = { rz: group.rotation.z };
-
-    gsap.to(proxy, {
-      rz: targetRz,
-      duration: 0.55,
-      ease: "power2.inOut",
-      onUpdate: () => {
-        group.position.copy(groupPosForPivot(pivotWorld!, proxy.rz, mainPos));
-        group.rotation.z = proxy.rz;
-      },
-      onComplete: () => {
-        animatingRef.current = false;
-      },
+    animateCoverToggle(group, mainPos, restPivot, overlay, () => {
+      animatingRef.current = false;
     });
   }, [coverOverlay, selectedIndex]);
 
