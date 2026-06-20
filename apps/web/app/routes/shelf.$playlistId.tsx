@@ -2,6 +2,7 @@ import { Link, useParams, useFetcher } from "react-router";
 import { ArrowLeft, Disc3, LoaderCircle, Info, X, ExternalLink, Clock, Music, Rocket } from "lucide-react";
 import { usePlaylistStore } from "../lib/playlist-store";
 import PlaylistShelf from "../components/PlaylistShelf";
+import SongVinylOverlay from "../components/SongVinylOverlay";
 import type { SongInfo } from "../lib/types";
 import type { PlatformType } from "../lib/types";
 import { PLATFORM_CONFIG } from "../lib/types";
@@ -133,6 +134,8 @@ export default function ShelfPage() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [showDetail, setShowDetail] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [selectedSong, setSelectedSong] = useState<SongInfo | null>(null);
+  const [showVinyl, setShowVinyl] = useState(false);
   // 从 playlist 数据中读取刷新间隔，默认为 0（关闭）
   const refreshInterval = playlist?.refreshInterval ?? 0;
 
@@ -175,8 +178,18 @@ export default function ShelfPage() {
   const songs = fetcher.data?.songs || [];
   console.log(`[shelf] render: loading=${loading} songs=${songs.length} error=${error || 'none'}`);
 
-  const handleSongSelect = (_song: SongInfo | null, index: number | null) => {
+  const handleSongSelect = (song: SongInfo | null, index: number | null) => {
     setSelectedIndex(index);
+    setShowVinyl(false);
+    if (song) {
+      setSelectedSong(song);
+    } else {
+      setSelectedSong(null);
+    }
+  };
+
+  const handleBookAnimationComplete = (_index: number) => {
+    setShowVinyl(true);
   };
 
   return (
@@ -407,8 +420,14 @@ export default function ShelfPage() {
       <PlaylistShelf
         songs={songs}
         onSongSelect={handleSongSelect}
+        onSelectionAnimationComplete={handleBookAnimationComplete}
         selectedIndex={selectedIndex}
       />
+
+      {/* 黑胶唱片 + 唱臂（在封面之上，书本动画结束后从右侧滑入） */}
+      {selectedSong && (
+        <SongVinylOverlay song={selectedSong} visible={showVinyl} />
+      )}
     </div>
   );
 }

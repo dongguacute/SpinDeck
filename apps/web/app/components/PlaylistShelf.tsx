@@ -134,10 +134,11 @@ function spineCanvas(
 interface Props {
   songs: SongInfo[];
   onSongSelect?: (song: SongInfo | null, index: number | null) => void;
+  onSelectionAnimationComplete?: (index: number) => void;
   selectedIndex: number | null;
 }
 
-export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Props) {
+export default function PlaylistShelf({ songs, onSongSelect, onSelectionAnimationComplete, selectedIndex }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<SceneState | null>(null);
   const selectedIndexRef = useRef<number | null>(null);
@@ -223,6 +224,7 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
         groups[j].position.x = originalPositions[j].x + sd;
       }
       selectedIndexRef.current = curSel;
+      onSelectionAnimationComplete?.(curSel);
     }
 
     // --- 射线点击检测 ---
@@ -525,6 +527,9 @@ export default function PlaylistShelf({ songs, onSongSelect, selectedIndex }: Pr
             },
             onComplete: () => {
               animatingRef.current = false;
+              if (selectedIndexRef.current === next) {
+                onSelectionAnimationComplete?.(next);
+              }
             },
           });
         },
