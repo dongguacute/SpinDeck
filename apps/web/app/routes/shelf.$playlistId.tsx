@@ -1,5 +1,5 @@
 import { Link, useParams, useFetcher } from "react-router";
-import { ArrowLeft, Disc3, LoaderCircle, Info, X, ExternalLink, Clock, Music, Rocket } from "lucide-react";
+import { ArrowLeft, Disc3, LoaderCircle, Info, X, ExternalLink, Clock, Music, Rocket, LogOut } from "lucide-react";
 import { usePlaylistStore } from "../lib/playlist-store";
 import PlaylistShelf from "../components/PlaylistShelf";
 import SongVinylOverlay from "../components/SongVinylOverlay";
@@ -95,6 +95,15 @@ export default function ShelfPage() {
     setShowVinyl(true);
   };
 
+  const inPlayback = selectedIndex !== null;
+
+  const handleExitPlayback = () => {
+    if (playlist?.platform) void stopSong(playlist.platform);
+    setShowVinyl(false);
+    setSelectedIndex(null);
+    setSelectedSong(null);
+  };
+
   return (
     <div className="relative w-screen h-screen overflow-hidden select-none touch-none" style={{ background: "var(--bg-primary)" }}>
       {/* 返回 */}
@@ -111,31 +120,56 @@ export default function ShelfPage() {
         <ArrowLeft className="w-3.5 h-3.5" />返回歌单
       </Link>
 
-      {/* @spindeck/player/prelaunchApp：预唤起本地音乐客户端 */}
       {playlist && (
-        <button
-          onClick={() => prelaunchApp(playlist.platform)}
-          className="absolute top-6 right-6 z-10 flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-medium transition-all backdrop-blur-sm cursor-pointer"
-          style={{
-            backgroundColor: PLATFORM_CONFIG[playlist.platform]?.bg || "var(--surface-color)",
-            borderColor: "var(--border-color)",
-            color: PLATFORM_CONFIG[playlist.platform]?.color || "var(--text-secondary)",
-            opacity: 0.7,
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = "var(--border-hover)";
-            e.currentTarget.style.opacity = "1";
-            e.currentTarget.style.transform = "scale(1.02)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = "var(--border-color)";
-            e.currentTarget.style.opacity = "0.7";
-            e.currentTarget.style.transform = "scale(1)";
-          }}
-          title={`启动 ${PLATFORM_CONFIG[playlist.platform]?.label || playlist.platform}`}
-        >
-          <Rocket className="w-3.5 h-3.5" />预启动播放应用
-        </button>
+        inPlayback ? (
+          <button
+            onClick={handleExitPlayback}
+            className="absolute top-6 right-6 z-10 flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-medium transition-all backdrop-blur-sm cursor-pointer"
+            style={{
+              backgroundColor: "var(--surface-color)",
+              borderColor: "var(--border-color)",
+              color: "var(--text-secondary)",
+              opacity: 0.7,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = "var(--border-hover)";
+              e.currentTarget.style.opacity = "1";
+              e.currentTarget.style.transform = "scale(1.02)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = "var(--border-color)";
+              e.currentTarget.style.opacity = "0.7";
+              e.currentTarget.style.transform = "scale(1)";
+            }}
+            title="退出播放并停止音乐"
+          >
+            <LogOut className="w-3.5 h-3.5" />退出播放
+          </button>
+        ) : (
+          <button
+            onClick={() => prelaunchApp(playlist.platform)}
+            className="absolute top-6 right-6 z-10 flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-medium transition-all backdrop-blur-sm cursor-pointer"
+            style={{
+              backgroundColor: PLATFORM_CONFIG[playlist.platform]?.bg || "var(--surface-color)",
+              borderColor: "var(--border-color)",
+              color: PLATFORM_CONFIG[playlist.platform]?.color || "var(--text-secondary)",
+              opacity: 0.7,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = "var(--border-hover)";
+              e.currentTarget.style.opacity = "1";
+              e.currentTarget.style.transform = "scale(1.02)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = "var(--border-color)";
+              e.currentTarget.style.opacity = "0.7";
+              e.currentTarget.style.transform = "scale(1)";
+            }}
+            title={`启动 ${PLATFORM_CONFIG[playlist.platform]?.label || playlist.platform}`}
+          >
+            <Rocket className="w-3.5 h-3.5" />预启动播放应用
+          </button>
+        )
       )}
 
       {/* 歌单主信息 */}
@@ -325,6 +359,7 @@ export default function ShelfPage() {
         onSongSelect={handleSongSelect}
         onSelectionAnimationComplete={handleBookAnimationComplete}
         selectedIndex={selectedIndex}
+        lockDeselect={inPlayback}
       />
 
       {/* 黑胶 UI；pageSessionId 来自 beginShelfSession，用于区分重进页面 vs 同页暂停 */}

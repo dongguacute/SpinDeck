@@ -136,13 +136,20 @@ interface Props {
   onSongSelect?: (song: SongInfo | null, index: number | null) => void;
   onSelectionAnimationComplete?: (index: number) => void;
   selectedIndex: number | null;
+  /** 播放中：禁止点击空白或再次点击当前书来退出 */
+  lockDeselect?: boolean;
 }
 
-export default function PlaylistShelf({ songs, onSongSelect, onSelectionAnimationComplete, selectedIndex }: Props) {
+export default function PlaylistShelf({ songs, onSongSelect, onSelectionAnimationComplete, selectedIndex, lockDeselect = false }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<SceneState | null>(null);
   const selectedIndexRef = useRef<number | null>(null);
+  const lockDeselectRef = useRef(lockDeselect);
   const animatingRef = useRef(false);
+
+  useEffect(() => {
+    lockDeselectRef.current = lockDeselect;
+  }, [lockDeselect]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -243,17 +250,18 @@ export default function PlaylistShelf({ songs, onSongSelect, onSelectionAnimatio
       raycaster.setFromCamera(mouse, camera);
       const intersects = raycaster.intersectObjects(meshes);
       const cur = selectedIndexRef.current;
+      const locked = lockDeselectRef.current;
       if (intersects.length > 0) {
         const hitMesh = intersects[0].object as THREE.Mesh;
         const idx = meshes.indexOf(hitMesh);
         if (idx >= 0) {
           if (cur === idx) {
-            onSongSelect?.(null, null);
+            if (!locked) onSongSelect?.(null, null);
           } else {
             onSongSelect?.(songs[idx], idx);
           }
         }
-      } else if (cur !== null && cur !== undefined) {
+      } else if (cur !== null && cur !== undefined && !locked) {
         onSongSelect?.(null, null);
       }
     };
