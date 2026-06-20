@@ -24,6 +24,7 @@ export default function ShelfPage() {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [selectedSong, setSelectedSong] = useState<SongInfo | null>(null);
   const [showVinyl, setShowVinyl] = useState(false);
+  const [coverOverlay, setCoverOverlay] = useState(false);
   const [pageSessionId, setPageSessionId] = useState("");
   // 从 playlist 数据中读取刷新间隔，默认为 0（关闭）
   const refreshInterval = playlist?.refreshInterval ?? 0;
@@ -84,6 +85,7 @@ export default function ShelfPage() {
   const handleSongSelect = (song: SongInfo | null, index: number | null) => {
     setSelectedIndex(index);
     setShowVinyl(false);
+    setCoverOverlay(false);
     if (song) {
       setSelectedSong(song);
     } else {
@@ -100,6 +102,7 @@ export default function ShelfPage() {
   const handleExitPlayback = () => {
     if (playlist?.platform) void stopSong(playlist.platform);
     setShowVinyl(false);
+    setCoverOverlay(false);
     setSelectedIndex(null);
     setSelectedSong(null);
   };
@@ -358,7 +361,9 @@ export default function ShelfPage() {
         songs={songs}
         onSongSelect={handleSongSelect}
         onSelectionAnimationComplete={handleBookAnimationComplete}
+        onCoverToggle={() => setCoverOverlay((v) => !v)}
         selectedIndex={selectedIndex}
+        coverOverlay={coverOverlay}
         lockDeselect={inPlayback}
       />
 

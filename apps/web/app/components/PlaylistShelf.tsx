@@ -26,6 +26,39 @@ const SPINE_THICK = 0.18;
 const ALBUM_TALL = 5.0;
 const ALBUM_DEEP = 5.0; // 和 ALBUM_TALL 一致，±X 面天生正方形
 const GAP = 0.8;
+const LEAN_ANGLE = 15 * (Math.PI / 180);
+const SELECTED_WORLD_X = -2.0;
+
+const _pivotEuler = new THREE.Euler();
+const _pivotQuat = new THREE.Quaternion();
+/** +X 封面左下角（Ry -90° 前，z = +AD/2 对应屏幕左下） */
+const COVER_FACE_BL = new THREE.Vector3(SPINE_THICK / 2, -ALBUM_TALL / 2, ALBUM_DEEP / 2);
+
+function getCoverPivotLocal(): THREE.Vector3 {
+  return COVER_FACE_BL.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), -Math.PI / 2);
+}
+
+function groupPosForPivot(
+  pivotWorld: THREE.Vector3,
+  rz: number,
+  mainGroupPos: THREE.Vector3,
+): THREE.Vector3 {
+  _pivotEuler.set(0, -Math.PI / 2, rz, "ZYX");
+  _pivotQuat.setFromEuler(_pivotEuler);
+  const rotated = getCoverPivotLocal().applyQuaternion(_pivotQuat);
+  return pivotWorld.clone().sub(mainGroupPos).sub(rotated);
+}
+
+function pivotWorldFromGroup(
+  groupPos: THREE.Vector3,
+  rz: number,
+  mainGroupPos: THREE.Vector3,
+): THREE.Vector3 {
+  _pivotEuler.set(0, -Math.PI / 2, rz, "ZYX");
+  _pivotQuat.setFromEuler(_pivotEuler);
+  const rotated = getCoverPivotLocal().applyQuaternion(_pivotQuat);
+  return mainGroupPos.clone().add(groupPos).add(rotated);
+}
 
 const COLORS = [
   "#FF4757", "#FF6348", "#FFA502", "#2ED573", "#3742FA",
@@ -135,21 +168,43 @@ interface Props {
   songs: SongInfo[];
   onSongSelect?: (song: SongInfo | null, index: number | null) => void;
   onSelectionAnimationComplete?: (index: number) => void;
+  onCoverToggle?: () => void;
   selectedIndex: number | null;
+  coverOverlay?: boolean;
   /** 播放中：禁止点击空白或再次点击当前书来退出 */
   lockDeselect?: boolean;
 }
 
-export default function PlaylistShelf({ songs, onSongSelect, onSelectionAnimationComplete, selectedIndex, lockDeselect = false }: Props) {
+export default function PlaylistShelf({
+  songs,
+  onSongSelect,
+  onSelectionAnimationComplete,
+  onCoverToggle,
+  selectedIndex,
+  coverOverlay = false,
+  lockDeselect = false,
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<SceneState | null>(null);
   const selectedIndexRef = useRef<number | null>(null);
   const lockDeselectRef = useRef(lockDeselect);
+  const coverOverlayRef = useRef(coverOverlay);
+  const onCoverToggleRef = useRef(onCoverToggle);
   const animatingRef = useRef(false);
+  const prevCoverOverlayRef = useRef(coverOverlay);
+  const coverPivotWorldRef = useRef<THREE.Vector3 | null>(null);
 
   useEffect(() => {
     lockDeselectRef.current = lockDeselect;
   }, [lockDeselect]);
+
+  useEffect(() => {
+    coverOverlayRef.current = coverOverlay;
+  }, [coverOverlay]);
+
+  useEffect(() => {
+    onCoverToggleRef.current = onCoverToggle;
+  }, [onCoverToggle]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -221,7 +276,20 @@ export default function PlaylistShelf({ songs, onSongSelect, onSelectionAnimatio
     if (curSel !== null && curSel !== undefined && curSel < groups.length) {
       const selGroup = groups[curSel];
       selGroup.rotation.y = -Math.PI / 2;
+      selGroup.rotation.order = "ZYX";
       meshes[curSel].geometry = roundedGeo; // 翻开时切换为圆角几何体
+      const overlay = coverOverlayRef.current;
+      const mainPos = mainGroup.position.clone();
+      const leanPos = new THREE.Vector3(
+        SELECTED_WORLD_X - mainPos.x,
+        -mainPos.y,
+        -mainPos.z,
+      );
+      const pivotWorld = pivotWorldFromGroup(leanPos, LEAN_ANGLE, mainPos);
+      coverPivotWorldRef.current = pivotWorld;
+      const pose = groupPosForPivot(pivotWorld, overlay ? 0 : LEAN_ANGLE, mainPos);
+      selGroup.position.copy(pose);
+      selGroup.rotation.z = overlay ? 0 : LEAN_ANGLE;
       // 左右书滑出画面
       const sd = Math.max(totalW + 8, 14);
       for (let i = curSel - 1; i >= 0; i--) {
@@ -231,6 +299,7 @@ export default function PlaylistShelf({ songs, onSongSelect, onSelectionAnimatio
         groups[j].position.x = originalPositions[j].x + sd;
       }
       selectedIndexRef.current = curSel;
+      prevCoverOverlayRef.current = overlay;
       onSelectionAnimationComplete?.(curSel);
     }
 
@@ -256,7 +325,11 @@ export default function PlaylistShelf({ songs, onSongSelect, onSelectionAnimatio
         const idx = meshes.indexOf(hitMesh);
         if (idx >= 0) {
           if (cur === idx) {
-            if (!locked) onSongSelect?.(null, null);
+            if (locked) {
+              onCoverToggleRef.current?.();
+            } else {
+              onSongSelect?.(null, null);
+            }
           } else {
             onSongSelect?.(songs[idx], idx);
           }
@@ -275,8 +348,11 @@ export default function PlaylistShelf({ songs, onSongSelect, onSelectionAnimatio
       mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
       raycaster.setFromCamera(mouse, camera);
       const intersects = raycaster.intersectObjects(meshes);
-      if (selectedIndexRef.current !== null && selectedIndexRef.current !== undefined) {
-        renderer.domElement.style.cursor = "default";
+      const cur = selectedIndexRef.current;
+      if (cur !== null && cur !== undefined) {
+        const hitSelected =
+          intersects.length > 0 && meshes.indexOf(intersects[0].object as THREE.Mesh) === cur;
+        renderer.domElement.style.cursor = hitSelected ? "pointer" : "default";
       } else {
         renderer.domElement.style.cursor = intersects.length > 0 ? "pointer" : "grab";
       }
@@ -448,6 +524,9 @@ export default function PlaylistShelf({ songs, onSongSelect, onSelectionAnimatio
 
     if (prev === next) return;
 
+    prevCoverOverlayRef.current = false;
+    coverPivotWorldRef.current = null;
+
     const { groups, originalPositions, totalW } = state;
     // 确保书的边缘完全超出屏幕（书深 6.9，屏幕可见宽度约 14）
     const slideDist = Math.max(totalW + 8, 14);
@@ -504,12 +583,8 @@ export default function PlaylistShelf({ songs, onSongSelect, onSelectionAnimatio
           group.position.z = initPz + pivotEdge * Math.sin(theta);
         },
         onComplete: () => {
-          // 翻转完成后：从当前位置滑动到页面中线 + 左倾15°
-          const leanAngle = 15 * (Math.PI / 180);
-
-          // 书本视觉位置 = mainGroup.position + group.position
-          // 目标：书出现在画面中心偏左（世界坐标 -2.0），需要扣掉 mainGroup 的拖拽偏移
-          const worldCenterX = -2.0;
+          // 翻转完成后：从当前位置滑动到页面中线偏左 + 左倾 15°
+          const worldCenterX = SELECTED_WORLD_X;
           const localCenterX = worldCenterX - state.mainGroup.position.x;
           const localCenterY = 0 - state.mainGroup.position.y;
           const localCenterZ = 0 - state.mainGroup.position.z;
@@ -526,7 +601,7 @@ export default function PlaylistShelf({ songs, onSongSelect, onSelectionAnimatio
             px: localCenterX,
             py: localCenterY,
             pz: localCenterZ,
-            rz: leanAngle,
+            rz: LEAN_ANGLE,
             duration: 0.7,
             ease: "power2.out",
             onUpdate: () => {
@@ -535,6 +610,12 @@ export default function PlaylistShelf({ songs, onSongSelect, onSelectionAnimatio
             },
             onComplete: () => {
               animatingRef.current = false;
+              prevCoverOverlayRef.current = false;
+              coverPivotWorldRef.current = pivotWorldFromGroup(
+                group.position.clone(),
+                LEAN_ANGLE,
+                state.mainGroup.position.clone(),
+              );
               if (selectedIndexRef.current === next) {
                 onSelectionAnimationComplete?.(next);
               }
@@ -613,5 +694,57 @@ export default function PlaylistShelf({ songs, onSongSelect, onSelectionAnimatio
     prevIndexRef.current = next;
   }, [selectedIndex]);
 
-  return <div ref={containerRef} className="absolute inset-0 z-[1]" />;
+  // 播放中点击封面：以左下角为原点，倾斜 ↔ 放平
+  useEffect(() => {
+    const state = sceneRef.current;
+    if (!state || selectedIndex === null || selectedIndex === undefined) {
+      prevCoverOverlayRef.current = coverOverlay;
+      return;
+    }
+    if (prevCoverOverlayRef.current === coverOverlay) return;
+
+    const group = state.groups[selectedIndex];
+    if (Math.abs(group.rotation.y + Math.PI / 2) > 0.05) {
+      prevCoverOverlayRef.current = coverOverlay;
+      return;
+    }
+
+    const overlay = coverOverlay;
+    prevCoverOverlayRef.current = overlay;
+
+    const mainPos = state.mainGroup.position.clone();
+    let pivotWorld = coverPivotWorldRef.current;
+    if (!pivotWorld) {
+      pivotWorld = pivotWorldFromGroup(group.position.clone(), group.rotation.z, mainPos);
+      coverPivotWorldRef.current = pivotWorld;
+    }
+
+    const targetRz = overlay ? 0 : LEAN_ANGLE;
+
+    gsap.killTweensOf(group.position);
+    gsap.killTweensOf(group.rotation);
+
+    animatingRef.current = true;
+    const proxy = { rz: group.rotation.z };
+
+    gsap.to(proxy, {
+      rz: targetRz,
+      duration: 0.55,
+      ease: "power2.inOut",
+      onUpdate: () => {
+        group.position.copy(groupPosForPivot(pivotWorld!, proxy.rz, mainPos));
+        group.rotation.z = proxy.rz;
+      },
+      onComplete: () => {
+        animatingRef.current = false;
+      },
+    });
+  }, [coverOverlay, selectedIndex]);
+
+  return (
+    <div
+      ref={containerRef}
+      className={`absolute inset-0 ${coverOverlay ? "z-[3]" : "z-[1]"}`}
+    />
+  );
 }
