@@ -1,24 +1,7 @@
-export type PlatformType =
-  | "QQMusic"
-  | "NetEaseMusic"
-  | "KugouMusic"
-  | "AppleMusic"
-  | "Spotify"
-  | "YTMusic";
+import type { PlatformType, SongInfo } from "@spindeck/player";
 
-/** 单首歌曲信息 */
-export interface SongInfo {
-  name: string;
-  artist: string;
-  cover: string;
-  album: string;
-  /** 平台内歌曲 ID（如 QQ 音乐 songmid），用于 deep link 播放 */
-  platformSongId?: string;
-  /** QQ 音乐 numeric songid */
-  platformNumericId?: number;
-  /** QQ 音乐 songtype，默认 0 */
-  platformSongType?: number;
-}
+/** 播放相关基础类型，定义于 @spindeck/player */
+export type { PlatformType, SongInfo };
 
 export interface Playlist {
   id: string;

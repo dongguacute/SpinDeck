@@ -1,5 +1,5 @@
 {
-  "name": "@spindeck/core",
+  "name": "@spindeck/player",
   "version": "0.0.1",
   "type": "module",
   "main": "./src/index.ts",
@@ -9,20 +9,20 @@
       "types": "./src/index.ts",
       "import": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./server": {
+      "types": "./src/server/index.ts",
+      "import": "./src/server/index.ts",
+      "default": "./src/server/index.ts"
     }
   },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "check-types": "tsc --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest"
-  },
-  "dependencies": {
-    "ky": "^1.12.0"
+    "check-types": "tsc --noEmit"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
-    "vitest": "^3.2.4"
+    "@types/node": "^22",
+    "typescript": "^5.9.3"
   }
 }

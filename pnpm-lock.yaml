@@ -32,6 +32,9 @@ importers:
       '@spindeck/picker':
         specifier: workspace:*
         version: link:../../packages/picker
+      '@spindeck/player':
+        specifier: workspace:*
+        version: link:../../packages/player
       gsap:
         specifier: ^3.15.0
         version: 3.15.0
@@ -100,6 +103,15 @@ importers:
 
   packages/picker:
     devDependencies:
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/player:
+    devDependencies:
+      '@types/node':
+        specifier: ^22
+        version: 22.19.21
       typescript:
         specifier: ^5.9.3
         version: 5.9.3

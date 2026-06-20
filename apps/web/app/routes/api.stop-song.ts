@@ -1,15 +1,11 @@
-import type { PlatformType } from "../lib/types";
-import { QQ_MUSIC_PAUSE_SCRIPT } from "../lib/qqmusic-mac-server";
+import type { PlatformType } from "@spindeck/player";
+import { serverPauseSong } from "@spindeck/player/server";
 import type { Route } from "./+types/api.stop-song";
 
-/** macOS：后台暂停 QQ 音乐 */
+/** 播放器 HTTP 接口：暂停，逻辑见 @spindeck/player/server → serverPauseSong */
 export async function action({ request }: Route.ActionArgs) {
   if (request.method !== "POST") {
     return Response.json({ error: "Method not allowed" }, { status: 405 });
-  }
-
-  if (process.platform !== "darwin") {
-    return Response.json({ error: "仅 macOS 支持服务端控制" }, { status: 400 });
   }
 
   let body: { platform?: PlatformType };
@@ -24,19 +20,13 @@ export async function action({ request }: Route.ActionArgs) {
     return Response.json({ error: "缺少 platform" }, { status: 400 });
   }
 
-  if (platform !== "QQMusic") {
-    return Response.json({ ok: true, stopped: false });
-  }
-
-  const { execFile } = await import("node:child_process");
-  const { promisify } = await import("node:util");
-  const execFileAsync = promisify(execFile);
-
   try {
-    const { stdout } = await execFileAsync("osascript", ["-e", QQ_MUSIC_PAUSE_SCRIPT]);
-    const stopped = String(stdout).trim() === "paused";
-    console.log(`[api/stop-song] stopped=${stopped}`);
-    return Response.json({ ok: true, stopped });
+    const result = await serverPauseSong(platform);
+    if (!result.ok) {
+      return Response.json({ error: result.error ?? "暂停失败" }, { status: 500 });
+    }
+    console.log(`[api/stop-song] stopped=${result.stopped}`);
+    return Response.json({ ok: true, stopped: result.stopped });
   } catch (err) {
     console.error("[api/stop-song] failed:", err);
     return Response.json({ error: "暂停失败" }, { status: 500 });

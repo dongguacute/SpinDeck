@@ -1,4 +1,4 @@
-/** 服务端控制 QQ 音乐 Mac 客户端（AppleScript） */
+/** QQ 音乐 Mac 客户端控制（AppleScript） */
 
 export const QQ_MUSIC_PAUSE_SCRIPT = `
 tell application "System Events"
@@ -43,23 +43,3 @@ return "false"
 
 export const PLAY_DETECT_TIMEOUT_MS = 5000;
 export const PLAY_DETECT_INTERVAL_MS = 300;
-
-export type ExecFileAsync = (
-  file: string,
-  args: string[],
-) => Promise<{ stdout: string | Buffer }>;
-
-export async function isQQMusicPlaying(execFileAsync: ExecFileAsync): Promise<boolean> {
-  const { stdout } = await execFileAsync("osascript", ["-e", QQ_MUSIC_IS_PLAYING_SCRIPT]);
-  return String(stdout).trim() === "true";
-}
-
-export async function waitForQQMusicPlaying(execFileAsync: ExecFileAsync): Promise<boolean> {
-  if (await isQQMusicPlaying(execFileAsync)) return true;
-  const polls = Math.ceil(PLAY_DETECT_TIMEOUT_MS / PLAY_DETECT_INTERVAL_MS);
-  for (let i = 0; i < polls; i++) {
-    await new Promise((r) => setTimeout(r, PLAY_DETECT_INTERVAL_MS));
-    if (await isQQMusicPlaying(execFileAsync)) return true;
-  }
-  return false;
-}

@@ -50,6 +50,7 @@ html, body {
 
 /* ============================================================
    黑胶唱片 + 唱臂 — 书本动画结束后从右侧滑入
+   播放态由 SongVinylOverlay 挂 class；光碟旋转见 .song-cd-disc--spin
    ============================================================ */
 .song-vinyl-stage {
   position: absolute;
@@ -99,6 +100,7 @@ html, body {
   transition: none !important;
 }
 
+/* 落针后开始旋转；暂停时 animation-play-state: paused，角度保留 */
 .song-cd-disc--spin {
   animation: cdSpin 2.8s linear infinite;
   animation-play-state: paused;
@@ -194,7 +196,7 @@ html, body {
   z-index: 4;
 }
 
-/* 密纹同心圆 — 主纹路层（默认静止，落针后旋转） */
+/* 密纹同心圆 — 主纹路层（视觉层，整盘旋转由 .song-cd-disc--spin 负责） */
 .song-cd-grooves {
   position: absolute;
   inset: 0;

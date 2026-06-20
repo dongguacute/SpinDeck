@@ -8,6 +8,9 @@ export default defineConfig({
   resolve: {
     tsconfigPaths: true,
   },
+  ssr: {
+    noExternal: ["@spindeck/core", "@spindeck/picker", "@spindeck/player"],
+  },
   server: {
     host: '0.0.0.0',
   },

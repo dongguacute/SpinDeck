@@ -1,3 +1,7 @@
+/**
+ * 黑胶落针 UI：唱臂交互 + 光碟视觉反馈。
+ * 播放控制全部走 @spindeck/player（落针/抬臂/会话），Mac 端经 /api/* 桥接到本地客户端。
+ */
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Play } from "lucide-react";
 import type { SongInfo, PlatformType } from "../lib/types";
@@ -10,7 +14,7 @@ import {
   pauseSong,
   playSong,
   resumeSong,
-} from "../lib/play-song";
+} from "@spindeck/player";
 
 interface Props {
   song: SongInfo;
@@ -67,6 +71,7 @@ export default function SongVinylOverlay({ song, platform, visible, pageSessionI
   const pendingRef = useRef(false);
 
   useEffect(() => {
+    // pageSessionId 或换歌时重置光碟角度（同页暂停不重置，见 spinActive）
     setSpinActive(false);
   }, [pageSessionId, song]);
 
@@ -75,6 +80,7 @@ export default function SongVinylOverlay({ song, platform, visible, pageSessionI
   }, [playing]);
 
   useEffect(() => {
+    // 首次开始播放后挂上旋转动画，暂停时仅 animation-play-state: paused
     if (playing) setSpinActive(true);
   }, [playing]);
 
@@ -86,7 +92,7 @@ export default function SongVinylOverlay({ song, platform, visible, pageSessionI
     playRequestRef.current += 1;
     setPendingPlay(false);
     setPlaying(false);
-    markSongPausedByArm(song);
+    markSongPausedByArm(song); // 标记会话，供同页再次落针 resumeSong
     void pauseSong(platform);
   }, [platform, song]);
 
@@ -131,6 +137,7 @@ export default function SongVinylOverlay({ song, platform, visible, pageSessionI
       return;
     }
 
+    // 换歌 / 重进页面（pageSessionId 变）时重置唱臂，播放逻辑由 @spindeck/player 会话区分
     setProgress(0);
     progressRef.current = 0;
     setPlaying(false);
@@ -157,7 +164,7 @@ export default function SongVinylOverlay({ song, platform, visible, pageSessionI
     [stopPlayback],
   );
 
-  /** 落针：同页抬臂后再落 = 继续；离开页面再进 = 从头播 */
+  /** 落针：@spindeck/player 决策 — 已在播 / 同页继续(resume) / 从头(play) */
   const startPlayback = useCallback(async () => {
     setArmProgress(1);
     setPlaying(false);
@@ -198,7 +205,7 @@ export default function SongVinylOverlay({ song, platform, visible, pageSessionI
     }
   }, [platform, song, setArmProgress]);
 
-  /** 松手吸附：落针播放，抬起暂停 */
+  /** 松手吸附：落针 → startPlayback，抬起 → pauseSong（保留会话） */
   const snapArm = useCallback(
     (value: number) => {
       if (value >= SNAP_ON_THRESHOLD) {

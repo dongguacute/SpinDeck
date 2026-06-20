@@ -3,7 +3,7 @@ import { ArrowLeft, Disc3, LoaderCircle, Info, X, ExternalLink, Clock, Music, Ro
 import { usePlaylistStore } from "../lib/playlist-store";
 import PlaylistShelf from "../components/PlaylistShelf";
 import SongVinylOverlay from "../components/SongVinylOverlay";
-import { beginShelfSession, prelaunchApp, stopSong } from "../lib/play-song";
+import { beginShelfSession, prelaunchApp, stopSong } from "@spindeck/player";
 import type { SongInfo } from "../lib/types";
 import { PLATFORM_CONFIG } from "../lib/types";
 import { useEffect, useState, useRef } from "react";
@@ -62,13 +62,13 @@ export default function ShelfPage() {
     };
   }, [playlist?.refreshInterval, playlist?.importUrl, playlist?.platform]);
 
-  // 进入书架：中断系统一切播放，重置会话（再次落针从头播）
+  // @spindeck/player：进入书架 → beginShelfSession（中断系统播放 + 重置会话）
   useEffect(() => {
     if (!playlist?.platform) return;
     void beginShelfSession(playlist.platform).then(setPageSessionId);
   }, [playlistId, playlist?.platform]);
 
-  // 离开书架页时暂停播放
+  // @spindeck/player：离开书架 → stopSong（暂停 + 清会话）
   useEffect(() => {
     const platform = playlist?.platform;
     return () => {
@@ -111,7 +111,7 @@ export default function ShelfPage() {
         <ArrowLeft className="w-3.5 h-3.5" />返回歌单
       </Link>
 
-      {/* 预启动播放应用按钮 */}
+      {/* @spindeck/player/prelaunchApp：预唤起本地音乐客户端 */}
       {playlist && (
         <button
           onClick={() => prelaunchApp(playlist.platform)}
@@ -327,7 +327,7 @@ export default function ShelfPage() {
         selectedIndex={selectedIndex}
       />
 
-      {/* 黑胶唱片 + 唱臂（在封面之上，书本动画结束后从右侧滑入） */}
+      {/* 黑胶 UI；pageSessionId 来自 beginShelfSession，用于区分重进页面 vs 同页暂停 */}
       {selectedSong && playlist && (
         <SongVinylOverlay
           song={selectedSong}

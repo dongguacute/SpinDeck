@@ -14,7 +14,11 @@
     "jsx": "react-jsx",
     "rootDirs": [".", "./.react-router/types"],
     "paths": {
-      "~/*": ["./app/*"]
+      "~/*": ["./app/*"],
+      "@spindeck/core": ["../../packages/core/src/index.ts"],
+      "@spindeck/picker": ["../../packages/picker/src/index.ts"],
+      "@spindeck/player": ["../../packages/player/src/index.ts"],
+      "@spindeck/player/server": ["../../packages/player/src/server/index.ts"]
     },
     "esModuleInterop": true,
     "verbatimModuleSyntax": true,
