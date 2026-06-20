@@ -10,5 +10,6 @@ export default [
   route("api/stop-song", "routes/api.stop-song.ts"),
   route("api/resume-song", "routes/api.resume-song.ts"),
   route("api/playback-status", "routes/api.playback-status.ts"),
+  route("api/set-play-mode", "routes/api.set-play-mode.ts"),
   route("api/image", "routes/api.image.ts"),
 ] satisfies RouteConfig;

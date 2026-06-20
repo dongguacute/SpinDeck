@@ -2,6 +2,7 @@ export type {
   DeviceOS,
   ExecFileAsync,
   PlatformType,
+  PlayMode,
   PlaybackStatus,
   PlayResult,
   SongInfo,
@@ -28,9 +29,10 @@ export {
   playSong,
   prelaunchApp,
   resumeSong,
+  setPlayMode,
   stopSong,
 } from "./client/index";
 
-export type { PlayerApiConfig } from "./client/index";
+export type { BeginShelfSessionOptions, PlayerApiConfig } from "./client/index";
 
 export * as platforms from "./platforms/index";

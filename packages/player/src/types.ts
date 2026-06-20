@@ -8,6 +8,9 @@ export type PlatformType =
 
 export type DeviceOS = "macos" | "windows" | "linux" | "android" | "ios";
 
+/** 本地客户端播放模式（Mac QQ 音乐菜单项） */
+export type PlayMode = "single" | "list" | "random" | "order";
+
 /** 单首歌曲信息 */
 export interface SongInfo {
   name: string;

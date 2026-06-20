@@ -62,10 +62,10 @@ export default function ShelfPage() {
     };
   }, [playlist?.refreshInterval, playlist?.importUrl, playlist?.platform]);
 
-  // @spindeck/player：进入书架 → beginShelfSession（中断系统播放 + 重置会话）
+  // @spindeck/player：进入书架 → beginShelfSession（中断系统播放 + 单曲循环 + 重置会话）
   useEffect(() => {
     if (!playlist?.platform) return;
-    void beginShelfSession(playlist.platform).then(setPageSessionId);
+    void beginShelfSession(playlist.platform, { playMode: "single" }).then(setPageSessionId);
   }, [playlistId, playlist?.platform]);
 
   // @spindeck/player：离开书架 → stopSong（暂停 + 清会话）

@@ -1,4 +1,4 @@
-import type { PlatformType, SongInfo } from "@spindeck/player";
+import type { PlatformType, PlayMode, SongInfo } from "@spindeck/player";
 import { serverPlaySong } from "@spindeck/player/server";
 import type { Route } from "./+types/api.play-song";
 
@@ -12,6 +12,7 @@ export async function action({ request }: Route.ActionArgs) {
     platform?: PlatformType;
     song?: SongInfo;
     fresh?: boolean;
+    playMode?: PlayMode;
   };
   try {
     body = await request.json();
@@ -19,7 +20,7 @@ export async function action({ request }: Route.ActionArgs) {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { platform, song } = body;
+  const { platform, song, playMode } = body;
   if (!platform || !song?.name) {
     return Response.json({ error: "缺少 platform 或 song" }, { status: 400 });
   }
@@ -32,7 +33,7 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   try {
-    const result = await serverPlaySong(platform, song);
+    const result = await serverPlaySong(platform, song, undefined, playMode);
     if (!result.ok) {
       return Response.json({ error: result.error ?? "播放失败" }, { status: result.error?.includes("macOS") ? 400 : 500 });
     }

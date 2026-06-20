@@ -2,6 +2,7 @@ import * as qqMusicMac from "../platforms/qqmusic/macos/server";
 import type {
   ExecFileAsync,
   PlatformType,
+  PlayMode,
   PlayResult,
   SongInfo,
   SystemPlaybackStatus,
@@ -13,18 +14,36 @@ async function getExec(exec?: ExecFileAsync): Promise<ExecFileAsync> {
   return exec ?? createNodeExec();
 }
 
+/** 服务端：设置播放模式（循环/随机等） */
+export async function serverSetPlayMode(
+  platform: PlatformType,
+  mode: PlayMode,
+  exec?: ExecFileAsync,
+): Promise<PlayResult> {
+  if (nodePlatform() !== "darwin") {
+    return { ok: false, playing: false, error: "仅 macOS 支持服务端控制" };
+  }
+
+  if (platform !== "QQMusic") {
+    return { ok: true, playing: false, method: "noop" };
+  }
+
+  return qqMusicMac.setPlayModeOnMac(mode, await getExec(exec));
+}
+
 /** 服务端：从头播放 */
 export async function serverPlaySong(
   platform: PlatformType,
   song: SongInfo,
   exec?: ExecFileAsync,
+  playMode?: PlayMode,
 ): Promise<PlayResult> {
   if (nodePlatform() !== "darwin") {
     return { ok: false, playing: false, error: "仅 macOS 支持服务端唤起" };
   }
 
   if (platform === "QQMusic") {
-    return qqMusicMac.playSongOnMac(song, await getExec(exec));
+    return qqMusicMac.playSongOnMac(song, await getExec(exec), playMode);
   }
 
   const urls = buildSongPlayUrls(platform, song, "macos");

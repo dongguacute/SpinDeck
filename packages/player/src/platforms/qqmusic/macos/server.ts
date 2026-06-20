@@ -1,5 +1,12 @@
-import type { ExecFileAsync, PlayResult, SongInfo, SystemPlaybackStatus } from "../../../types";
+import type {
+  ExecFileAsync,
+  PlayMode,
+  PlayResult,
+  SongInfo,
+  SystemPlaybackStatus,
+} from "../../../types";
 import {
+  buildQQMusicSetPlayModeScript,
   PLAY_DETECT_INTERVAL_MS,
   PLAY_DETECT_TIMEOUT_MS,
   QQ_MUSIC_IS_PLAYING_SCRIPT,
@@ -23,12 +30,31 @@ export async function waitForQQMusicPlaying(exec: ExecFileAsync): Promise<boolea
   return false;
 }
 
+export async function setPlayModeOnMac(
+  mode: PlayMode,
+  exec: ExecFileAsync,
+): Promise<PlayResult> {
+  const { stdout } = await exec("osascript", ["-e", buildQQMusicSetPlayModeScript(mode)]);
+  const applied = String(stdout).trim() === "ok";
+  return {
+    ok: true,
+    playing: false,
+    method: "set-play-mode",
+    confirmed: applied,
+  };
+}
+
 export async function playSongOnMac(
   song: SongInfo,
   exec: ExecFileAsync,
+  playMode?: PlayMode,
 ): Promise<PlayResult> {
   if (song.platformNumericId == null) {
     return { ok: false, playing: false, error: "missing songid" };
+  }
+
+  if (playMode) {
+    await setPlayModeOnMac(playMode, exec);
   }
 
   const urls = buildQQMusicMacPlayUrls(song);
