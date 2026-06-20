@@ -8,6 +8,8 @@ import { Play } from "lucide-react";
 import type { SongInfo, PlatformType } from "../lib/types";
 import {
   canResumeSong,
+  getPlaybackStatus,
+  isSameSongInSession,
   markSongPausedByArm,
   markSongStarted,
   pauseSong,
@@ -32,6 +34,8 @@ const SNAP_ON_THRESHOLD = 0.5;
 const ARM_REST_DEG = -26;
 const ARM_PLAY_DEG = 11;
 const SLIDE_PX = 32;
+/** 轮询系统播放状态，同步唱臂 / 光碟视觉（如 QQ 音乐内暂停） */
+const STATUS_POLL_MS = 800;
 
 function px(url: string) {
   return `/api/image?url=${encodeURIComponent(url)}`;
@@ -77,6 +81,7 @@ export default function SongVinylOverlay({
   const playRequestRef = useRef(0);
   const playingRef = useRef(false);
   const pendingRef = useRef(false);
+  const draggingRef = useRef(false);
 
   useEffect(() => {
     // pageSessionId 或换歌时重置光碟角度（同页暂停不重置，见 spinActive）
@@ -90,6 +95,10 @@ export default function SongVinylOverlay({
   useEffect(() => {
     pendingRef.current = pendingPlay;
   }, [pendingPlay]);
+
+  useEffect(() => {
+    draggingRef.current = dragging;
+  }, [dragging]);
 
   const stopPlayback = useCallback(() => {
     playRequestRef.current += 1;
@@ -263,6 +272,53 @@ export default function SongVinylOverlay({
       window.removeEventListener("pointercancel", onPointerUpGlobal);
     };
   }, [dragging, onPointerMove, onPointerUpGlobal]);
+
+  /** 实时监测系统播放状态，调整唱臂落针 / 抬起与光碟旋转 */
+  const syncTonearmFromSystem = useCallback(async () => {
+    if (draggingRef.current || pendingRef.current) return;
+
+    try {
+      const status = await getPlaybackStatus(platform, song);
+      if (draggingRef.current || pendingRef.current) return;
+
+      if (status.playing) {
+        const inSession = isSameSongInSession(song) || canResumeSong(song);
+        if (!inSession && progressRef.current < SNAP_ON_THRESHOLD) return;
+
+        if (progressRef.current < SNAP_ON_THRESHOLD) {
+          progressRef.current = 1;
+          setProgress(1);
+        }
+        if (!playingRef.current) {
+          setPlaying(true);
+          setSpinActive(true);
+        }
+        if (canResumeSong(song)) {
+          markSongStarted(song);
+        }
+      } else {
+        const armDown = progressRef.current >= SNAP_ON_THRESHOLD;
+        if (!armDown && !playingRef.current) return;
+
+        progressRef.current = 0;
+        setProgress(0);
+        setPlaying(false);
+        if (isSameSongInSession(song) || canResumeSong(song)) {
+          markSongPausedByArm(song);
+        }
+      }
+    } catch {
+      // 轮询失败时保持当前 UI，不打断用户操作
+    }
+  }, [platform, song]);
+
+  useEffect(() => {
+    if (!visible || !interactive) return;
+
+    void syncTonearmFromSystem();
+    const id = window.setInterval(() => void syncTonearmFromSystem(), STATUS_POLL_MS);
+    return () => window.clearInterval(id);
+  }, [visible, interactive, syncTonearmFromSystem]);
 
   const armDeg = ARM_REST_DEG + progress * (ARM_PLAY_DEG - ARM_REST_DEG);
   const slideX = -progress * SLIDE_PX;
