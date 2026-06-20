@@ -1,5 +1,6 @@
 import ky from "ky";
 import type { Input } from '../types/url';
+import { decodeHtmlEntities } from '../utils/decodeHtmlEntities';
 
 export interface SongInfo {
     name: string;
@@ -67,15 +68,15 @@ function parseSonglistToDetails(songlist: any[]): SongInfo[] {
     return songlist.map((item: any) => {
         const albummid = item.albummid ?? '';
         const singers = (item.singer ?? [])
-            .map((s: any) => s.name ?? '')
+            .map((s: any) => decodeHtmlEntities(s.name ?? ''))
             .filter(Boolean);
         return {
-            name: item.songname ?? item.songorig ?? item.title ?? '',
+            name: decodeHtmlEntities(item.songname ?? item.songorig ?? item.title ?? ''),
             cover: albummid
                 ? `https://y.gtimg.cn/music/photo_new/T002R300x300M000${albummid}.jpg`
                 : '',
-            artist: singers.join(' / ') || '未知歌手',
-            album: item.albumname ?? item.album_name ?? '',
+            artist: decodeHtmlEntities(singers.join(' / ') || '未知歌手'),
+            album: decodeHtmlEntities(item.albumname ?? item.album_name ?? ''),
         platformSongId: item.songmid ?? item.media_mid ?? "",
         platformNumericId:
           typeof item.songid === "number"
@@ -107,9 +108,9 @@ export async function getQQMusicPlaylistSongs(url: string): Promise<PlaylistResu
 
     return {
         platform: 'QQMusic',
-        name: (cdInfo.dissname ?? '').replace(/&#[\w;]*.*$/, ''),
+        name: decodeHtmlEntities(cdInfo.dissname ?? ''),
         cover: cdInfo.logo ?? cdInfo.diss_cover ?? '',
-        creator: cdInfo.nickname ?? cdInfo.nick ?? '',
+        creator: decodeHtmlEntities(cdInfo.nickname ?? cdInfo.nick ?? ''),
         songs,
     };
 }
