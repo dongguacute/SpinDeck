@@ -8,14 +8,18 @@ import { beginShelfSession, prelaunchApp, stopSong } from "@spindeck/player";
 import type { SongInfo } from "../lib/types";
 import { PLATFORM_CONFIG } from "../lib/types";
 import {
+  derivePlaybackGlassBackground,
   derivePlaybackPalette,
   getDefaultChrome,
   themePaletteToChrome,
-  toPlaybackPastel,
   type ThemePalette,
 } from "../lib/theme-color";
 import { buildPlaybackCoverTheme } from "../lib/cover-background";
 import { useEffect, useState, useRef, useMemo } from "react";
+
+function proxiedCover(coverUrl: string) {
+  return `/api/image?url=${encodeURIComponent(coverUrl)}`;
+}
 
 export default function ShelfPage() {
   const { playlistId } = useParams<{ playlistId: string }>();
@@ -39,7 +43,6 @@ export default function ShelfPage() {
   const [coverOverlay, setCoverOverlay] = useState(false);
   const [pageSessionId, setPageSessionId] = useState("");
   const [bookThemeColor, setBookThemeColor] = useState<string | null>(null);
-  const [coverPastelBackground, setCoverPastelBackground] = useState<string | null>(null);
   const [coverThemePalette, setCoverThemePalette] = useState<ThemePalette | null>(null);
   // 从 playlist 数据中读取刷新间隔，默认为 0（关闭）
   const refreshInterval = playlist?.refreshInterval ?? 0;
@@ -106,7 +109,6 @@ export default function ShelfPage() {
     } else {
       setSelectedSong(null);
       setBookThemeColor(null);
-      setCoverPastelBackground(null);
       setCoverThemePalette(null);
     }
   };
@@ -124,14 +126,12 @@ export default function ShelfPage() {
     setSelectedIndex(null);
     setSelectedSong(null);
     setBookThemeColor(null);
-    setCoverPastelBackground(null);
     setCoverThemePalette(null);
   };
 
   // 从封面提取主色 → 极淡纯色背景
   useEffect(() => {
     if (!selectedSong?.cover) {
-      setCoverPastelBackground(null);
       setCoverThemePalette(null);
       return;
     }
@@ -139,12 +139,10 @@ export default function ShelfPage() {
     let cancelled = false;
     void buildPlaybackCoverTheme(selectedSong.cover, theme).then((themeResult) => {
       if (cancelled) return;
-      setCoverPastelBackground(themeResult.background);
       setCoverThemePalette(themeResult.palette);
       setBookThemeColor(themeResult.accentHex);
     }).catch(() => {
       if (!cancelled) {
-        setCoverPastelBackground(null);
         setCoverThemePalette(null);
       }
     });
@@ -157,23 +155,18 @@ export default function ShelfPage() {
   const themePalette = useMemo(() => {
     if (!inPlayback) return null;
     if (coverThemePalette) return coverThemePalette;
-    if (bookThemeColor) return derivePlaybackPalette(bookThemeColor);
+    if (bookThemeColor) return derivePlaybackPalette(bookThemeColor, theme);
     return null;
-  }, [inPlayback, coverThemePalette, bookThemeColor]);
+  }, [inPlayback, coverThemePalette, bookThemeColor, theme]);
 
-  const playbackAmbientColor = useMemo(() => {
-    if (!inPlayback || !bookThemeColor) return null;
-    if (coverPastelBackground) return coverPastelBackground;
-    return toPlaybackPastel(bookThemeColor, theme);
-  }, [inPlayback, bookThemeColor, coverPastelBackground, theme]);
+  const glassBackground = useMemo(() => {
+    if (!inPlayback) return null;
+    if (themePalette) return themePalette.backdropGradient;
+    if (bookThemeColor) return derivePlaybackGlassBackground(bookThemeColor, theme);
+    return null;
+  }, [inPlayback, themePalette, bookThemeColor, theme]);
 
-  const pageBackground = useMemo(() => {
-    if (!inPlayback) return "var(--bg-primary)";
-    if (playbackAmbientColor) return playbackAmbientColor;
-    return "var(--bg-primary)";
-  }, [inPlayback, playbackAmbientColor]);
-
-  const showThemeBackdrop = inPlayback && themePalette;
+  const showThemeBackdrop = inPlayback && !!glassBackground;
 
   const chrome = useMemo(
     () => (showThemeBackdrop && themePalette ? themePaletteToChrome(themePalette) : getDefaultChrome()),
@@ -185,13 +178,24 @@ export default function ShelfPage() {
   const chromeBtnIdleOpacity = 1;
 
   return (
-    <div
-      className="relative w-screen h-screen overflow-hidden select-none touch-none"
-      style={{
-        backgroundColor: pageBackground,
-        transition: "background-color 0.9s ease",
-      }}
-    >
+    <div className="relative w-screen h-screen overflow-hidden select-none touch-none" style={{ background: "var(--bg-primary)" }}>
+      {/* 播放页磨砂玻璃背景（封面模糊 + pastel 叠层 + 高光） */}
+      <div
+        className={`playback-backdrop${showThemeBackdrop ? " playback-backdrop--visible" : ""}`}
+        aria-hidden
+      >
+        {selectedSong?.cover && (
+          <div
+            className="playback-backdrop__cover"
+            style={{ backgroundImage: `url(${proxiedCover(selectedSong.cover)})` }}
+          />
+        )}
+        {glassBackground && (
+          <div className="playback-backdrop__glass" style={{ background: glassBackground }} />
+        )}
+        <div className="playback-backdrop__sheen" />
+      </div>
+
       {/* 返回（播放态隐藏） */}
       {!inPlayback && (
         <Link

@@ -109,7 +109,7 @@ export async function buildPlaybackCoverTheme(
   const samples = await extractCoverSamples(coverUrl);
   const accentHex = pickCoverAccentColor(samples);
   const background = toPlaybackPastel(accentHex, theme);
-  const palette = derivePlaybackPalette(accentHex);
+  const palette = derivePlaybackPalette(accentHex, theme);
 
   return { background, accentHex, palette };
 }

@@ -49,6 +49,55 @@ html, body {
 }
 
 /* ============================================================
+   播放页背景 — 磨砂玻璃层次
+   ============================================================ */
+.playback-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.9s ease;
+}
+
+.playback-backdrop--visible {
+  opacity: 1;
+}
+
+.playback-backdrop__cover {
+  position: absolute;
+  inset: -18%;
+  background-size: cover;
+  background-position: center;
+  filter: blur(56px) saturate(1.4);
+  transform: scale(1.08);
+  opacity: 0.62;
+}
+
+.playback-backdrop__glass {
+  position: absolute;
+  inset: 0;
+  backdrop-filter: blur(32px) saturate(1.18);
+  -webkit-backdrop-filter: blur(32px) saturate(1.18);
+}
+
+.playback-backdrop__sheen {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 100% 70% at 50% 0%,
+    rgba(255, 255, 255, 0.38) 0%,
+    transparent 55%
+  );
+  mix-blend-mode: soft-light;
+  opacity: 0.85;
+}
+
+[data-theme="light"] .playback-backdrop__sheen {
+  opacity: 0.65;
+}
+
+/* ============================================================
    黑胶唱片 + 唱臂 — 书本动画结束后从右侧滑入
    播放态由 SongVinylOverlay 挂 class；光碟旋转见 .song-cd-disc--spin
    ============================================================ */

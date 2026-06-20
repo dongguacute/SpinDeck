@@ -272,6 +272,28 @@ export function derivePaleTint(baseHex: string, level: PaleLevel): string {
 }
 
 /**
+ * 封面主色 → 播放页磨砂玻璃背景（pastel 底色 + 柔和高光层次）。
+ */
+export function derivePlaybackGlassBackground(
+  accentHex: string,
+  theme: "dark" | "light" = "dark",
+): string {
+  const base = normalizeHex(accentHex);
+  const pastel = toPlaybackPastel(base, theme);
+  const pale100 = derivePaleTint(base, 100);
+  const pale200 = derivePaleTint(base, 200);
+  const frost = theme === "light" ? 0.68 : 0.58;
+  const frostSoft = theme === "light" ? 0.76 : 0.66;
+
+  return [
+    `radial-gradient(ellipse 130% 90% at 50% -12%, ${hexToRgba("#ffffff", frost)} 0%, transparent 62%)`,
+    `radial-gradient(ellipse 85% 65% at 88% 105%, ${hexToRgba(pale200, 0.34)} 0%, transparent 55%)`,
+    `radial-gradient(ellipse 75% 58% at 12% 82%, ${hexToRgba(pale100, 0.28)} 0%, transparent 50%)`,
+    `linear-gradient(165deg, ${hexToRgba(pastel, frostSoft)} 0%, ${hexToRgba(mixColors(pastel, pale100, 0.28), frostSoft - 0.06)} 100%)`,
+  ].join(", ");
+}
+
+/**
  * 封面主色 → 播放页背景色（明显但柔和的 pastel，非近白）。
  */
 export function toPlaybackPastel(accentHex: string, theme: "dark" | "light" = "dark"): string {
@@ -346,19 +368,23 @@ export function deriveThemePalette(baseHex: string): ThemePalette {
 /**
  * 播放页浅色氛围色板（参考：封面主色 → 极淡纯色背景 + 深色可读文字）。
  */
-export function derivePlaybackPalette(accentHex: string): ThemePalette {
+export function derivePlaybackPalette(
+  accentHex: string,
+  theme: "dark" | "light" = "dark",
+): ThemePalette {
   const base = normalizeHex(accentHex);
-  const pale50 = toPlaybackPastel(base);
+  const pale50 = toPlaybackPastel(base, theme);
   const pale100 = derivePaleTint(base, 100);
   const pale200 = derivePaleTint(base, 200);
   const pale300 = derivePaleTint(base, 300);
+  const glassBackground = derivePlaybackGlassBackground(base, theme);
 
   return {
     base,
     backdropTop: pale50,
     backdropMid: pale50,
     backdropBottom: pale50,
-    backdropGradient: pale50,
+    backdropGradient: glassBackground,
     pale50,
     pale100,
     pale200,
