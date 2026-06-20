@@ -59,7 +59,9 @@ html, body {
   z-index: 2;
   pointer-events: none;
   transform: translate(-50%, -50%);
-  margin-left: clamp(44px, 6vw, 84px);
+  margin-left: var(--vinyl-offset-x, clamp(8px, min(4vw, 3svh), 72px));
+  --vinyl-size: clamp(180px, min(46vw, 52svh), 480px);
+  --vinyl-offset-x: clamp(8px, min(4vw, 3svh), 72px);
 }
 
 /* 遮盖态唱臂 portal：叠在书（z-3）上方 */
@@ -68,6 +70,8 @@ html, body {
   inset: 0;
   z-index: 5;
   pointer-events: none;
+  --vinyl-size: clamp(180px, min(46vw, 52svh), 480px);
+  --vinyl-offset-x: clamp(8px, min(4vw, 3svh), 72px);
 }
 
 .song-tonearm-portal-stage {
@@ -75,7 +79,7 @@ html, body {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  margin-left: clamp(44px, 6vw, 84px);
+  margin-left: var(--vinyl-offset-x, clamp(8px, min(4vw, 3svh), 72px));
   pointer-events: none;
 }
 
@@ -84,8 +88,8 @@ html, body {
   position: relative;
   display: flex;
   align-items: center;
-  width: clamp(340px, 56vw, 520px);
-  height: clamp(340px, 56vw, 520px);
+  width: var(--vinyl-size);
+  height: var(--vinyl-size);
   flex-shrink: 0;
 }
 
@@ -128,6 +132,12 @@ html, body {
 
 .song-vinyl-stage--interactive {
   touch-action: none;
+}
+
+/* 光碟区域拦截点击，避免穿透到下方 3D 封面 */
+.song-vinyl-stage--interactive .song-cd-disc {
+  pointer-events: auto;
+  cursor: default;
 }
 
 .song-vinyl-stage--interactive .song-tonearm-wrap {
@@ -195,17 +205,17 @@ html, body {
 }
 
 @keyframes vinylSlideIn {
-  0%   { opacity: 0; transform: translateX(55vw); }
+  0%   { opacity: 0; transform: translateX(42vw); }
   100% { opacity: 1; transform: translateX(0); }
 }
 
 @keyframes vinylSlideOut {
   0%   { opacity: 1; transform: translateX(0); }
-  100% { opacity: 0; transform: translateX(40vw); }
+  100% { opacity: 0; transform: translateX(28vw); }
 }
 
 @keyframes tonearmSlideIn {
-  0%   { opacity: 0; transform: translateY(-42%) translateX(90px) rotate(14deg); }
+  0%   { opacity: 0; transform: translateY(-42%) translateX(64px) rotate(12deg); }
   100% { opacity: 1; transform: translateY(-42%) translateX(0) rotate(0deg); }
 }
 
@@ -218,8 +228,8 @@ html, body {
 .song-cd-disc {
   --vinyl-color: #6eb5d4;
   --vinyl-label-color: #4a9fd4;
-  width: clamp(340px, 56vw, 520px);
-  height: clamp(340px, 56vw, 520px);
+  width: var(--vinyl-size);
+  height: var(--vinyl-size);
   border-radius: 50%;
   position: relative;
   flex-shrink: 0;
@@ -324,6 +334,11 @@ html, body {
   transition: opacity 0.35s ease;
 }
 
+.song-cd-play-icon svg {
+  width: calc(var(--vinyl-size) * 0.12);
+  height: calc(var(--vinyl-size) * 0.12);
+}
+
 .song-cd-center {
   position: absolute;
   top: 50%;
@@ -350,7 +365,7 @@ html, body {
 
 .song-cd-title {
   margin: 0;
-  font-size: clamp(12px, 1.8vw, 17px);
+  font-size: clamp(10px, calc(var(--vinyl-size) * 0.038), 17px);
   font-weight: 700;
   line-height: 1.25;
   color: #fff;
@@ -362,7 +377,7 @@ html, body {
 
 .song-cd-artist {
   margin: 0;
-  font-size: clamp(10px, 1.35vw, 14px);
+  font-size: clamp(9px, calc(var(--vinyl-size) * 0.028), 14px);
   font-weight: 500;
   line-height: 1.2;
   color: rgba(255, 255, 255, 0.88);
@@ -385,19 +400,18 @@ html, body {
   z-index: 3;
 }
 
-/* 唱臂 */
+/* 唱臂 — 尺寸随光碟等比缩放 */
 .song-tonearm-wrap {
   position: absolute;
-  right: clamp(-54px, -5.2vw, -40px);
+  right: calc(var(--vinyl-size) * -0.14);
   top: 50%;
-  width: clamp(68px, 7vw, 88px);
-  height: clamp(196px, 23vw, 252px);
+  width: calc(var(--vinyl-size) * 0.175);
+  height: calc(var(--vinyl-size) * 0.5);
   transform: translateY(-42%);
   transform-origin: 50% 5%;
   z-index: 10;
-  /* 扩大可拖拽区域 */
-  padding: 14px;
-  margin: -14px;
+  padding: calc(var(--vinyl-size) * 0.035);
+  margin: calc(var(--vinyl-size) * -0.035);
 }
 
 .song-tonearm {

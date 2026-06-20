@@ -4,6 +4,12 @@ import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeom
 import gsap from "gsap";
 import type { SongInfo } from "../lib/types";
 import type { RGBAColor } from "@spindeck/picker";
+import {
+  computeCoverSelectedWorldX,
+  SHELF_CAM_Z,
+  SHELF_LOOK_Y_PLAYBACK,
+  shelfCoverPlaybackCamZ,
+} from "../lib/vinyl-layout";
 
 /* ============================================================
    场景状态引用
@@ -16,6 +22,7 @@ interface SceneState {
   originalPositions: { x: number; y: number; z: number }[];
   totalW: number;
   camera: THREE.PerspectiveCamera;
+  lookTarget: THREE.Vector3;
   roundedGeo: THREE.BufferGeometry;
   sharpGeo: THREE.BufferGeometry;
 }
@@ -27,13 +34,12 @@ const SPINE_THICK = 0.18;
 const ALBUM_TALL = 5.0;
 const ALBUM_DEEP = 5.0; // 和 ALBUM_TALL 一致，±X 面天生正方形
 const GAP = 0.8;
-const LEAN_ANGLE = 15 * (Math.PI / 180);
-const SELECTED_WORLD_X = -2.0;
+const LEAN_ANGLE = 5 * (Math.PI / 180);
 /** 向左移出光碟（仅 X，不改变高度） */
 const CLEAR_LEFT = 3.0;
-/** 从 resting 向右摆入，轻盖光碟左缘（约左半区的半边） */
-const COVER_X = -0.55;
-const COVER_Z = 0.16;
+/** 从 resting 向右摆入，轻触光碟左缘 */
+const COVER_X = 0.95;
+const COVER_Z = 0.18;
 
 const _pivotEuler = new THREE.Euler();
 const _pivotQuat = new THREE.Quaternion();
@@ -279,8 +285,6 @@ interface Props {
   coverOverlay?: boolean;
   /** 播放中：禁止点击空白或再次点击当前书来退出 */
   lockDeselect?: boolean;
-  /** 播放页氛围背景色（写入 Three 场景背景） */
-  playbackAmbientColor?: string | null;
 }
 
 export default function PlaylistShelf({
@@ -292,7 +296,6 @@ export default function PlaylistShelf({
   selectedIndex,
   coverOverlay = false,
   lockDeselect = false,
-  playbackAmbientColor = null,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<SceneState | null>(null);
@@ -301,7 +304,6 @@ export default function PlaylistShelf({
   const coverOverlayRef = useRef(coverOverlay);
   const onCoverToggleRef = useRef(onCoverToggle);
   const onBookThemeColorRef = useRef(onBookThemeColor);
-  const playbackAmbientColorRef = useRef(playbackAmbientColor);
   const animatingRef = useRef(false);
   const prevCoverOverlayRef = useRef(coverOverlay);
   const coverPivotWorldRef = useRef<THREE.Vector3 | null>(null);
@@ -323,17 +325,6 @@ export default function PlaylistShelf({
   }, [onBookThemeColor]);
 
   useEffect(() => {
-    playbackAmbientColorRef.current = playbackAmbientColor;
-    const state = sceneRef.current;
-    if (!state) return;
-    if (playbackAmbientColor) {
-      state.scene.background = new THREE.Color(playbackAmbientColor);
-    } else {
-      state.scene.background = null;
-    }
-  }, [playbackAmbientColor]);
-
-  useEffect(() => {
     const container = containerRef.current;
     if (!container || !songs.length) return;
 
@@ -347,10 +338,12 @@ export default function PlaylistShelf({
     // --- 场景 ---
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(38, w / h, 0.1, 100);
-    camera.position.set(0, 0, 12);
-    camera.lookAt(0, 0, 0);
+    camera.position.set(0, 0, SHELF_CAM_Z);
+    const lookTarget = new THREE.Vector3(0, 0, 0);
+    camera.lookAt(lookTarget);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setClearColor(0x000000, 0);
     renderer.setSize(w, h);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -362,9 +355,7 @@ export default function PlaylistShelf({
     mainGroup.scale.set(1.0, 1.0, 1.0);
     scene.add(mainGroup);
 
-    if (playbackAmbientColorRef.current) {
-      scene.background = new THREE.Color(playbackAmbientColorRef.current);
-    }
+    // 背景由页面层 playbackAmbientColor 负责，canvas 保持透明以便遮盖态下光碟可见
 
     // --- 创建书本 ---
     const sharpGeo = new THREE.BoxGeometry(SPINE_THICK, ALBUM_TALL, ALBUM_DEEP);
@@ -408,6 +399,7 @@ export default function PlaylistShelf({
       originalPositions,
       totalW,
       camera,
+      lookTarget,
       roundedGeo,
       sharpGeo,
     };
@@ -421,8 +413,9 @@ export default function PlaylistShelf({
       meshes[curSel].geometry = roundedGeo; // 翻开时切换为圆角几何体
       const overlay = coverOverlayRef.current;
       const mainPos = mainGroup.position.clone();
+      const coverX = computeCoverSelectedWorldX(w, h);
       const leanPos = new THREE.Vector3(
-        SELECTED_WORLD_X - mainPos.x,
+        coverX - mainPos.x,
         -mainPos.y,
         -mainPos.z,
       );
@@ -440,6 +433,9 @@ export default function PlaylistShelf({
       }
       selectedIndexRef.current = curSel;
       prevCoverOverlayRef.current = overlay;
+      camera.position.z = shelfCoverPlaybackCamZ(w, h);
+      lookTarget.set(0, SHELF_LOOK_Y_PLAYBACK, 0);
+      camera.lookAt(lookTarget);
       onSelectionAnimationComplete?.(curSel);
     }
 
@@ -565,8 +561,13 @@ export default function PlaylistShelf({
 
     const onResize = () => {
       const cw = container.clientWidth, ch = container.clientHeight;
-      camera.aspect = cw / ch; camera.updateProjectionMatrix();
+      camera.aspect = cw / ch;
+      camera.updateProjectionMatrix();
       renderer.setSize(cw, ch);
+      if (selectedIndexRef.current !== null && selectedIndexRef.current !== undefined) {
+        camera.position.z = shelfCoverPlaybackCamZ(cw, ch);
+        camera.lookAt(lookTarget);
+      }
     };
     window.addEventListener("resize", onResize);
 
@@ -684,6 +685,26 @@ export default function PlaylistShelf({
     if (next !== null && next !== undefined) {
       animatingRef.current = true;
 
+      gsap.killTweensOf(state.camera.position);
+      gsap.killTweensOf(state.lookTarget);
+      gsap.to(state.camera.position, {
+        z: shelfCoverPlaybackCamZ(
+          containerRef.current?.clientWidth ?? window.innerWidth,
+          containerRef.current?.clientHeight ?? window.innerHeight,
+        ),
+        duration: 0.85,
+        ease: "power2.out",
+        delay: 0.08,
+      });
+      gsap.to(state.lookTarget, {
+        x: 0,
+        y: SHELF_LOOK_Y_PLAYBACK,
+        duration: 0.85,
+        ease: "power2.out",
+        delay: 0.08,
+        onUpdate: () => state.camera.lookAt(state.lookTarget),
+      });
+
       // 停止所有正在进行的动画（拖拽惯性、弯曲效果等）
       gsap.killTweensOf(state.mainGroup.position);
       for (let i = 0; i < groups.length; i++) {
@@ -733,8 +754,11 @@ export default function PlaylistShelf({
           group.position.z = initPz + pivotEdge * Math.sin(theta);
         },
         onComplete: () => {
-          // 翻转完成后：从当前位置滑动到页面中线偏左 + 左倾 15°
-          const worldCenterX = SELECTED_WORLD_X;
+          // 翻转完成后：从当前位置滑动到播放位（封面左移三指，光碟不动）
+          const container = containerRef.current;
+          const vw = container?.clientWidth ?? window.innerWidth;
+          const vh = container?.clientHeight ?? window.innerHeight;
+          const worldCenterX = computeCoverSelectedWorldX(vw, vh);
           const localCenterX = worldCenterX - state.mainGroup.position.x;
           const localCenterY = 0 - state.mainGroup.position.y;
           const localCenterZ = 0 - state.mainGroup.position.z;
@@ -795,6 +819,21 @@ export default function PlaylistShelf({
       }
     } else if (prev !== null && prev !== undefined) {
       animatingRef.current = true;
+
+      gsap.killTweensOf(state.camera.position);
+      gsap.killTweensOf(state.lookTarget);
+      gsap.to(state.camera.position, {
+        z: SHELF_CAM_Z,
+        duration: 0.85,
+        ease: "power2.out",
+      });
+      gsap.to(state.lookTarget, {
+        x: 0,
+        y: 0,
+        duration: 0.85,
+        ease: "power2.out",
+        onUpdate: () => state.camera.lookAt(state.lookTarget),
+      });
 
       // 停止所有正在进行的动画
       gsap.killTweensOf(state.mainGroup.position);

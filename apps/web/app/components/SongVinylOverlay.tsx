@@ -7,6 +7,10 @@ import { createPortal } from "react-dom";
 import { Play } from "lucide-react";
 import type { SongInfo, PlatformType } from "../lib/types";
 import {
+  applyVinylLayoutVars,
+  computeVinylLayout,
+} from "../lib/vinyl-layout";
+import {
   canResumeSong,
   getPlaybackStatus,
   isSameSongInSession,
@@ -77,6 +81,7 @@ export default function SongVinylOverlay({
   const [spinActive, setSpinActive] = useState(false);
   const [dragging, setDragging] = useState(false);
   const dragRef = useRef({ active: false, startX: 0, startY: 0, startProgress: 0 });
+  const stageRef = useRef<HTMLDivElement>(null);
   const progressRef = useRef(0);
   const playRequestRef = useRef(0);
   const playingRef = useRef(false);
@@ -99,6 +104,18 @@ export default function SongVinylOverlay({
   useEffect(() => {
     draggingRef.current = dragging;
   }, [dragging]);
+
+  useEffect(() => {
+    const syncLayout = () => {
+      const layout = computeVinylLayout(window.innerWidth, window.innerHeight);
+      if (stageRef.current) applyVinylLayoutVars(stageRef.current, layout);
+      if (tonearmPortalRef?.current) applyVinylLayoutVars(tonearmPortalRef.current, layout);
+    };
+
+    syncLayout();
+    window.addEventListener("resize", syncLayout);
+    return () => window.removeEventListener("resize", syncLayout);
+  }, [tonearmPortalRef, tonearmPortalReady, visible]);
 
   const stopPlayback = useCallback(() => {
     playRequestRef.current += 1;
@@ -432,7 +449,7 @@ export default function SongVinylOverlay({
 
   return (
     <>
-      <div className={stageClass} aria-hidden={!visible}>
+      <div ref={stageRef} className={stageClass} aria-hidden={!visible}>
         <div className="song-vinyl-group">
           <div
             className={`song-cd-disc${spinActive ? " song-cd-disc--spin" : ""}`}
@@ -446,7 +463,7 @@ export default function SongVinylOverlay({
             <div className="song-cd-sheen" aria-hidden />
 
             <div className="song-cd-play-icon" aria-hidden>
-              <Play className="w-16 h-16" strokeWidth={1.5} fill="currentColor" />
+              <Play strokeWidth={1.5} fill="currentColor" />
             </div>
 
             <div className="song-cd-center">

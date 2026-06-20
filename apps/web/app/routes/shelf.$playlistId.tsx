@@ -192,29 +192,31 @@ export default function ShelfPage() {
         transition: "background-color 0.9s ease",
       }}
     >
-      {/* 返回 */}
-      <Link
-        to="/"
-        className="absolute top-6 left-6 z-10 flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-medium transition-all backdrop-blur-sm cursor-pointer"
-        style={{
-          backgroundColor: chrome.surface,
-          borderColor: chrome.border,
-          color: chrome.text,
-          opacity: chromeIdleOpacity,
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.borderColor = chrome.borderHover;
-          e.currentTarget.style.backgroundColor = chrome.surfaceHover;
-          (e.currentTarget as HTMLAnchorElement).style.opacity = String(chromeHoverOpacity);
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = chrome.border;
-          e.currentTarget.style.backgroundColor = chrome.surface;
-          (e.currentTarget as HTMLAnchorElement).style.opacity = String(chromeIdleOpacity);
-        }}
-      >
-        <ArrowLeft className="w-3.5 h-3.5" />返回歌单
-      </Link>
+      {/* 返回（播放态隐藏） */}
+      {!inPlayback && (
+        <Link
+          to="/"
+          className="absolute top-6 left-6 z-10 flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-medium transition-all backdrop-blur-sm cursor-pointer"
+          style={{
+            backgroundColor: chrome.surface,
+            borderColor: chrome.border,
+            color: chrome.text,
+            opacity: chromeIdleOpacity,
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = chrome.borderHover;
+            e.currentTarget.style.backgroundColor = chrome.surfaceHover;
+            (e.currentTarget as HTMLAnchorElement).style.opacity = String(chromeHoverOpacity);
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = chrome.border;
+            e.currentTarget.style.backgroundColor = chrome.surface;
+            (e.currentTarget as HTMLAnchorElement).style.opacity = String(chromeIdleOpacity);
+          }}
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />返回歌单
+        </Link>
+      )}
 
       {playlist && (
         inPlayback ? (
@@ -270,8 +272,8 @@ export default function ShelfPage() {
         )
       )}
 
-      {/* 歌单主信息 */}
-      {playlist && (
+      {/* 歌单主信息（播放态隐藏） */}
+      {playlist && !inPlayback && (
         <div className="absolute top-6 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2.5 backdrop-blur-sm">
           {/* 名字和信息 */}
           <div className="flex items-center gap-2.5">
@@ -495,7 +497,6 @@ export default function ShelfPage() {
         selectedIndex={selectedIndex}
         coverOverlay={coverOverlay}
         lockDeselect={inPlayback}
-        playbackAmbientColor={playbackAmbientColor}
       />
 
       {/* 唱臂 portal（z-5，遮盖态叠在书上方可交互） */}
