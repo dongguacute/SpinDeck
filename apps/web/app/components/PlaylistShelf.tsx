@@ -9,6 +9,7 @@ import type { RGBAColor } from "@spindeck/picker";
    场景状态引用
    ============================================================ */
 interface SceneState {
+  scene: THREE.Scene;
   groups: THREE.Group[];
   meshes: THREE.Mesh[];
   mainGroup: THREE.Group;
@@ -272,10 +273,14 @@ interface Props {
   onSongSelect?: (song: SongInfo | null, index: number | null) => void;
   onSelectionAnimationComplete?: (index: number) => void;
   onCoverToggle?: () => void;
+  /** 选中书的主题色变化（封面取色完成后也会更新） */
+  onBookThemeColor?: (color: string | null) => void;
   selectedIndex: number | null;
   coverOverlay?: boolean;
   /** 播放中：禁止点击空白或再次点击当前书来退出 */
   lockDeselect?: boolean;
+  /** 播放页氛围背景色（写入 Three 场景背景） */
+  playbackAmbientColor?: string | null;
 }
 
 export default function PlaylistShelf({
@@ -283,9 +288,11 @@ export default function PlaylistShelf({
   onSongSelect,
   onSelectionAnimationComplete,
   onCoverToggle,
+  onBookThemeColor,
   selectedIndex,
   coverOverlay = false,
   lockDeselect = false,
+  playbackAmbientColor = null,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<SceneState | null>(null);
@@ -293,6 +300,8 @@ export default function PlaylistShelf({
   const lockDeselectRef = useRef(lockDeselect);
   const coverOverlayRef = useRef(coverOverlay);
   const onCoverToggleRef = useRef(onCoverToggle);
+  const onBookThemeColorRef = useRef(onBookThemeColor);
+  const playbackAmbientColorRef = useRef(playbackAmbientColor);
   const animatingRef = useRef(false);
   const prevCoverOverlayRef = useRef(coverOverlay);
   const coverPivotWorldRef = useRef<THREE.Vector3 | null>(null);
@@ -308,6 +317,21 @@ export default function PlaylistShelf({
   useEffect(() => {
     onCoverToggleRef.current = onCoverToggle;
   }, [onCoverToggle]);
+
+  useEffect(() => {
+    onBookThemeColorRef.current = onBookThemeColor;
+  }, [onBookThemeColor]);
+
+  useEffect(() => {
+    playbackAmbientColorRef.current = playbackAmbientColor;
+    const state = sceneRef.current;
+    if (!state) return;
+    if (playbackAmbientColor) {
+      state.scene.background = new THREE.Color(playbackAmbientColor);
+    } else {
+      state.scene.background = null;
+    }
+  }, [playbackAmbientColor]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -337,6 +361,10 @@ export default function PlaylistShelf({
     mainGroup.position.set(0, 0.0, 0);
     mainGroup.scale.set(1.0, 1.0, 1.0);
     scene.add(mainGroup);
+
+    if (playbackAmbientColorRef.current) {
+      scene.background = new THREE.Color(playbackAmbientColorRef.current);
+    }
 
     // --- 创建书本 ---
     const sharpGeo = new THREE.BoxGeometry(SPINE_THICK, ALBUM_TALL, ALBUM_DEEP);
@@ -372,7 +400,17 @@ export default function PlaylistShelf({
     }
 
     // 存储场景引用
-    sceneRef.current = { groups, meshes, mainGroup, originalPositions, totalW, camera, roundedGeo, sharpGeo };
+    sceneRef.current = {
+      scene,
+      groups,
+      meshes,
+      mainGroup,
+      originalPositions,
+      totalW,
+      camera,
+      roundedGeo,
+      sharpGeo,
+    };
 
     // 如果场景重建时仍有选中状态，立即应用（无动画）
     const curSel = selectedIndex;
@@ -431,13 +469,17 @@ export default function PlaylistShelf({
               onCoverToggleRef.current?.();
             } else {
               onSongSelect?.(null, null);
+              onBookThemeColorRef.current?.(null);
             }
           } else {
+            const bookColor = (groups[idx].userData.color as string) || COLORS[idx % COLORS.length];
             onSongSelect?.(songs[idx], idx);
+            onBookThemeColorRef.current?.(bookColor);
           }
         }
       } else if (cur !== null && cur !== undefined && !locked) {
         onSongSelect?.(null, null);
+        onBookThemeColorRef.current?.(null);
       }
     };
     renderer.domElement.addEventListener("click", handleClick);
@@ -562,6 +604,12 @@ export default function PlaylistShelf({
 
       if (texR.status === "fulfilled") coverTex = texR.value;
       if (colR.status === "fulfilled") mainColor = colR.value;
+
+      const group = groups[i];
+      group.userData.color = mainColor;
+      if (selectedIndexRef.current === i) {
+        onBookThemeColorRef.current?.(mainColor);
+      }
 
       // 重建书脊（用主色）
       const newSpine = spineCanvas(song.name, song.artist, mainColor, null);

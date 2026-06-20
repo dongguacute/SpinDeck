@@ -1,16 +1,26 @@
 import { Link, useParams, useFetcher } from "react-router";
 import { ArrowLeft, Disc3, LoaderCircle, Info, X, ExternalLink, Clock, Music, Rocket, LogOut } from "lucide-react";
 import { usePlaylistStore } from "../lib/playlist-store";
+import { useThemeStore } from "../lib/theme-store";
 import PlaylistShelf from "../components/PlaylistShelf";
 import SongVinylOverlay from "../components/SongVinylOverlay";
 import { beginShelfSession, prelaunchApp, stopSong } from "@spindeck/player";
 import type { SongInfo } from "../lib/types";
 import { PLATFORM_CONFIG } from "../lib/types";
-import { useEffect, useState, useRef } from "react";
+import {
+  derivePlaybackPalette,
+  getDefaultChrome,
+  themePaletteToChrome,
+  toPlaybackPastel,
+  type ThemePalette,
+} from "../lib/theme-color";
+import { buildPlaybackCoverTheme } from "../lib/cover-background";
+import { useEffect, useState, useRef, useMemo } from "react";
 
 export default function ShelfPage() {
   const { playlistId } = useParams<{ playlistId: string }>();
   const { playlists } = usePlaylistStore();
+  const { theme } = useThemeStore();
   const playlist = playlists.find((p) => p.id === playlistId);
 
   // 每次进入书架都请求歌单数据
@@ -28,6 +38,9 @@ export default function ShelfPage() {
   const [showVinyl, setShowVinyl] = useState(false);
   const [coverOverlay, setCoverOverlay] = useState(false);
   const [pageSessionId, setPageSessionId] = useState("");
+  const [bookThemeColor, setBookThemeColor] = useState<string | null>(null);
+  const [coverPastelBackground, setCoverPastelBackground] = useState<string | null>(null);
+  const [coverThemePalette, setCoverThemePalette] = useState<ThemePalette | null>(null);
   // 从 playlist 数据中读取刷新间隔，默认为 0（关闭）
   const refreshInterval = playlist?.refreshInterval ?? 0;
 
@@ -92,6 +105,9 @@ export default function ShelfPage() {
       setSelectedSong(song);
     } else {
       setSelectedSong(null);
+      setBookThemeColor(null);
+      setCoverPastelBackground(null);
+      setCoverThemePalette(null);
     }
   };
 
@@ -107,20 +123,95 @@ export default function ShelfPage() {
     setCoverOverlay(false);
     setSelectedIndex(null);
     setSelectedSong(null);
+    setBookThemeColor(null);
+    setCoverPastelBackground(null);
+    setCoverThemePalette(null);
   };
 
+  // 从封面提取主色 → 极淡纯色背景
+  useEffect(() => {
+    if (!selectedSong?.cover) {
+      setCoverPastelBackground(null);
+      setCoverThemePalette(null);
+      return;
+    }
+
+    let cancelled = false;
+    void buildPlaybackCoverTheme(selectedSong.cover, theme).then((themeResult) => {
+      if (cancelled) return;
+      setCoverPastelBackground(themeResult.background);
+      setCoverThemePalette(themeResult.palette);
+      setBookThemeColor(themeResult.accentHex);
+    }).catch(() => {
+      if (!cancelled) {
+        setCoverPastelBackground(null);
+        setCoverThemePalette(null);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedSong?.cover, theme]);
+
+  const themePalette = useMemo(() => {
+    if (!inPlayback) return null;
+    if (coverThemePalette) return coverThemePalette;
+    if (bookThemeColor) return derivePlaybackPalette(bookThemeColor);
+    return null;
+  }, [inPlayback, coverThemePalette, bookThemeColor]);
+
+  const playbackAmbientColor = useMemo(() => {
+    if (!inPlayback || !bookThemeColor) return null;
+    if (coverPastelBackground) return coverPastelBackground;
+    return toPlaybackPastel(bookThemeColor, theme);
+  }, [inPlayback, bookThemeColor, coverPastelBackground, theme]);
+
+  const pageBackground = useMemo(() => {
+    if (!inPlayback) return "var(--bg-primary)";
+    if (playbackAmbientColor) return playbackAmbientColor;
+    return "var(--bg-primary)";
+  }, [inPlayback, playbackAmbientColor]);
+
+  const showThemeBackdrop = inPlayback && themePalette;
+
+  const chrome = useMemo(
+    () => (showThemeBackdrop && themePalette ? themePaletteToChrome(themePalette) : getDefaultChrome()),
+    [showThemeBackdrop, themePalette],
+  );
+
+  const chromeIdleOpacity = showThemeBackdrop ? 1 : 0.5;
+  const chromeHoverOpacity = 1;
+  const chromeBtnIdleOpacity = 1;
+
   return (
-    <div className="relative w-screen h-screen overflow-hidden select-none touch-none" style={{ background: "var(--bg-primary)" }}>
+    <div
+      className="relative w-screen h-screen overflow-hidden select-none touch-none"
+      style={{
+        backgroundColor: pageBackground,
+        transition: "background-color 0.9s ease",
+      }}
+    >
       {/* 返回 */}
-      <Link to="/" className="absolute top-6 left-6 z-10 flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-medium transition-all backdrop-blur-sm cursor-pointer"
+      <Link
+        to="/"
+        className="absolute top-6 left-6 z-10 flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-medium transition-all backdrop-blur-sm cursor-pointer"
         style={{
-          backgroundColor: "var(--surface-color)",
-          borderColor: "var(--border-color)",
-          color: "var(--text-secondary)",
-          opacity: 0.5,
+          backgroundColor: chrome.surface,
+          borderColor: chrome.border,
+          color: chrome.text,
+          opacity: chromeIdleOpacity,
         }}
-        onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--border-hover)"; (e.currentTarget as HTMLAnchorElement).style.opacity = "0.8"; }}
-        onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border-color)"; (e.currentTarget as HTMLAnchorElement).style.opacity = "0.5"; }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.borderColor = chrome.borderHover;
+          e.currentTarget.style.backgroundColor = chrome.surfaceHover;
+          (e.currentTarget as HTMLAnchorElement).style.opacity = String(chromeHoverOpacity);
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.borderColor = chrome.border;
+          e.currentTarget.style.backgroundColor = chrome.surface;
+          (e.currentTarget as HTMLAnchorElement).style.opacity = String(chromeIdleOpacity);
+        }}
       >
         <ArrowLeft className="w-3.5 h-3.5" />返回歌单
       </Link>
@@ -131,19 +222,21 @@ export default function ShelfPage() {
             onClick={handleExitPlayback}
             className="absolute top-6 right-6 z-10 flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-medium transition-all backdrop-blur-sm cursor-pointer"
             style={{
-              backgroundColor: "var(--surface-color)",
-              borderColor: "var(--border-color)",
-              color: "var(--text-secondary)",
-              opacity: 0.7,
+              backgroundColor: chrome.surface,
+              borderColor: chrome.border,
+              color: chrome.text,
+              opacity: chromeBtnIdleOpacity,
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "var(--border-hover)";
+              e.currentTarget.style.borderColor = chrome.borderHover;
+              e.currentTarget.style.backgroundColor = chrome.surfaceHover;
               e.currentTarget.style.opacity = "1";
               e.currentTarget.style.transform = "scale(1.02)";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "var(--border-color)";
-              e.currentTarget.style.opacity = "0.7";
+              e.currentTarget.style.borderColor = chrome.border;
+              e.currentTarget.style.backgroundColor = chrome.surface;
+              e.currentTarget.style.opacity = String(chromeBtnIdleOpacity);
               e.currentTarget.style.transform = "scale(1)";
             }}
             title="退出播放并停止音乐"
@@ -182,12 +275,20 @@ export default function ShelfPage() {
         <div className="absolute top-6 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2.5 backdrop-blur-sm">
           {/* 名字和信息 */}
           <div className="flex items-center gap-2.5">
-            <span className="text-sm font-medium tracking-wide max-w-[200px] truncate" style={{ color: "var(--text-secondary)", opacity: 0.7 }}>{playlist.name}</span>
-            <span className="text-xs px-2 py-0.5 rounded-md border" style={{
-              color: "var(--text-muted)",
-              backgroundColor: "var(--surface-color)",
-              borderColor: "var(--border-color)",
-            }}>
+            <span
+              className="text-sm font-medium tracking-wide max-w-[200px] truncate transition-colors duration-700"
+              style={{ color: chrome.textSecondary, opacity: showThemeBackdrop ? 0.95 : 0.7 }}
+            >
+              {playlist.name}
+            </span>
+            <span
+              className="text-xs px-2 py-0.5 rounded-md border transition-colors duration-700"
+              style={{
+                color: chrome.textMuted,
+                backgroundColor: chrome.surface,
+                borderColor: chrome.border,
+              }}
+            >
               {songs.length > 0 ? `${songs.length} 首` : playlist.songCount > 0 ? `${playlist.songCount} 首` : ""}
             </span>
 
@@ -195,9 +296,17 @@ export default function ShelfPage() {
             <button
               onClick={() => setShowDetail(true)}
               className="p-1 rounded-lg transition-all cursor-pointer"
-              style={{ color: "var(--text-muted)", opacity: 0.25 }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-secondary)"; e.currentTarget.style.opacity = "0.5"; e.currentTarget.style.background = "var(--surface-color)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.opacity = "0.25"; e.currentTarget.style.background = "transparent"; }}
+              style={{ color: chrome.textMuted, opacity: showThemeBackdrop ? 0.65 : 0.25 }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = chrome.textSecondary;
+                e.currentTarget.style.opacity = showThemeBackdrop ? "0.95" : "0.5";
+                e.currentTarget.style.background = chrome.surfaceHover;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = chrome.textMuted;
+                e.currentTarget.style.opacity = showThemeBackdrop ? "0.65" : "0.25";
+                e.currentTarget.style.background = "transparent";
+              }}
               title="歌单详情"
             >
               <Info className="w-3.5 h-3.5" />
@@ -205,8 +314,14 @@ export default function ShelfPage() {
 
             {/* 自动刷新状态指示（只读） */}
             {refreshInterval > 0 && (
-              <span className="text-emerald-400/50 text-[10px] flex items-center gap-1">
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400/60" />
+              <span
+                className={`text-[10px] flex items-center gap-1 transition-colors duration-700${showThemeBackdrop ? "" : " text-emerald-400/50"}`}
+                style={showThemeBackdrop && themePalette ? { color: themePalette.textSecondary } : undefined}
+              >
+                <span
+                  className={`inline-block w-1.5 h-1.5 rounded-full${showThemeBackdrop ? "" : " bg-emerald-400/60"}`}
+                  style={showThemeBackdrop && themePalette ? { backgroundColor: themePalette.pale200 } : undefined}
+                />
                 自动刷新中
               </span>
             )}
@@ -376,9 +491,11 @@ export default function ShelfPage() {
         onSongSelect={handleSongSelect}
         onSelectionAnimationComplete={handleBookAnimationComplete}
         onCoverToggle={() => setCoverOverlay((v) => !v)}
+        onBookThemeColor={setBookThemeColor}
         selectedIndex={selectedIndex}
         coverOverlay={coverOverlay}
         lockDeselect={inPlayback}
+        playbackAmbientColor={playbackAmbientColor}
       />
 
       {/* 唱臂 portal（z-5，遮盖态叠在书上方可交互） */}
