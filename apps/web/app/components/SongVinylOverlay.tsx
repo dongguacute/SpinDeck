@@ -4,7 +4,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Play } from "lucide-react";
+import Tonearm from "./Tonearm";
 import type { SongInfo, PlatformType } from "../lib/types";
 import {
   applyVinylLayoutVars,
@@ -35,9 +35,10 @@ const FALLBACK_COLOR = "#6eb5d4";
 const ENTER_ANIM_MS = 800;
 const DRAG_RANGE_PX = 120;
 const SNAP_ON_THRESHOLD = 0.5;
-const ARM_REST_DEG = -26;
-const ARM_PLAY_DEG = 11;
-const SLIDE_PX = 32;
+const ARM_REST_DEG = -28;
+const ARM_PLAY_DEG = 18;
+/** 本地播放/暂停后，忽略系统状态滞后的宽限期 */
+const PLAY_SYNC_GRACE_MS = 2800;
 /** 轮询系统播放状态，同步唱臂 / 光碟视觉（如 QQ 音乐内暂停） */
 const STATUS_POLL_MS = 800;
 
@@ -87,6 +88,7 @@ export default function SongVinylOverlay({
   const playingRef = useRef(false);
   const pendingRef = useRef(false);
   const draggingRef = useRef(false);
+  const lastLocalActionAtRef = useRef(0);
 
   useEffect(() => {
     // pageSessionId 或换歌时重置光碟角度（同页暂停不重置，见 spinActive）
@@ -118,11 +120,14 @@ export default function SongVinylOverlay({
   }, [tonearmPortalRef, tonearmPortalReady, visible]);
 
   const stopPlayback = useCallback(() => {
+    lastLocalActionAtRef.current = Date.now();
     playRequestRef.current += 1;
     setPendingPlay(false);
     setPlaying(false);
     markSongPausedByArm(song); // 标记会话，供同页再次落针 resumeSong
     void pauseSong(platform);
+    progressRef.current = 0;
+    setProgress(0);
   }, [platform, song]);
 
   useEffect(() => {
@@ -195,11 +200,19 @@ export default function SongVinylOverlay({
 
   /** 落针：落针即转碟；播放指令走 @spindeck/player，失败再回滚视觉状态 */
   const startPlayback = useCallback(async () => {
+    lastLocalActionAtRef.current = Date.now();
     setArmProgress(1);
     const requestId = ++playRequestRef.current;
     setPendingPlay(true);
     setSpinActive(true);
     setPlaying(true);
+
+    const rollbackVisual = () => {
+      progressRef.current = 0;
+      setProgress(0);
+      setPlaying(false);
+      setSpinActive(false);
+    };
 
     try {
       if (canResumeSong(song)) {
@@ -210,7 +223,7 @@ export default function SongVinylOverlay({
           markSongStarted(song);
           return;
         }
-        setPlaying(false);
+        rollbackVisual();
         return;
       }
 
@@ -221,12 +234,12 @@ export default function SongVinylOverlay({
         markSongStarted(song);
         return;
       }
-      setPlaying(false);
+      rollbackVisual();
     } catch (err) {
       console.warn("[Vinyl] startPlayback failed", err);
       if (playRequestRef.current !== requestId) return;
       setPendingPlay(false);
-      setPlaying(false);
+      rollbackVisual();
     }
   }, [platform, song, setArmProgress]);
 
@@ -244,6 +257,16 @@ export default function SongVinylOverlay({
     },
     [setArmProgress, startPlayback, stopPlayback],
   );
+
+  const onDiscClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!interactive) return;
+    e.stopPropagation();
+    if (playingRef.current || pendingRef.current) {
+      stopPlayback();
+    } else {
+      void startPlayback();
+    }
+  };
 
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!interactive) return;
@@ -290,7 +313,7 @@ export default function SongVinylOverlay({
     };
   }, [dragging, onPointerMove, onPointerUpGlobal]);
 
-  /** 实时监测系统播放状态，调整唱臂落针 / 抬起与光碟旋转 */
+  /** 实时监测系统播放状态，调整唱臂落针 / 抬起与光碟旋转（仅处理外部变化） */
   const syncTonearmFromSystem = useCallback(async () => {
     if (draggingRef.current || pendingRef.current) return;
 
@@ -298,29 +321,38 @@ export default function SongVinylOverlay({
       const status = await getPlaybackStatus(platform, song);
       if (draggingRef.current || pendingRef.current) return;
 
-      if (status.playing) {
-        const inSession = isSameSongInSession(song) || canResumeSong(song);
-        if (!inSession && progressRef.current < SNAP_ON_THRESHOLD) return;
+      const inSession = isSameSongInSession(song);
+      const canResume = canResumeSong(song);
+      const armDown = progressRef.current >= SNAP_ON_THRESHOLD;
+      const localPlaying = playingRef.current;
+      const withinGrace = Date.now() - lastLocalActionAtRef.current < PLAY_SYNC_GRACE_MS;
 
-        if (progressRef.current < SNAP_ON_THRESHOLD) {
+      if (status.playing) {
+        // 本地已暂停（canResume），忽略 QQ 音乐延迟上报的 playing
+        if (canResume) return;
+        if (!inSession && !armDown) return;
+
+        if (!armDown) {
           progressRef.current = 1;
           setProgress(1);
         }
-        if (!playingRef.current) {
+        if (!localPlaying) {
           setPlaying(true);
           setSpinActive(true);
         }
-        if (canResumeSong(song)) {
-          markSongStarted(song);
-        }
-      } else {
-        const armDown = progressRef.current >= SNAP_ON_THRESHOLD;
-        if (!armDown && !playingRef.current) return;
+        return;
+      }
 
+      // 系统未在播：本地刚触发播放，等待状态跟上
+      if (localPlaying && inSession && !canResume && withinGrace) return;
+
+      if (!localPlaying && !armDown) return;
+
+      if (localPlaying || armDown) {
         progressRef.current = 0;
         setProgress(0);
         setPlaying(false);
-        if (isSameSongInSession(song) || canResumeSong(song)) {
+        if (inSession && localPlaying) {
           markSongPausedByArm(song);
         }
       }
@@ -338,9 +370,6 @@ export default function SongVinylOverlay({
   }, [visible, interactive, syncTonearmFromSystem]);
 
   const armDeg = ARM_REST_DEG + progress * (ARM_PLAY_DEG - ARM_REST_DEG);
-  const slideX = -progress * SLIDE_PX;
-  const pickStroke = mixHex(vinylColor, "#000", 0.38);
-  const pickHighlight = mixHex(vinylColor, "#fff", 0.32);
 
   const stageClass = [
     "song-vinyl-stage",
@@ -356,6 +385,8 @@ export default function SongVinylOverlay({
     "song-tonearm-portal-stage",
     visible ? "song-vinyl-stage--visible" : "song-vinyl-stage--hidden",
     interactive && "song-vinyl-stage--interactive",
+    pendingPlay && "song-vinyl-stage--pending",
+    playing && "song-vinyl-stage--playing",
   ]
     .filter(Boolean)
     .join(" ");
@@ -363,77 +394,10 @@ export default function SongVinylOverlay({
   const tonearmEl = (
     <div
       className={`song-tonearm-wrap${dragging ? " song-tonearm-wrap--dragging" : ""}`}
-      style={
-        interactive
-          ? { transform: `translateY(-42%) translateX(${slideX}px)` }
-          : undefined
-      }
       onPointerDown={onPointerDown}
       title="拖动唱臂到唱片上，松手播放"
     >
-      <svg
-        className="song-tonearm"
-        viewBox="0 0 64 196"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        aria-hidden
-      >
-        <rect x="16" y="0" width="32" height="5" rx="2.5" fill="var(--tonearm-mount)" />
-        <circle cx="32" cy="9" r="3.5" stroke="var(--tonearm-pivot-stroke)" strokeWidth="1.25" />
-        <circle cx="32" cy="9" r="1.25" fill="var(--tonearm-pivot-fill)" />
-        <g
-          className="song-tonearm-arm-group"
-          style={interactive ? { transform: `rotate(${armDeg}deg)` } : undefined}
-        >
-          <path
-            d="M32 13 C30 52 22 98 16 138"
-            stroke="var(--tonearm-arm)"
-            strokeWidth="3"
-            strokeLinecap="round"
-          />
-          <g transform="translate(6, 128) rotate(18 13 30)">
-            <rect
-              x="3"
-              y="0"
-              width="20"
-              height="48"
-              rx="10"
-              fill={vinylColor}
-              opacity="0.35"
-            />
-            <rect
-              x="5"
-              y="2"
-              width="16"
-              height="44"
-              rx="8"
-              fill={vinylColor}
-              stroke={pickStroke}
-              strokeWidth="1.2"
-            />
-            <rect
-              x="8"
-              y="10"
-              width="10"
-              height="3"
-              rx="1.5"
-              fill={pickHighlight}
-              opacity="0.9"
-            />
-            <line
-              x1="13"
-              y1="46"
-              x2="11"
-              y2="68"
-              stroke="var(--tonearm-needle)"
-              strokeWidth="2"
-              strokeLinecap="round"
-            />
-            <circle cx="11" cy="70" r="2.75" fill={vinylColor} stroke={pickStroke} strokeWidth="1" />
-            <circle cx="11" cy="70" r="1.1" fill={pickHighlight} />
-          </g>
-        </g>
-      </svg>
+      <Tonearm className="song-tonearm" armDeg={interactive ? armDeg : ARM_REST_DEG} />
     </div>
   );
 
@@ -457,14 +421,21 @@ export default function SongVinylOverlay({
               ["--vinyl-color" as string]: vinylColor,
               ["--vinyl-label-color" as string]: labelColor,
             }}
+            onClick={onDiscClick}
+            role="button"
+            tabIndex={interactive ? 0 : -1}
+            aria-label={playing || pendingPlay ? "暂停" : "播放"}
+            onKeyDown={(e) => {
+              if (!interactive) return;
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onDiscClick(e as unknown as React.MouseEvent<HTMLDivElement>);
+              }
+            }}
           >
             <div className="song-cd-grooves" aria-hidden />
             <div className="song-cd-grooves song-cd-grooves--fine" aria-hidden />
             <div className="song-cd-sheen" aria-hidden />
-
-            <div className="song-cd-play-icon" aria-hidden>
-              <Play strokeWidth={1.5} fill="currentColor" />
-            </div>
 
             <div className="song-cd-center">
               <p className="song-cd-title">{song.name}</p>

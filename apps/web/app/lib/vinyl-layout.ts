@@ -23,9 +23,11 @@ const PLAYBACK_CHROME_PX = 64;
 /** 左右安全边距 */
 const PLAYBACK_EDGE_PX = 40;
 /** 唱臂向右探出（相对光碟直径） */
-const TONEARM_WIDTH_RATIO = 0.2;
+const TONEARM_HEIGHT_RATIO = 0.88;
+const TONEARM_RIGHT_OVERHANG = 0.18;
+const TONEARM_WIDTH_RATIO = TONEARM_RIGHT_OVERHANG + TONEARM_HEIGHT_RATIO * (40 / 140);
 /** 垂直占用：光碟 + 唱臂（相对直径） */
-const VINYL_VERTICAL_RATIO = 1.06;
+const VINYL_VERTICAL_RATIO = 1.1;
 /** 封面 + 间距 + 光碟 + 唱臂（相对光碟直径） */
 const GROUP_WIDTH_RATIO = 2 + 0.035 + TONEARM_WIDTH_RATIO;
 
