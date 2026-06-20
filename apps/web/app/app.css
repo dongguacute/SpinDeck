@@ -106,7 +106,8 @@ html, body {
   animation-play-state: paused;
 }
 
-.song-vinyl-stage--playing .song-cd-disc--spin {
+.song-vinyl-stage--playing .song-cd-disc--spin,
+.song-vinyl-stage--pending .song-cd-disc--spin {
   animation-play-state: running;
 }
 

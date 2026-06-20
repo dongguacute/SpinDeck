@@ -7,8 +7,6 @@ import { Play } from "lucide-react";
 import type { SongInfo, PlatformType } from "../lib/types";
 import {
   canResumeSong,
-  getPlaybackStatus,
-  isSameSongInSession,
   markSongPausedByArm,
   markSongStarted,
   pauseSong,
@@ -77,11 +75,6 @@ export default function SongVinylOverlay({ song, platform, visible, pageSessionI
 
   useEffect(() => {
     playingRef.current = playing;
-  }, [playing]);
-
-  useEffect(() => {
-    // 首次开始播放后挂上旋转动画，暂停时仅 animation-play-state: paused
-    if (playing) setSpinActive(true);
   }, [playing]);
 
   useEffect(() => {
@@ -164,31 +157,24 @@ export default function SongVinylOverlay({ song, platform, visible, pageSessionI
     [stopPlayback],
   );
 
-  /** 落针：@spindeck/player 决策 — 已在播 / 同页继续(resume) / 从头(play) */
+  /** 落针：落针即转碟；播放指令走 @spindeck/player，失败再回滚视觉状态 */
   const startPlayback = useCallback(async () => {
     setArmProgress(1);
-    setPlaying(false);
     const requestId = ++playRequestRef.current;
     setPendingPlay(true);
+    setSpinActive(true);
+    setPlaying(true);
 
     try {
-      const status = await getPlaybackStatus(platform, song);
-      if (playRequestRef.current !== requestId) return;
-
-      if (status.playing && isSameSongInSession(song)) {
-        setPendingPlay(false);
-        setPlaying(true);
-        return;
-      }
-
       if (canResumeSong(song)) {
         const result = await resumeSong(platform);
         if (playRequestRef.current !== requestId) return;
         setPendingPlay(false);
         if (result.ok && result.playing) {
           markSongStarted(song);
-          setPlaying(true);
+          return;
         }
+        setPlaying(false);
         return;
       }
 
@@ -197,11 +183,14 @@ export default function SongVinylOverlay({ song, platform, visible, pageSessionI
       setPendingPlay(false);
       if (result.ok && result.playing) {
         markSongStarted(song);
-        setPlaying(true);
+        return;
       }
+      setPlaying(false);
     } catch (err) {
       console.warn("[Vinyl] startPlayback failed", err);
-      if (playRequestRef.current === requestId) setPendingPlay(false);
+      if (playRequestRef.current !== requestId) return;
+      setPendingPlay(false);
+      setPlaying(false);
     }
   }, [platform, song, setArmProgress]);
 
