@@ -94,4 +94,4 @@ The library uses a "Base + Theme" CSS architecture. To contribute a new style:
 
 ## License
 
-MIT
+Apache-2.0
