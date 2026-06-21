@@ -103,6 +103,25 @@
   filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.28));
 }
 
+.sd-vinyl-arm-rotor {
+  transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sd-vinyl-arm-wrap--dragging .sd-vinyl-arm-rotor {
+  transition: none;
+}
+
+.sd-vinyl-arm-stylus-glow {
+  fill: rgba(255, 255, 255, 0.15);
+  filter: blur(2px);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.sd-vinyl-stage--playing .sd-vinyl-arm-stylus-glow {
+  opacity: 1;
+}
+
 [data-theme="light"] .sd-vinyl-style-classic .sd-vinyl-arm {
   --tonearm-base: #0a0a0a;
   --tonearm-arm: #e2ddd2;

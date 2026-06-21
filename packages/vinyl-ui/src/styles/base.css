@@ -161,6 +161,14 @@
   overflow: visible;
 }
 
+.sd-vinyl-arm-rotor {
+  transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sd-vinyl-arm-wrap--dragging .sd-vinyl-arm-rotor {
+  transition: none;
+}
+
 /* 动画定义 */
 @keyframes sd-vinyl-spin {
   from { transform: rotate(0deg); }

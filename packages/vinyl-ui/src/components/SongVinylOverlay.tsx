@@ -35,7 +35,7 @@ interface Props {
 }
 
 const FALLBACK_COLOR = "#6eb5d4";
-const ENTER_ANIM_MS = 800;
+const ENTER_ANIM_MS = 1000;
 const DRAG_RANGE_PX = 120;
 const SNAP_ON_THRESHOLD = 0.5;
 const ARM_REST_DEG = -28;
@@ -412,7 +412,7 @@ export default function SongVinylOverlay({
       onPointerDown={onPointerDown}
       title="拖动唱臂到唱片上，松手播放"
     >
-      <Tonearm className="sd-vinyl-arm" armDeg={interactive ? armDeg : ARM_REST_DEG} />
+      <Tonearm className="sd-vinyl-arm" armDeg={armDeg} />
     </div>
   );
 
