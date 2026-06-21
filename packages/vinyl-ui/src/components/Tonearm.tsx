@@ -11,7 +11,7 @@ const PIVOT_Y = 13;
 export default function Tonearm({ className, armDeg = -28, style }: Props) {
   return (
     <svg
-      className={className}
+      className={`sd-vinyl-arm ${className || ""}`}
       viewBox="0 0 40 140"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
@@ -30,7 +30,7 @@ export default function Tonearm({ className, armDeg = -28, style }: Props) {
       <rect x="17" y="7" width="16" height="6" rx="0.8" fill="var(--tonearm-base, #121212)" />
       {/* 杆 + 唱头：绕 pivot 一体旋转（底座在上方 sibling，不随动） */}
       <g
-        className="song-tonearm-arm-rotor"
+        className="sd-vinyl-arm-rotor"
         style={
           {
             transform: `rotate(${armDeg}deg)`,
@@ -49,7 +49,7 @@ export default function Tonearm({ className, armDeg = -28, style }: Props) {
           strokeLinecap="round"
         />
         <g transform="translate(4 117) rotate(98.2)">
-          <ellipse className="song-tonearm-stylus-glow" cx="0" cy="17" rx="9" ry="3.5" />
+          <ellipse className="sd-vinyl-arm-stylus-glow" cx="0" cy="17" rx="9" ry="3.5" />
           <rect x="-3.5" y="-2" width="13" height="5" rx="0.7" fill="var(--tonearm-headshell, #121212)" />
           <rect x="-3.5" y="2.5" width="7.5" height="14" rx="1" fill="var(--tonearm-headshell, #121212)" />
           <line

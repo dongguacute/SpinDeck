@@ -3,7 +3,7 @@ import { ArrowLeft, Disc3, LoaderCircle, Info, X, ExternalLink, Clock, Music, Ro
 import { usePlaylistStore } from "../lib/playlist-store";
 import { useThemeStore } from "../lib/theme-store";
 import PlaylistShelf from "../components/PlaylistShelf";
-import SongVinylOverlay from "../components/SongVinylOverlay";
+import { SongVinylOverlay } from "@spindeck/vinyl-ui";
 import { beginShelfSession, prelaunchApp, stopSong } from "@spindeck/player";
 import type { SongInfo } from "../lib/types";
 import { PLATFORM_CONFIG } from "../lib/types";
@@ -486,6 +486,7 @@ export default function ShelfPage() {
           platform={playlist.platform}
           visible={showVinyl}
           pageSessionId={pageSessionId}
+          theme={theme}
           tonearmPortalRef={tonearmPortalRef}
           tonearmPortalReady={tonearmPortalReady}
         />
@@ -509,7 +510,7 @@ export default function ShelfPage() {
           tonearmPortalRef.current = el;
           setTonearmPortalReady(!!el);
         }}
-        className="song-tonearm-portal"
+        className="sd-vinyl-portal"
         aria-hidden
       />
     </div>

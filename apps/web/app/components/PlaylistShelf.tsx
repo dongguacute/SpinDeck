@@ -9,7 +9,7 @@ import {
   SHELF_CAM_Z,
   SHELF_LOOK_Y_PLAYBACK,
   shelfCoverPlaybackCamZ,
-} from "../lib/vinyl-layout";
+} from "@spindeck/vinyl-ui";
 
 /* ============================================================
    场景状态引用

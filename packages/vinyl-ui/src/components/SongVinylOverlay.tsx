@@ -1,17 +1,15 @@
 /**
  * 黑胶落针 UI：唱臂交互 + 光碟视觉反馈。
- * 播放控制全部走 @spindeck/player（落针/抬臂/会话），Mac 端经 /api/* 桥接到本地客户端。
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Tonearm from "./Tonearm";
-import type { SongInfo, PlatformType } from "../lib/types";
+import type { SongInfo, PlatformType } from "@spindeck/player";
 import {
   applyVinylLayoutVars,
   computeVinylLayout,
 } from "../lib/vinyl-layout";
-import { deriveVinylGlowColor, hexToRgba } from "../lib/theme-color";
-import { useThemeStore } from "../lib/theme-store";
+import { deriveVinylGlowColor, hexToRgba, mixColors } from "../lib/colors";
 import {
   canResumeSong,
   getPlaybackStatus,
@@ -28,6 +26,9 @@ interface Props {
   platform: PlatformType;
   visible: boolean;
   pageSessionId: string;
+  theme?: "dark" | "light";
+  /** 样式名称，对应 sd-vinyl-style-${styleName} 类 */
+  styleName?: string;
   /** 唱臂 portal 容器（固定叠层，避免随封面切换跳动） */
   tonearmPortalRef?: React.RefObject<HTMLDivElement | null>;
   tonearmPortalReady?: boolean;
@@ -48,21 +49,6 @@ function px(url: string) {
   return `/api/image?url=${encodeURIComponent(url)}`;
 }
 
-function toHex(r: number, g: number, b: number) {
-  return `#${[r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
-}
-
-function mixHex(hex: string, target: "#000" | "#fff", amount: number) {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  const tr = target === "#000" ? 0 : 255;
-  const tg = target === "#000" ? 0 : 255;
-  const tb = target === "#000" ? 0 : 255;
-  const mix = (c: number, t: number) => Math.round(c + (t - c) * amount);
-  return toHex(mix(r, tr), mix(g, tg), mix(b, tb));
-}
-
 function clamp(v: number, min: number, max: number) {
   return Math.min(max, Math.max(min, v));
 }
@@ -72,12 +58,13 @@ export default function SongVinylOverlay({
   platform,
   visible,
   pageSessionId,
+  theme = "dark",
+  styleName = "classic",
   tonearmPortalRef,
   tonearmPortalReady = false,
 }: Props) {
-  const { theme } = useThemeStore();
   const [vinylColor, setVinylColor] = useState(FALLBACK_COLOR);
-  const [labelColor, setLabelColor] = useState(mixHex(FALLBACK_COLOR, "#000", 0.25));
+  const [labelColor, setLabelColor] = useState(mixColors(FALLBACK_COLOR, "#000", 0.25));
   const [interactive, setInteractive] = useState(false);
   const [progress, setProgress] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -141,15 +128,15 @@ export default function SongVinylOverlay({
       try {
         const { pickEdgeColors } = await import("@spindeck/picker");
         const edge = await pickEdgeColors({ content: px(song.cover) });
-        const main = toHex(edge.top.r, edge.top.g, edge.top.b);
+        const main = rgbToHex(edge.top.r, edge.top.g, edge.top.b);
         if (!cancelled) {
           setVinylColor(main);
-          setLabelColor(mixHex(main, "#000", 0.22));
+          setLabelColor(mixColors(main, "#000", 0.22));
         }
       } catch {
         if (!cancelled) {
           setVinylColor(FALLBACK_COLOR);
-          setLabelColor(mixHex(FALLBACK_COLOR, "#000", 0.22));
+          setLabelColor(mixColors(FALLBACK_COLOR, "#000", 0.22));
         }
       }
     })();
@@ -158,6 +145,11 @@ export default function SongVinylOverlay({
       cancelled = true;
     };
   }, [song.cover]);
+
+  function rgbToHex(r: number, g: number, b: number) {
+    const toByte = (v: number) => Math.round(v).toString(16).padStart(2, "0");
+    return `#${toByte(r)}${toByte(g)}${toByte(b)}`;
+  }
 
   useEffect(() => {
     if (!visible) {
@@ -375,21 +367,23 @@ export default function SongVinylOverlay({
   const armDeg = ARM_REST_DEG + progress * (ARM_PLAY_DEG - ARM_REST_DEG);
 
   const stageClass = [
-    "song-vinyl-stage",
-    visible ? "song-vinyl-stage--visible" : "song-vinyl-stage--hidden",
-    interactive && "song-vinyl-stage--interactive",
-    pendingPlay && "song-vinyl-stage--pending",
-    playing && "song-vinyl-stage--playing",
+    "sd-vinyl-stage",
+    `sd-vinyl-style-${styleName}`,
+    visible ? "sd-vinyl-stage--visible" : "sd-vinyl-stage--hidden",
+    interactive && "sd-vinyl-stage--interactive",
+    pendingPlay && "sd-vinyl-stage--pending",
+    playing && "sd-vinyl-stage--playing",
   ]
     .filter(Boolean)
     .join(" ");
 
   const tonearmPortalClass = [
-    "song-tonearm-portal-stage",
-    visible ? "song-vinyl-stage--visible" : "song-vinyl-stage--hidden",
-    interactive && "song-vinyl-stage--interactive",
-    pendingPlay && "song-vinyl-stage--pending",
-    playing && "song-vinyl-stage--playing",
+    "sd-vinyl-portal-stage",
+    `sd-vinyl-style-${styleName}`,
+    visible ? "sd-vinyl-stage--visible" : "sd-vinyl-stage--hidden",
+    interactive && "sd-vinyl-stage--interactive",
+    pendingPlay && "sd-vinyl-stage--pending",
+    playing && "sd-vinyl-stage--playing",
   ]
     .filter(Boolean)
     .join(" ");
@@ -414,11 +408,11 @@ export default function SongVinylOverlay({
 
   const tonearmEl = (
     <div
-      className={`song-tonearm-wrap${dragging ? " song-tonearm-wrap--dragging" : ""}`}
+      className={`sd-vinyl-arm-wrap${dragging ? " sd-vinyl-arm-wrap--dragging" : ""}`}
       onPointerDown={onPointerDown}
       title="拖动唱臂到唱片上，松手播放"
     >
-      <Tonearm className="song-tonearm" armDeg={interactive ? armDeg : ARM_REST_DEG} />
+      <Tonearm className="sd-vinyl-arm" armDeg={interactive ? armDeg : ARM_REST_DEG} />
     </div>
   );
 
@@ -427,7 +421,7 @@ export default function SongVinylOverlay({
     useTonearmPortal &&
     createPortal(
       <div className={tonearmPortalClass} style={glowThemeStyle} aria-hidden={!visible}>
-        <div className="song-vinyl-group song-vinyl-group--arm-only">{tonearmEl}</div>
+        <div className="sd-vinyl-group sd-vinyl-group--arm-only">{tonearmEl}</div>
       </div>,
       tonearmPortalRef.current!,
     );
@@ -435,10 +429,10 @@ export default function SongVinylOverlay({
   return (
     <>
       <div ref={stageRef} className={stageClass} style={glowThemeStyle} aria-hidden={!visible}>
-        <div className="song-vinyl-group">
-          <div className="song-cd-glow" style={glowDiscStyle} aria-hidden />
+        <div className="sd-vinyl-group">
+          <div className="sd-vinyl-glow" style={glowDiscStyle} aria-hidden />
           <div
-            className={`song-cd-disc${spinActive ? " song-cd-disc--spin" : ""}`}
+            className={`sd-vinyl-disc${spinActive ? " sd-vinyl-disc--spin" : ""}`}
             style={{
               ["--vinyl-color" as string]: vinylColor,
               ["--vinyl-label-color" as string]: labelColor,
@@ -455,16 +449,16 @@ export default function SongVinylOverlay({
               }
             }}
           >
-            <div className="song-cd-grooves" aria-hidden />
-            <div className="song-cd-grooves song-cd-grooves--fine" aria-hidden />
-            <div className="song-cd-sheen" aria-hidden />
+            <div className="sd-vinyl-grooves" aria-hidden />
+            <div className="sd-vinyl-grooves sd-vinyl-grooves--fine" aria-hidden />
+            <div className="sd-vinyl-sheen" aria-hidden />
 
-            <div className="song-cd-center">
-              <p className="song-cd-title">{song.name}</p>
-              <p className="song-cd-artist">{song.artist}</p>
+            <div className="sd-vinyl-center">
+              <p className="sd-vinyl-title">{song.name}</p>
+              <p className="sd-vinyl-artist">{song.artist}</p>
             </div>
 
-            <div className="song-cd-hole" />
+            <div className="sd-vinyl-hole" />
           </div>
 
           {!useTonearmPortal && tonearmEl}

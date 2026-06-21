@@ -1,0 +1,208 @@
+/* ============================================================
+   基础结构与布局 (Base Structure)
+   包含定位、层级、动画逻辑，不包含具体颜色和装饰
+   ============================================================ */
+
+.sd-vinyl-stage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  margin-left: var(--vinyl-offset-x, clamp(8px, min(4vw, 3svh), 72px));
+  --vinyl-size: clamp(180px, min(46vw, 52svh), 480px);
+  --vinyl-offset-x: clamp(8px, min(4vw, 3svh), 72px);
+  isolation: isolate;
+}
+
+.sd-vinyl-stage--hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* 遮盖态唱臂 portal：叠在书（z-3）上方 */
+.sd-vinyl-portal {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  --vinyl-size: clamp(180px, min(46vw, 52svh), 480px);
+  --vinyl-offset-x: clamp(8px, min(4vw, 3svh), 72px);
+}
+
+.sd-vinyl-portal-stage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin-left: var(--vinyl-offset-x, clamp(8px, min(4vw, 3svh), 72px));
+  pointer-events: none;
+}
+
+.sd-vinyl-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.sd-vinyl-group--arm-only {
+  width: var(--vinyl-size);
+  height: var(--vinyl-size);
+  flex-shrink: 0;
+}
+
+/* 光碟主体 */
+.sd-vinyl-disc {
+  width: var(--vinyl-size);
+  height: var(--vinyl-size);
+  border-radius: 50%;
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.sd-vinyl-disc--spin {
+  animation: sd-vinyl-spin 2.8s linear infinite;
+  animation-play-state: paused;
+}
+
+.sd-vinyl-stage--playing .sd-vinyl-disc--spin,
+.sd-vinyl-stage--pending .sd-vinyl-disc--spin {
+  animation-play-state: running;
+}
+
+/* 纹路与高光层 */
+.sd-vinyl-grooves,
+.sd-vinyl-sheen {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.sd-vinyl-grooves {
+  animation: sd-vinyl-spin 1.6s linear infinite;
+  animation-play-state: paused;
+}
+
+.sd-vinyl-grooves--fine {
+  animation: sd-vinyl-spin 1.2s linear infinite reverse;
+}
+
+/* 标签区域 */
+.sd-vinyl-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 38%;
+  height: 38%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+  gap: 4px;
+  padding: 10px 8px;
+  text-align: center;
+}
+
+.sd-vinyl-title {
+  margin: 0;
+  font-size: clamp(10px, calc(var(--vinyl-size) * 0.038), 17px);
+  font-weight: 700;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.sd-vinyl-artist {
+  margin: 0;
+  font-size: clamp(9px, calc(var(--vinyl-size) * 0.028), 14px);
+  font-weight: 500;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.sd-vinyl-hole {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  z-index: 3;
+}
+
+/* 唱臂 */
+.sd-vinyl-arm-wrap {
+  position: absolute;
+  right: calc(var(--vinyl-size) * -0.18);
+  top: 50%;
+  height: calc(var(--vinyl-size) * 0.88);
+  width: calc(var(--vinyl-size) * 0.88 * 40 / 140);
+  transform: translateY(-48%);
+  z-index: 10;
+}
+
+.sd-vinyl-arm {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* 动画定义 */
+@keyframes sd-vinyl-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes sd-vinyl-slide-in {
+  0%   { opacity: 0; transform: translateX(42vw); }
+  58%  { opacity: 1; transform: translateX(-2.2vw); }
+  76%  { transform: translateX(0.65vw); }
+  90%  { transform: translateX(-0.12vw); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes sd-vinyl-slide-out {
+  0%   { opacity: 1; transform: translateX(0); }
+  100% { opacity: 0; transform: translateX(28vw); }
+}
+
+@keyframes sd-vinyl-arm-slide-in {
+  0%   { opacity: 0; transform: translateY(-48%) translateX(48px); }
+  62%  { opacity: 1; transform: translateY(-48%) translateX(-6px); }
+  80%  { transform: translateY(-48%) translateX(2.5px); }
+  92%  { transform: translateY(-48%) translateX(-0.5px); }
+  100% { opacity: 1; transform: translateY(-48%) translateX(0); }
+}
+
+.sd-vinyl-stage--visible .sd-vinyl-group {
+  animation: sd-vinyl-slide-in 0.92s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.sd-vinyl-stage--visible .sd-vinyl-arm-wrap {
+  animation: sd-vinyl-arm-slide-in 0.82s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+}
+
+.sd-vinyl-stage--interactive .sd-vinyl-arm-wrap {
+  animation: none;
+  pointer-events: auto;
+  cursor: grab;
+}
+
+.sd-vinyl-stage--interactive .sd-vinyl-disc {
+  pointer-events: auto;
+  cursor: pointer;
+}
