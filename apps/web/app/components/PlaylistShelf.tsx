@@ -776,8 +776,8 @@ export default function PlaylistShelf({
             py: localCenterY,
             pz: localCenterZ,
             rz: LEAN_ANGLE,
-            duration: 0.7,
-            ease: "power2.out",
+            duration: 0.78,
+            ease: "back.out(1.35)",
             onUpdate: () => {
               group.position.set(proxy.px, proxy.py, proxy.pz);
               group.rotation.z = proxy.rz;

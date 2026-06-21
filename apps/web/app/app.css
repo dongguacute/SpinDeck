@@ -143,7 +143,7 @@ html, body {
 }
 
 .song-tonearm-portal-stage.song-vinyl-stage--visible .song-tonearm-wrap {
-  animation: tonearmSlideIn 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
+  animation: tonearmSlideIn 0.82s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
 }
 
 .song-tonearm-portal-stage.song-vinyl-stage--interactive .song-tonearm-wrap {
@@ -171,11 +171,11 @@ html, body {
 }
 
 .song-vinyl-stage--visible .song-vinyl-group {
-  animation: vinylSlideIn 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: vinylSlideIn 0.92s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .song-vinyl-stage--visible .song-tonearm-wrap {
-  animation: tonearmSlideIn 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
+  animation: tonearmSlideIn 0.82s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
 }
 
 .song-vinyl-stage--interactive {
@@ -237,6 +237,9 @@ html, body {
 
 @keyframes vinylSlideIn {
   0%   { opacity: 0; transform: translateX(42vw); }
+  58%  { opacity: 1; transform: translateX(-2.2vw); }
+  76%  { transform: translateX(0.65vw); }
+  90%  { transform: translateX(-0.12vw); }
   100% { opacity: 1; transform: translateX(0); }
 }
 
@@ -247,6 +250,9 @@ html, body {
 
 @keyframes tonearmSlideIn {
   0%   { opacity: 0; transform: translateY(-48%) translateX(48px); }
+  62%  { opacity: 1; transform: translateY(-48%) translateX(-6px); }
+  80%  { transform: translateY(-48%) translateX(2.5px); }
+  92%  { transform: translateY(-48%) translateX(-0.5px); }
   100% { opacity: 1; transform: translateY(-48%) translateX(0); }
 }
 
