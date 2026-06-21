@@ -23,7 +23,7 @@ function proxiedCover(coverUrl: string) {
 
 export default function ShelfPage() {
   const { playlistId } = useParams<{ playlistId: string }>();
-  const { playlists } = usePlaylistStore();
+  const { playlists, updatePlaylist } = usePlaylistStore();
   const { theme } = useThemeStore();
   const playlist = playlists.find((p) => p.id === playlistId);
 
@@ -32,6 +32,26 @@ export default function ShelfPage() {
     name?: string; cover?: string; songCount?: number;
     songs?: SongInfo[]; error?: string;
   }>();
+
+  // 当 fetcher 数据返回时，同步更新 store 中的歌单基础信息
+  useEffect(() => {
+    if (fetcher.data && !fetcher.data.error && playlist) {
+      const { name, cover, songCount } = fetcher.data;
+      const hasChanged =
+        (name && name !== playlist.name) ||
+        (cover && cover !== playlist.coverUrl) ||
+        (songCount !== undefined && songCount !== playlist.songCount);
+
+      if (hasChanged) {
+        console.log(`[shelf] 同步更新 store 信息: ${name}`);
+        updatePlaylist(playlist.id, {
+          name: name || playlist.name,
+          coverUrl: cover || playlist.coverUrl,
+          songCount: songCount ?? playlist.songCount,
+        });
+      }
+    }
+  }, [fetcher.data, playlist, updatePlaylist]);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const tonearmPortalRef = useRef<HTMLDivElement>(null);
@@ -98,7 +118,26 @@ export default function ShelfPage() {
   const loading = fetcher.state !== "idle";
   const error = fetcher.data?.error;
   const songs = fetcher.data?.songs || [];
-  console.log(`[shelf] render: loading=${loading} songs=${songs.length} error=${error || 'none'}`);
+
+  // 当 fetcher 数据返回时，同步更新 store 中的歌单基础信息
+  useEffect(() => {
+    if (fetcher.data && !fetcher.data.error && playlist) {
+      const { name, cover, songCount } = fetcher.data;
+      const hasChanged =
+        (name && name !== playlist.name) ||
+        (cover && cover !== playlist.coverUrl) ||
+        (songCount !== undefined && songCount !== playlist.songCount);
+
+      if (hasChanged) {
+        console.log(`[shelf] 同步更新 store 信息: ${name}`);
+        updatePlaylist(playlist.id, {
+          name: name || playlist.name,
+          coverUrl: cover || playlist.coverUrl,
+          songCount: songCount ?? playlist.songCount,
+        });
+      }
+    }
+  }, [fetcher.data, playlist, updatePlaylist]);
 
   const handleSongSelect = (song: SongInfo | null, index: number | null) => {
     setSelectedIndex(index);

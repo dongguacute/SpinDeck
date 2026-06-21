@@ -7,11 +7,13 @@ import {
 } from "react-router";
 import { useEffect } from "react";
 import { useThemeStore } from "./lib/theme-store";
+import { useBackgroundRefresh } from "./lib/use-background-refresh";
 
 import "./app.css";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { theme } = useThemeStore();
+  useBackgroundRefresh();
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
