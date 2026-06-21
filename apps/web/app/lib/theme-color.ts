@@ -272,6 +272,19 @@ export function derivePaleTint(baseHex: string, level: PaleLevel): string {
 }
 
 /**
+ * 光碟主色 → 外圈光晕色：同色相的柔和淡色，比碟面更亮、更适合 radial blur。
+ */
+export function deriveVinylGlowColor(
+  vinylHex: string,
+  theme: "dark" | "light" = "dark",
+): string {
+  const pale100 = derivePaleTint(vinylHex, 100);
+  const pale200 = derivePaleTint(vinylHex, 200);
+  const blended = mixColors(pale100, pale200, 0.42);
+  return softenWithWhite(blended, theme === "light" ? 0.04 : 0.1);
+}
+
+/**
  * 封面主色 → 播放页磨砂玻璃背景（pastel 底色 + 柔和高光层次）。
  */
 export function derivePlaybackGlassBackground(

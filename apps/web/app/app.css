@@ -111,6 +111,8 @@ html, body {
   margin-left: var(--vinyl-offset-x, clamp(8px, min(4vw, 3svh), 72px));
   --vinyl-size: clamp(180px, min(46vw, 52svh), 480px);
   --vinyl-offset-x: clamp(8px, min(4vw, 3svh), 72px);
+  --vinyl-glow-color: #6eb5d4;
+  isolation: isolate;
 }
 
 /* 遮盖态唱臂 portal：叠在书（z-3）上方 */
@@ -130,6 +132,7 @@ html, body {
   transform: translate(-50%, -50%);
   margin-left: var(--vinyl-offset-x, clamp(8px, min(4vw, 3svh), 72px));
   pointer-events: none;
+  --vinyl-glow-color: #6eb5d4;
 }
 
 /* 与光碟同尺寸，保证唱臂 absolute 定位一致、不随封面切换偏移 */
@@ -262,6 +265,29 @@ html, body {
   align-items: center;
 }
 
+/* 光碟外圈光晕 — 由 deriveVinylGlowColor 推导的协调淡色 */
+.song-cd-glow {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: var(--vinyl-size);
+  height: var(--vinyl-size);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  transform: translateY(-50%) scale(2.05);
+  filter: blur(44px);
+  opacity: 0.72;
+  transition: opacity 0.65s ease, transform 0.65s ease, filter 0.65s ease;
+}
+
+.song-vinyl-stage--playing .song-cd-glow,
+.song-vinyl-stage--pending .song-cd-glow {
+  opacity: 1;
+  transform: translateY(-50%) scale(2.48);
+  filter: blur(58px);
+}
+
 .song-cd-disc {
   --vinyl-color: #6eb5d4;
   --vinyl-label-color: #4a9fd4;
@@ -269,6 +295,7 @@ html, body {
   height: var(--vinyl-size);
   border-radius: 50%;
   position: relative;
+  z-index: 1;
   flex-shrink: 0;
   background:
     radial-gradient(circle at 50% 50%, transparent 18.5%, rgba(255, 255, 255, 0.06) 19%, transparent 19.8%),
@@ -454,16 +481,16 @@ html, body {
 }
 
 .song-tonearm-stylus-glow {
-  fill: rgba(255, 72, 72, 0);
+  fill: transparent;
   opacity: 0;
-  filter: blur(3px);
-  transition: opacity 0.35s ease;
+  filter: blur(4px);
+  transition: opacity 0.35s ease, fill 0.45s ease;
 }
 
 .song-vinyl-stage--playing .song-tonearm-stylus-glow,
 .song-vinyl-stage--pending .song-tonearm-stylus-glow {
-  fill: rgba(255, 72, 72, 0.48);
-  opacity: 1;
+  fill: var(--vinyl-glow-color, #6eb5d4);
+  opacity: 0.58;
 }
 
 /* ============================================================

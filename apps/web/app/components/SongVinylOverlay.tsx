@@ -2,7 +2,7 @@
  * 黑胶落针 UI：唱臂交互 + 光碟视觉反馈。
  * 播放控制全部走 @spindeck/player（落针/抬臂/会话），Mac 端经 /api/* 桥接到本地客户端。
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Tonearm from "./Tonearm";
 import type { SongInfo, PlatformType } from "../lib/types";
@@ -10,6 +10,8 @@ import {
   applyVinylLayoutVars,
   computeVinylLayout,
 } from "../lib/vinyl-layout";
+import { deriveVinylGlowColor, hexToRgba } from "../lib/theme-color";
+import { useThemeStore } from "../lib/theme-store";
 import {
   canResumeSong,
   getPlaybackStatus,
@@ -73,6 +75,7 @@ export default function SongVinylOverlay({
   tonearmPortalRef,
   tonearmPortalReady = false,
 }: Props) {
+  const { theme } = useThemeStore();
   const [vinylColor, setVinylColor] = useState(FALLBACK_COLOR);
   const [labelColor, setLabelColor] = useState(mixHex(FALLBACK_COLOR, "#000", 0.25));
   const [interactive, setInteractive] = useState(false);
@@ -391,6 +394,24 @@ export default function SongVinylOverlay({
     .filter(Boolean)
     .join(" ");
 
+  const glowColor = useMemo(
+    () => deriveVinylGlowColor(vinylColor, theme),
+    [vinylColor, theme],
+  );
+
+  const glowThemeStyle = useMemo(
+    () => ({ ["--vinyl-glow-color" as string]: glowColor }),
+    [glowColor],
+  );
+
+  const glowDiscStyle = useMemo(
+    () => ({
+      ["--vinyl-glow-color" as string]: glowColor,
+      background: `radial-gradient(circle, ${hexToRgba(glowColor, 0.48)} 0%, ${hexToRgba(glowColor, 0.28)} 28%, ${hexToRgba(glowColor, 0.12)} 52%, ${hexToRgba(glowColor, 0.04)} 72%, transparent 88%)`,
+    }),
+    [glowColor],
+  );
+
   const tonearmEl = (
     <div
       className={`song-tonearm-wrap${dragging ? " song-tonearm-wrap--dragging" : ""}`}
@@ -405,7 +426,7 @@ export default function SongVinylOverlay({
   const portaledTonearm =
     useTonearmPortal &&
     createPortal(
-      <div className={tonearmPortalClass} aria-hidden={!visible}>
+      <div className={tonearmPortalClass} style={glowThemeStyle} aria-hidden={!visible}>
         <div className="song-vinyl-group song-vinyl-group--arm-only">{tonearmEl}</div>
       </div>,
       tonearmPortalRef.current!,
@@ -413,8 +434,9 @@ export default function SongVinylOverlay({
 
   return (
     <>
-      <div ref={stageRef} className={stageClass} aria-hidden={!visible}>
+      <div ref={stageRef} className={stageClass} style={glowThemeStyle} aria-hidden={!visible}>
         <div className="song-vinyl-group">
+          <div className="song-cd-glow" style={glowDiscStyle} aria-hidden />
           <div
             className={`song-cd-disc${spinActive ? " song-cd-disc--spin" : ""}`}
             style={{
