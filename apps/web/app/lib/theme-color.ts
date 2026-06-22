@@ -393,9 +393,9 @@ export function derivePlaybackPalette(
     surfaceHover: hexToRgba(pale100, 0.82),
     border: hexToRgba(pale300, 0.38),
     borderHover: hexToRgba(pale300, 0.58),
-    textPrimary: mixColors(pale300, "#111111", 0.82),
-    textSecondary: mixColors(pale300, "#444444", 0.68),
-    textMuted: mixColors(pale200, "#888888", 0.62),
+    textPrimary: mixColors(pale300, "#1a1a1a", 0.78),
+    textSecondary: mixColors(pale300, "#3a3a3a", 0.62),
+    textMuted: mixColors(pale200, "#6a6a6a", 0.55),
   };
 }
 

@@ -239,26 +239,22 @@ export default function ShelfPage() {
       {!inPlayback && (
         <Link
           to="/"
-          className={`absolute top-6 left-6 z-10 flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-medium transition-all backdrop-blur-sm cursor-pointer ${theme === 'light' ? 'nm-button border-none' : ''}`}
+          className="absolute top-6 left-6 z-10 flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-medium transition-all backdrop-blur-sm cursor-pointer"
           style={{
-            backgroundColor: theme === 'light' ? undefined : chrome.surface,
-            borderColor: theme === 'light' ? 'transparent' : chrome.border,
+            backgroundColor: chrome.surface,
+            borderColor: chrome.border,
             color: chrome.text,
-            opacity: theme === 'light' ? 1 : chromeIdleOpacity,
+            opacity: chromeIdleOpacity,
           }}
           onMouseEnter={(e) => {
-            if (theme !== 'light') {
-              e.currentTarget.style.borderColor = chrome.borderHover;
-              e.currentTarget.style.backgroundColor = chrome.surfaceHover;
-              (e.currentTarget as HTMLAnchorElement).style.opacity = String(chromeHoverOpacity);
-            }
+            e.currentTarget.style.borderColor = chrome.borderHover;
+            e.currentTarget.style.backgroundColor = chrome.surfaceHover;
+            (e.currentTarget as HTMLAnchorElement).style.opacity = String(chromeHoverOpacity);
           }}
           onMouseLeave={(e) => {
-            if (theme !== 'light') {
-              e.currentTarget.style.borderColor = chrome.border;
-              e.currentTarget.style.backgroundColor = chrome.surface;
-              (e.currentTarget as HTMLAnchorElement).style.opacity = String(chromeIdleOpacity);
-            }
+            e.currentTarget.style.borderColor = chrome.border;
+            e.currentTarget.style.backgroundColor = chrome.surface;
+            (e.currentTarget as HTMLAnchorElement).style.opacity = String(chromeIdleOpacity);
           }}
         >
           <ArrowLeft className="w-3.5 h-3.5" />返回歌单
@@ -269,28 +265,24 @@ export default function ShelfPage() {
         inPlayback ? (
           <button
             onClick={handleExitPlayback}
-            className={`absolute top-6 right-6 z-10 flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-medium transition-all backdrop-blur-sm cursor-pointer ${theme === 'light' ? 'nm-button border-none' : ''}`}
+            className="absolute top-6 right-6 z-10 flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-medium transition-all backdrop-blur-sm cursor-pointer"
             style={{
-              backgroundColor: theme === 'light' ? undefined : chrome.surface,
-              borderColor: theme === 'light' ? 'transparent' : chrome.border,
+              backgroundColor: chrome.surface,
+              borderColor: chrome.border,
               color: chrome.text,
-              opacity: theme === 'light' ? 1 : chromeBtnIdleOpacity,
+              opacity: chromeBtnIdleOpacity,
             }}
             onMouseEnter={(e) => {
-              if (theme !== 'light') {
-                e.currentTarget.style.borderColor = chrome.borderHover;
-                e.currentTarget.style.backgroundColor = chrome.surfaceHover;
-                e.currentTarget.style.opacity = "1";
-                e.currentTarget.style.transform = "scale(1.02)";
-              }
+              e.currentTarget.style.borderColor = chrome.borderHover;
+              e.currentTarget.style.backgroundColor = chrome.surfaceHover;
+              e.currentTarget.style.opacity = "1";
+              e.currentTarget.style.transform = "scale(1.02)";
             }}
             onMouseLeave={(e) => {
-              if (theme !== 'light') {
-                e.currentTarget.style.borderColor = chrome.border;
-                e.currentTarget.style.backgroundColor = chrome.surface;
-                e.currentTarget.style.opacity = String(chromeBtnIdleOpacity);
-                e.currentTarget.style.transform = "scale(1)";
-              }
+              e.currentTarget.style.borderColor = chrome.border;
+              e.currentTarget.style.backgroundColor = chrome.surface;
+              e.currentTarget.style.opacity = String(chromeBtnIdleOpacity);
+              e.currentTarget.style.transform = "scale(1)";
             }}
             title="退出播放并停止音乐"
           >
@@ -299,26 +291,22 @@ export default function ShelfPage() {
         ) : (
           <button
             onClick={() => prelaunchApp(playlist.platform)}
-            className={`absolute top-6 right-6 z-10 flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-medium transition-all backdrop-blur-sm cursor-pointer ${theme === 'light' ? 'nm-button border-none' : ''}`}
+            className="absolute top-6 right-6 z-10 flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-medium transition-all backdrop-blur-sm cursor-pointer"
             style={{
-              backgroundColor: theme === 'light' ? undefined : (PLATFORM_CONFIG[playlist.platform]?.bg || "var(--surface-color)"),
-              borderColor: theme === 'light' ? 'transparent' : "var(--border-color)",
+              backgroundColor: PLATFORM_CONFIG[playlist.platform]?.bg || "var(--surface-color)",
+              borderColor: "var(--border-color)",
               color: PLATFORM_CONFIG[playlist.platform]?.color || "var(--text-secondary)",
-              opacity: theme === 'light' ? 1 : 0.7,
+              opacity: 0.7,
             }}
             onMouseEnter={(e) => {
-              if (theme !== 'light') {
-                e.currentTarget.style.borderColor = "var(--border-hover)";
-                e.currentTarget.style.opacity = "1";
-                e.currentTarget.style.transform = "scale(1.02)";
-              }
+              e.currentTarget.style.borderColor = "var(--border-hover)";
+              e.currentTarget.style.opacity = "1";
+              e.currentTarget.style.transform = "scale(1.02)";
             }}
             onMouseLeave={(e) => {
-              if (theme !== 'light') {
-                e.currentTarget.style.borderColor = "var(--border-color)";
-                e.currentTarget.style.opacity = "0.7";
-                e.currentTarget.style.transform = "scale(1)";
-              }
+              e.currentTarget.style.borderColor = "var(--border-color)";
+              e.currentTarget.style.opacity = "0.7";
+              e.currentTarget.style.transform = "scale(1)";
             }}
             title={`启动 ${PLATFORM_CONFIG[playlist.platform]?.label || playlist.platform}`}
           >
