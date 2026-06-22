@@ -66,5 +66,22 @@ end tell
 return "false"
 `.trim();
 
+export const QQ_MUSIC_GET_INFO_SCRIPT = `
+tell application "System Events"
+  if exists process "QQMusic" then
+    tell process "QQMusic"
+      try
+        -- 尝试从窗口标题获取，QQ 音乐 Mac 版窗口标题通常是 "歌手 - 歌曲名"
+        set winName to name of window 1
+        return winName
+      on error
+        return "unknown"
+      end try
+    end tell
+  end if
+end tell
+return "idle"
+`.trim();
+
 export const PLAY_DETECT_TIMEOUT_MS = 5000;
 export const PLAY_DETECT_INTERVAL_MS = 300;

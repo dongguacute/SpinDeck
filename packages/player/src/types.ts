@@ -23,6 +23,8 @@ export interface SongInfo {
   platformNumericId?: number;
   /** QQ 音乐 songtype，默认 0 */
   platformSongType?: number;
+  /** 歌曲时长（秒） */
+  duration?: number;
 }
 
 export interface PlayResult {
@@ -42,6 +44,10 @@ export interface SystemPlaybackStatus {
   playing: boolean;
   paused: boolean;
   idle: boolean;
+  /** 当前播放的歌曲名（如果能获取到） */
+  currentSongName?: string;
+  /** 当前播放的歌手名（如果能获取到） */
+  currentArtistName?: string;
 }
 
 export interface PlaybackStatus extends SystemPlaybackStatus {

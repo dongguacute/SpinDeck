@@ -10,6 +10,7 @@ export interface SongInfo {
     platformSongId: string;
     platformNumericId?: number;
     platformSongType?: number;
+    duration?: number;
 }
 
 export interface PlaylistResult {
@@ -32,6 +33,7 @@ interface QQMusicSong {
   singer?: { name?: string }[];
   songid?: string | number;
   songtype?: number;
+  interval?: number;
 }
 
 interface QQMusicCD {
@@ -112,6 +114,7 @@ function parseSonglistToDetails(songlist: QQMusicSong[]): SongInfo[] {
               ? Number.parseInt(item.songid, 10)
               : undefined,
         platformSongType: typeof item.songtype === "number" ? item.songtype : 0,
+        duration: item.interval,
         };
     });
 }

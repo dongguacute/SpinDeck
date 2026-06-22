@@ -18,7 +18,8 @@
       "@spindeck/core": ["../../packages/core/src/index.ts"],
       "@spindeck/picker": ["../../packages/picker/src/index.ts"],
       "@spindeck/player": ["../../packages/player/src/index.ts"],
-      "@spindeck/player/server": ["../../packages/player/src/server/index.ts"]
+      "@spindeck/player/server": ["../../packages/player/src/server/index.ts"],
+      "@spindeck/vinyl-ui": ["../../packages/vinyl-ui/src/index.ts"]
     },
     "esModuleInterop": true,
     "verbatimModuleSyntax": true,

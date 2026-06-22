@@ -32,6 +32,12 @@ interface Props {
   /** 唱臂 portal 容器（固定叠层，避免随封面切换跳动） */
   tonearmPortalRef?: React.RefObject<HTMLDivElement | null>;
   tonearmPortalReady?: boolean;
+  /** 歌曲播放结束（系统状态变为非播放且非手动抬臂） */
+  onSongEnd?: () => void;
+  /** 播放状态变更 */
+  onPlayingChange?: (playing: boolean) => void;
+  /** 是否自动开始播放（用于切歌场景） */
+  autoPlay?: boolean;
 }
 
 const FALLBACK_COLOR = "#6eb5d4";
@@ -62,6 +68,9 @@ export default function SongVinylOverlay({
   styleName = "classic",
   tonearmPortalRef,
   tonearmPortalReady = false,
+  onSongEnd,
+  onPlayingChange,
+  autoPlay = false,
 }: Props) {
   const [vinylColor, setVinylColor] = useState(FALLBACK_COLOR);
   const [labelColor, setLabelColor] = useState(mixColors(FALLBACK_COLOR, "#000", 0.25));
@@ -80,35 +89,6 @@ export default function SongVinylOverlay({
   const draggingRef = useRef(false);
   const lastLocalActionAtRef = useRef(0);
 
-  useEffect(() => {
-    // pageSessionId 或换歌时重置光碟角度（同页暂停不重置，见 spinActive）
-    setSpinActive(false);
-  }, [pageSessionId, song]);
-
-  useEffect(() => {
-    playingRef.current = playing;
-  }, [playing]);
-
-  useEffect(() => {
-    pendingRef.current = pendingPlay;
-  }, [pendingPlay]);
-
-  useEffect(() => {
-    draggingRef.current = dragging;
-  }, [dragging]);
-
-  useEffect(() => {
-    const syncLayout = () => {
-      const layout = computeVinylLayout(window.innerWidth, window.innerHeight);
-      if (stageRef.current) applyVinylLayoutVars(stageRef.current, layout);
-      if (tonearmPortalRef?.current) applyVinylLayoutVars(tonearmPortalRef.current, layout);
-    };
-
-    syncLayout();
-    window.addEventListener("resize", syncLayout);
-    return () => window.removeEventListener("resize", syncLayout);
-  }, [tonearmPortalRef, tonearmPortalReady, visible]);
-
   const stopPlayback = useCallback(() => {
     lastLocalActionAtRef.current = Date.now();
     playRequestRef.current += 1;
@@ -119,62 +99,6 @@ export default function SongVinylOverlay({
     progressRef.current = 0;
     setProgress(0);
   }, [platform, song]);
-
-  useEffect(() => {
-    if (!song.cover) return;
-    let cancelled = false;
-
-    (async () => {
-      try {
-        const { pickEdgeColors } = await import("@spindeck/picker");
-        const edge = await pickEdgeColors({ content: px(song.cover) });
-        const main = rgbToHex(edge.top.r, edge.top.g, edge.top.b);
-        if (!cancelled) {
-          setVinylColor(main);
-          setLabelColor(mixColors(main, "#000", 0.22));
-        }
-      } catch {
-        if (!cancelled) {
-          setVinylColor(FALLBACK_COLOR);
-          setLabelColor(mixColors(FALLBACK_COLOR, "#000", 0.22));
-        }
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [song.cover]);
-
-  function rgbToHex(r: number, g: number, b: number) {
-    const toByte = (v: number) => Math.round(v).toString(16).padStart(2, "0");
-    return `#${toByte(r)}${toByte(g)}${toByte(b)}`;
-  }
-
-  useEffect(() => {
-    if (!visible) {
-      setInteractive(false);
-      setProgress(0);
-      progressRef.current = 0;
-      setPlaying(false);
-      setPendingPlay(false);
-      setDragging(false);
-      dragRef.current.active = false;
-      if (playingRef.current || pendingRef.current) {
-        stopPlayback();
-      }
-      return;
-    }
-
-    // 换歌 / 重进页面（pageSessionId 变）时重置唱臂，播放逻辑由 @spindeck/player 会话区分
-    setProgress(0);
-    progressRef.current = 0;
-    setPlaying(false);
-    setPendingPlay(false);
-    setInteractive(false);
-    const timer = window.setTimeout(() => setInteractive(true), ENTER_ANIM_MS);
-    return () => window.clearTimeout(timer);
-  }, [visible, song, stopPlayback, pageSessionId]);
 
   const setArmProgress = useCallback(
     (value: number) => {
@@ -237,6 +161,98 @@ export default function SongVinylOverlay({
       rollbackVisual();
     }
   }, [platform, song, setArmProgress]);
+
+  useEffect(() => {
+    // pageSessionId 或换歌时重置光碟角度（同页暂停不重置，见 spinActive）
+    setSpinActive(false);
+  }, [pageSessionId, song]);
+
+  useEffect(() => {
+    playingRef.current = playing;
+    onPlayingChange?.(playing);
+  }, [playing, onPlayingChange]);
+
+  useEffect(() => {
+    pendingRef.current = pendingPlay;
+  }, [pendingPlay]);
+
+  useEffect(() => {
+    draggingRef.current = dragging;
+  }, [dragging]);
+
+  useEffect(() => {
+    const syncLayout = () => {
+      const layout = computeVinylLayout(window.innerWidth, window.innerHeight);
+      if (stageRef.current) applyVinylLayoutVars(stageRef.current, layout);
+      if (tonearmPortalRef?.current) applyVinylLayoutVars(tonearmPortalRef.current, layout);
+    };
+
+    syncLayout();
+    window.addEventListener("resize", syncLayout);
+    return () => window.removeEventListener("resize", syncLayout);
+  }, [tonearmPortalRef, tonearmPortalReady, visible]);
+
+  useEffect(() => {
+    if (!song.cover) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const { pickEdgeColors } = await import("@spindeck/picker");
+        const edge = await pickEdgeColors({ content: px(song.cover) });
+        const main = rgbToHex(edge.top.r, edge.top.g, edge.top.b);
+        if (!cancelled) {
+          setVinylColor(main);
+          setLabelColor(mixColors(main, "#000", 0.22));
+        }
+      } catch {
+        if (!cancelled) {
+          setVinylColor(FALLBACK_COLOR);
+          setLabelColor(mixColors(FALLBACK_COLOR, "#000", 0.22));
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [song.cover]);
+
+  function rgbToHex(r: number, g: number, b: number) {
+    const toByte = (v: number) => Math.round(v).toString(16).padStart(2, "0");
+    return `#${toByte(r)}${toByte(g)}${toByte(b)}`;
+  }
+
+  useEffect(() => {
+    if (!visible) {
+      setInteractive(false);
+      setProgress(0);
+      progressRef.current = 0;
+      setPlaying(false);
+      setPendingPlay(false);
+      setDragging(false);
+      dragRef.current.active = false;
+      if (playingRef.current || pendingRef.current) {
+        stopPlayback();
+      }
+      return;
+    }
+
+    // 换歌 / 重进页面（pageSessionId 变）时重置唱臂，播放逻辑由 @spindeck/player 会话区分
+    setProgress(0);
+    progressRef.current = 0;
+    setPlaying(false);
+    setPendingPlay(false);
+    setInteractive(false);
+    const timer = window.setTimeout(() => {
+      setInteractive(true);
+      if (autoPlay) {
+        console.log(`[Vinyl] autoPlay triggered for ${song.name}`);
+        void startPlayback();
+      }
+    }, ENTER_ANIM_MS);
+    return () => window.clearTimeout(timer);
+  }, [visible, song, stopPlayback, pageSessionId, autoPlay, startPlayback]);
 
   /** 松手吸附：落针 → startPlayback，抬起 → pauseSong（保留会话） */
   const snapArm = useCallback(
@@ -322,7 +338,19 @@ export default function SongVinylOverlay({
       const localPlaying = playingRef.current;
       const withinGrace = Date.now() - lastLocalActionAtRef.current < PLAY_SYNC_GRACE_MS;
 
+      // 检查系统当前播放的是否是当前选中的歌
+      const isSystemPlayingCorrectSong = 
+        !status.currentSongName || 
+        status.currentSongName.toLowerCase().includes(song.name.toLowerCase()) ||
+        song.name.toLowerCase().includes(status.currentSongName.toLowerCase());
+
       if (status.playing) {
+        // 如果系统正在播，但歌名对不上，且不在宽限期内，说明外部干扰（切歌了）
+        if (!isSystemPlayingCorrectSong && !withinGrace && inSession) {
+          onSongEnd?.();
+          return;
+        }
+
         // 本地已暂停（canResume），忽略 QQ 音乐延迟上报的 playing
         if (canResume) return;
         if (!inSession && !armDown) return;
@@ -349,6 +377,9 @@ export default function SongVinylOverlay({
         setPlaying(false);
         if (inSession && localPlaying) {
           markSongPausedByArm(song);
+        } else if (inSession && !withinGrace) {
+          // 非手动抬臂导致的停止，且过了宽限期，认为是播放自然结束或外部停止
+          onSongEnd?.();
         }
       }
     } catch {

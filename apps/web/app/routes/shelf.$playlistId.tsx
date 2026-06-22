@@ -1,11 +1,11 @@
 import { Link, useParams, useFetcher } from "react-router";
-import { ArrowLeft, Disc3, LoaderCircle, Info, X, ExternalLink, Clock, Music, Rocket, LogOut } from "lucide-react";
+import { ArrowLeft, Disc3, LoaderCircle, Info, X, ExternalLink, Clock, Music, Rocket, LogOut, Shuffle, Repeat, Repeat1, SkipBack, SkipForward } from "lucide-react";
 import { usePlaylistStore } from "../lib/playlist-store";
 import { useThemeStore } from "../lib/theme-store";
 import PlaylistShelf from "../components/PlaylistShelf";
 import { SongVinylOverlay } from "@spindeck/vinyl-ui";
-import { beginShelfSession, prelaunchApp, stopSong } from "@spindeck/player";
-import type { SongInfo } from "../lib/types";
+import { beginShelfSession, prelaunchApp, stopSong, setPlayMode, pauseSong } from "@spindeck/player";
+import type { PlatformType, SongInfo, PlayMode } from "@spindeck/player";
 import { PLATFORM_CONFIG } from "../lib/types";
 import {
   derivePlaybackGlassBackground,
@@ -15,7 +15,7 @@ import {
   type ThemePalette,
 } from "../lib/theme-color";
 import { buildPlaybackCoverTheme } from "../lib/cover-background";
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 
 function proxiedCover(coverUrl: string) {
   return `/api/image?url=${encodeURIComponent(coverUrl)}`;
@@ -64,6 +64,98 @@ export default function ShelfPage() {
   const [pageSessionId, setPageSessionId] = useState("");
   const [bookThemeColor, setBookThemeColor] = useState<string | null>(null);
   const [coverThemePalette, setCoverThemePalette] = useState<ThemePalette | null>(null);
+  const [playMode, setPlayModeState] = useState<PlayMode>("order");
+  const [playbackStartTime, setPlaybackStartTime] = useState<number | null>(null);
+  const [totalPlayedTime, setTotalPlayedTime] = useState(0);
+  const [isSystemPlaying, setIsSystemPlaying] = useState(false);
+  const [autoPlayNext, setAutoPlayNext] = useState(false);
+  const swipeRef = useRef<{ x: number; time: number; startX: number } | null>(null);
+  const playbackWrapperRef = useRef<HTMLDivElement>(null);
+
+  const loading = fetcher.state !== "idle";
+  const error = fetcher.data?.error;
+  const songs = fetcher.data?.songs || [];
+
+  const handleSongSelect = useCallback((song: SongInfo | null, index: number | null, autoPlay = false) => {
+    const wasInPlayback = selectedIndex !== null;
+    
+    // 切换时第一时间暂停当前播放
+    if (wasInPlayback && playlist?.platform) {
+      void pauseSong(playlist.platform);
+    }
+
+    setSelectedIndex(index);
+    
+    // 如果已经在播放中，保持 showVinyl 为 true，实现无缝切换
+    // 如果是第一次播放，则由 handleBookAnimationComplete 负责显示
+    if (wasInPlayback && song) {
+      setShowVinyl(true);
+    } else if (!song) {
+      setShowVinyl(false);
+    }
+    
+    setCoverOverlay(false);
+    setAutoPlayNext(autoPlay);
+    
+    if (song) {
+      console.log(`[shelf] 切换歌曲: ${song.name} (index: ${index}) autoPlay: ${autoPlay}`);
+      setSelectedSong(song);
+      setPlaybackStartTime(Date.now());
+      setTotalPlayedTime(0);
+    } else {
+      setSelectedSong(null);
+      setPlaybackStartTime(null);
+      setTotalPlayedTime(0);
+      setBookThemeColor(null);
+      setCoverThemePalette(null);
+    }
+  }, [selectedIndex]);
+
+  const playNextSong = useCallback(() => {
+    if (songs.length === 0 || selectedIndex === null) return;
+    
+    let nextIndex = selectedIndex;
+    if (playMode === "random") {
+      nextIndex = Math.floor(Math.random() * songs.length);
+      if (nextIndex === selectedIndex && songs.length > 1) {
+        nextIndex = (selectedIndex + 1) % songs.length;
+      }
+    } else {
+      nextIndex = (selectedIndex + 1) % songs.length;
+    }
+    
+    handleSongSelect(songs[nextIndex], nextIndex, true);
+  }, [songs, selectedIndex, playMode, handleSongSelect]);
+
+  const playPrevSong = useCallback(() => {
+    if (songs.length === 0 || selectedIndex === null) return;
+    
+    let prevIndex = selectedIndex;
+    if (playMode === "random") {
+      prevIndex = Math.floor(Math.random() * songs.length);
+    } else {
+      prevIndex = (selectedIndex - 1 + songs.length) % songs.length;
+    }
+    
+    handleSongSelect(songs[prevIndex], prevIndex, true);
+  }, [songs, selectedIndex, playMode, handleSongSelect]);
+
+  const handleSongEnd = useCallback(() => {
+    if (playMode === "single") {
+      // 单曲循环：重新播放当前歌曲
+      if (selectedSong && playlist?.platform) {
+        // 重新触发 handleSongSelect 来模拟重新落针
+        handleSongSelect(selectedSong, selectedIndex, true);
+      }
+    } else {
+      playNextSong();
+    }
+  }, [playMode, selectedSong, selectedIndex, playlist?.platform, playNextSong, handleSongSelect]);
+
+  const handleBookAnimationComplete = useCallback((_index: number) => {
+    setShowVinyl(true);
+  }, []);
+
   // 从 playlist 数据中读取刷新间隔，默认为 0（关闭）
   const refreshInterval = playlist?.refreshInterval ?? 0;
 
@@ -101,6 +193,31 @@ export default function ShelfPage() {
     };
   }, [playlist?.refreshInterval, playlist?.importUrl, playlist?.platform, fetcher]);
 
+  // 播放时长监控（防止对接应用自动切歌或循环干扰）
+  useEffect(() => {
+    if (!selectedSong || !showVinyl || !isSystemPlaying) return;
+    
+    // 如果没有时长信息，我们只能依赖系统状态变更（SongVinylOverlay 中的逻辑）
+    if (!selectedSong.duration) return;
+
+    const checkInterval = setInterval(() => {
+      setTotalPlayedTime(prev => {
+        const next = prev + 1;
+        // 缓冲 2 秒，确保歌曲真的播完了
+        if (next > (selectedSong.duration || 0) + 2) {
+          console.log(`[shelf] 歌曲播放时长到达限制 (${selectedSong.duration}s)，触发自动切歌`);
+          clearInterval(checkInterval);
+          // 延迟一点触发，避免状态冲突
+          setTimeout(() => handleSongEnd(), 100);
+          return 0;
+        }
+        return next;
+      });
+    }, 1000);
+
+    return () => clearInterval(checkInterval);
+  }, [selectedSong, showVinyl, isSystemPlaying, handleSongEnd]);
+
   // @spindeck/player：进入书架 → beginShelfSession（中断系统播放 + 单曲循环 + 重置会话）
   useEffect(() => {
     if (!playlist?.platform) return;
@@ -114,10 +231,6 @@ export default function ShelfPage() {
       if (platform) void stopSong(platform);
     };
   }, [playlist?.platform]);
-
-  const loading = fetcher.state !== "idle";
-  const error = fetcher.data?.error;
-  const songs = fetcher.data?.songs || [];
 
   // 当 fetcher 数据返回时，同步更新 store 中的歌单基础信息
   useEffect(() => {
@@ -138,23 +251,6 @@ export default function ShelfPage() {
       }
     }
   }, [fetcher.data, playlist, updatePlaylist]);
-
-  const handleSongSelect = (song: SongInfo | null, index: number | null) => {
-    setSelectedIndex(index);
-    setShowVinyl(false);
-    setCoverOverlay(false);
-    if (song) {
-      setSelectedSong(song);
-    } else {
-      setSelectedSong(null);
-      setBookThemeColor(null);
-      setCoverThemePalette(null);
-    }
-  };
-
-  const handleBookAnimationComplete = (_index: number) => {
-    setShowVinyl(true);
-  };
 
   const inPlayback = selectedIndex !== null;
 
@@ -216,8 +312,77 @@ export default function ShelfPage() {
   const chromeHoverOpacity = 1;
   const chromeBtnIdleOpacity = 1;
 
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (!inPlayback) return;
+    swipeRef.current = { x: e.clientX, time: Date.now(), startX: e.clientX };
+    
+    // 停止任何正在进行的动画
+    if (playbackWrapperRef.current) {
+      gsap.killTweensOf(playbackWrapperRef.current);
+    }
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!swipeRef.current || !inPlayback || !playbackWrapperRef.current) return;
+    
+    const deltaX = e.clientX - swipeRef.current.startX;
+    // 实时跟随手指移动，增加一点阻尼感
+    gsap.set(playbackWrapperRef.current, { x: deltaX });
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!swipeRef.current || !inPlayback || !playbackWrapperRef.current) return;
+    
+    const deltaX = e.clientX - swipeRef.current.startX;
+    const deltaTime = Date.now() - swipeRef.current.time;
+    const velocity = Math.abs(deltaX) / deltaTime;
+    swipeRef.current = null;
+
+    // 触发切换的阈值：滑动距离超过屏幕宽度的 20% 或者 速度极快
+    const threshold = window.innerWidth * 0.2;
+    const isQuickSwipe = velocity > 0.5 && Math.abs(deltaX) > 30;
+
+    if (Math.abs(deltaX) > threshold || isQuickSwipe) {
+      const direction = deltaX > 0 ? "prev" : "next";
+      const targetX = direction === "prev" ? window.innerWidth : -window.innerWidth;
+      
+      // 1. 滑出屏幕
+      gsap.to(playbackWrapperRef.current, {
+        x: targetX,
+        opacity: 0,
+        duration: 0.3,
+        ease: "power2.in",
+        onComplete: () => {
+          // 2. 切换歌曲
+          if (direction === "prev") playPrevSong();
+          else playNextSong();
+          
+          // 3. 从另一侧滑入
+          gsap.fromTo(playbackWrapperRef.current!, 
+            { x: -targetX, opacity: 0 },
+            { x: 0, opacity: 1, duration: 0.5, ease: "back.out(1.2)" }
+          );
+        }
+      });
+    } else {
+      // 距离不足，弹回原位
+      gsap.to(playbackWrapperRef.current, {
+        x: 0,
+        duration: 0.4,
+        ease: "elastic.out(1, 0.75)"
+      });
+    }
+  };
+
   return (
-    <div className="relative w-screen h-screen overflow-hidden select-none touch-none" style={{ background: "var(--bg-primary)" }}>
+    <div 
+      className="relative w-screen h-screen overflow-hidden select-none touch-none" 
+      style={{ background: "var(--bg-primary)" }}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
+    >
       {/* 播放页磨砂玻璃背景（封面模糊 + pastel 叠层 + 高光） */}
       <div
         className={`playback-backdrop${showThemeBackdrop ? " playback-backdrop--visible" : ""}`}
@@ -455,7 +620,7 @@ export default function ShelfPage() {
 
       {/* 歌单详情弹窗 */}
       {showDetail && playlist && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={() => setShowDetail(false)}>
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4" onClick={() => setShowDetail(false)}>
           <div className="absolute inset-0" style={{ background: "rgba(0,0,0,0.4)" }} />
           <div className="relative w-full max-w-sm border rounded-3xl p-6 shadow-2xl" 
             style={{ 
@@ -538,7 +703,7 @@ export default function ShelfPage() {
                     onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.color = "#60a5fa", (e.currentTarget as HTMLAnchorElement).style.opacity = "0.7")}
                   >
                     <span className="truncate flex-1 min-w-0">{playlist.importUrl}</span>
-                    <ExternalLink className="w-3 h-3 flex-shrink-0 opacity-60 group-hover:opacity-100" />
+                    <ExternalLink className="w-3 h-3 shrink-0 opacity-60 group-hover:opacity-100" />
                   </a>
                 </div>
               )}
@@ -571,30 +736,36 @@ export default function ShelfPage() {
         </div>
       )}
 
-      {/* 光碟（z-2，封面遮盖时在书下方） */}
-      {selectedSong && playlist && (
-        <SongVinylOverlay
-          song={selectedSong}
-          platform={playlist.platform}
-          visible={showVinyl}
-          pageSessionId={pageSessionId}
-          theme={theme}
-          tonearmPortalRef={tonearmPortalRef}
-          tonearmPortalReady={tonearmPortalReady}
-        />
-      )}
+      {/* 播放核心区域（含动画容器） */}
+      <div ref={playbackWrapperRef} className="absolute inset-0 w-full h-full">
+        {/* 光碟（z-2，封面遮盖时在书下方） */}
+        {selectedSong && playlist && (
+          <SongVinylOverlay
+            song={selectedSong}
+            platform={playlist.platform}
+            visible={showVinyl}
+            pageSessionId={pageSessionId}
+            theme={theme}
+            tonearmPortalRef={tonearmPortalRef}
+            tonearmPortalReady={tonearmPortalReady}
+            onSongEnd={handleSongEnd}
+            onPlayingChange={setIsSystemPlaying}
+            autoPlay={autoPlayNext}
+          />
+        )}
 
-      {/* 3D 书架（遮盖态 z-3，叠在光碟上） */}
-      <PlaylistShelf
-        songs={songs}
-        onSongSelect={handleSongSelect}
-        onSelectionAnimationComplete={handleBookAnimationComplete}
-        onCoverToggle={() => setCoverOverlay((v) => !v)}
-        onBookThemeColor={setBookThemeColor}
-        selectedIndex={selectedIndex}
-        coverOverlay={coverOverlay}
-        lockDeselect={inPlayback}
-      />
+        {/* 3D 书架（遮盖态 z-3，叠在光碟上） */}
+        <PlaylistShelf
+          songs={songs}
+          onSongSelect={handleSongSelect}
+          onSelectionAnimationComplete={handleBookAnimationComplete}
+          onCoverToggle={() => setCoverOverlay((v) => !v)}
+          onBookThemeColor={setBookThemeColor}
+          selectedIndex={selectedIndex}
+          coverOverlay={coverOverlay}
+          lockDeselect={inPlayback}
+        />
+      </div>
 
       {/* 唱臂 portal（z-5，遮盖态叠在书上方可交互） */}
       <div
@@ -605,6 +776,62 @@ export default function ShelfPage() {
         className="sd-vinyl-portal"
         aria-hidden
       />
+
+      {/* 播放控制栏（仅播放态显示） */}
+      {inPlayback && (
+        <div 
+          className="absolute bottom-10 left-1/2 -translate-x-1/2 z-60 flex items-center gap-6 px-8 py-3 rounded-2xl border backdrop-blur-md transition-all duration-500"
+          style={{
+            backgroundColor: chrome.surface,
+            borderColor: chrome.border,
+            color: chrome.text,
+            boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+            opacity: showVinyl ? 1 : 0,
+            transform: `translateX(-50%) translateY(${showVinyl ? 0 : 20}px)`,
+          }}
+        >
+          {/* 播放模式切换 */}
+          <button
+            onClick={() => {
+              const modes: PlayMode[] = ["order", "random", "single"];
+              const nextMode = modes[(modes.indexOf(playMode) + 1) % modes.length];
+              setPlayModeState(nextMode);
+            }}
+            className="p-2 rounded-xl transition-all hover:scale-110 active:scale-95"
+            style={{ color: chrome.textSecondary }}
+            title={
+              playMode === "order" ? "顺序播放" : 
+              playMode === "random" ? "随机播放" : "单曲循环"
+            }
+          >
+            {playMode === "order" && <Repeat className="w-5 h-5" />}
+            {playMode === "random" && <Shuffle className="w-5 h-5" />}
+            {playMode === "single" && <Repeat1 className="w-5 h-5" />}
+          </button>
+
+          <div className="w-px h-4" style={{ backgroundColor: chrome.border }} />
+
+          {/* 上一首 */}
+          <button
+            onClick={playPrevSong}
+            className="p-2 rounded-xl transition-all hover:scale-110 active:scale-95"
+            style={{ color: chrome.textSecondary }}
+            title="上一首"
+          >
+            <SkipBack className="w-6 h-6 fill-current" />
+          </button>
+
+          {/* 下一首 */}
+          <button
+            onClick={playNextSong}
+            className="p-2 rounded-xl transition-all hover:scale-110 active:scale-95"
+            style={{ color: chrome.textSecondary }}
+            title="下一首"
+          >
+            <SkipForward className="w-6 h-6 fill-current" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

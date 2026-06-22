@@ -697,6 +697,46 @@ export default function PlaylistShelf({
     const slideDist = Math.max(totalW + 8, 14);
 
     if (next !== null && next !== undefined) {
+      // 如果是切歌（已经在播放态），跳过大部分动画，直接定位
+      const isSwitching = prev !== null && prev !== undefined;
+
+      if (isSwitching) {
+        // 立即重置旧书，定位新书
+        const prevGroup = groups[prev];
+        prevGroup.rotation.set(0, 0, 0);
+        prevGroup.position.set(originalPositions[prev].x, 0, 0);
+        state.meshes[prev].geometry = state.sharpGeo;
+
+        const group = groups[next];
+        group.rotation.order = "ZYX";
+        group.rotation.y = -Math.PI / 2;
+        state.meshes[next].geometry = state.roundedGeo;
+
+        const container = containerRef.current;
+        const vw = container?.clientWidth ?? window.innerWidth;
+        const vh = container?.clientHeight ?? window.innerHeight;
+        const worldCenterX = computeCoverSelectedWorldX(vw, vh);
+        const localCenterX = worldCenterX - state.mainGroup.position.x;
+        
+        group.position.set(localCenterX, 0, 0);
+        group.rotation.z = LEAN_ANGLE;
+
+        coverPivotWorldRef.current = pivotWorldFromGroup(
+          group.position.clone(),
+          LEAN_ANGLE,
+          state.mainGroup.position.clone(),
+        );
+
+        // 左右书滑出
+        const sd = Math.max(totalW + 8, 14);
+        for (let i = next - 1; i >= 0; i--) groups[i].position.x = originalPositions[i].x - sd;
+        for (let j = next + 1; j < groups.length; j++) groups[j].position.x = originalPositions[j].x + sd;
+
+        onSelectionAnimationCompleteRef.current?.(next);
+        prevIndexRef.current = next;
+        return;
+      }
+
       animatingRef.current = true;
 
       gsap.killTweensOf(state.camera.position);

@@ -9,6 +9,7 @@ import {
   buildQQMusicSetPlayModeScript,
   PLAY_DETECT_INTERVAL_MS,
   PLAY_DETECT_TIMEOUT_MS,
+  QQ_MUSIC_GET_INFO_SCRIPT,
   QQ_MUSIC_IS_PLAYING_SCRIPT,
   QQ_MUSIC_PAUSE_SCRIPT,
   QQ_MUSIC_RESUME_SCRIPT,
@@ -99,10 +100,31 @@ export async function resumeOnMac(exec: ExecFileAsync): Promise<PlayResult> {
 
 export async function getStatusOnMac(exec: ExecFileAsync): Promise<SystemPlaybackStatus> {
   const playing = await isQQMusicPlaying(exec);
+  let currentSongName: string | undefined;
+  let currentArtistName: string | undefined;
+
+  if (playing) {
+    try {
+      const { stdout } = await exec("osascript", ["-e", QQ_MUSIC_GET_INFO_SCRIPT]);
+      const info = String(stdout).trim();
+      if (info !== "unknown" && info !== "idle" && info.includes(" - ")) {
+        const parts = info.split(" - ");
+        currentArtistName = parts[0].trim();
+        currentSongName = parts[1].trim();
+      } else if (info !== "unknown" && info !== "idle") {
+        currentSongName = info;
+      }
+    } catch {
+      // ignore
+    }
+  }
+
   return {
     playing,
     paused: !playing,
     idle: !playing,
+    currentSongName,
+    currentArtistName,
   };
 }
 
