@@ -29,7 +29,6 @@ export {
   playSong,
   prelaunchApp,
   resumeSong,
-  setPlayMode,
   stopSong,
 } from "./client/index";
 

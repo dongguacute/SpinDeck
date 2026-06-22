@@ -2,7 +2,7 @@ import type { PlatformType, PlayMode } from "@spindeck/player";
 import { serverSetPlayMode } from "@spindeck/player/server";
 import type { Route } from "./+types/api.set-play-mode";
 
-/** 播放器 HTTP 接口：设置循环/随机等播放模式 */
+/** 播放器 HTTP 接口：设置 QQ 单曲循环（内部使用，防止 QQ 自行切歌） */
 export async function action({ request }: Route.ActionArgs) {
   if (request.method !== "POST") {
     return Response.json({ error: "Method not allowed" }, { status: 405 });

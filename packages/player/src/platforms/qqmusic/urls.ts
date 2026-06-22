@@ -6,33 +6,27 @@ function qqMusicScheme(os: DeviceOS): string {
   return "qqmusic";
 }
 
-function buildQQMusicPlayPayload(song: SongInfo): string {
-  const songmid = song.platformSongId?.trim() ?? "";
-  const songtype = song.platformSongType ?? 0;
+function buildQQMusicPlaySonglistPayload(song: SongInfo): string {
   const entry: Record<string, string | number> = {
     type: "0",
-    songmid,
-    songtype,
+    songmid: song.platformSongId?.trim() ?? "",
+    songtype: song.platformSongType ?? 0,
   };
-  if (song.platformNumericId) {
+  if (song.platformNumericId != null) {
     entry.songid = song.platformNumericId;
   }
-  return JSON.stringify({
-    song: [entry],
-    action: "play",
-  });
+  return JSON.stringify({ song: [entry], action: "play", index: 0 });
 }
 
 function buildQQMusicMobileOrDesktopUrls(song: SongInfo, os: DeviceOS): string[] {
   const songmid = song.platformSongId?.trim();
   if (!songmid && song.platformNumericId == null) return [];
-
   const scheme = qqMusicScheme(os);
-  const encoded = encodeURIComponent(buildQQMusicPlayPayload(song));
+  const encoded = encodeURIComponent(buildQQMusicPlaySonglistPayload(song));
   return [`${scheme}://qq.com/media/playSonglist?p=${encoded}`];
 }
 
-/** 按系统构建 QQ 音乐 deep link */
+/** 按系统构建 QQ 音乐单曲 deep link */
 export function buildQQMusicPlayUrls(song: SongInfo, os: DeviceOS): string[] {
   switch (os) {
     case "macos":

@@ -1,6 +1,6 @@
 import type { PlayMode } from "../../../types";
 
-/** Mac QQ 音乐「播放模式」子菜单文案（实测 v11.x） */
+/** Mac QQ 音乐「播放模式」子菜单文案（实测 v11.x，仅三项：顺序 / 随机 / 单曲循环） */
 export const QQ_MUSIC_PLAY_MODE_LABELS: Record<PlayMode, string> = {
   single: "单曲循环",
   list: "单曲循环",
@@ -8,8 +8,12 @@ export const QQ_MUSIC_PLAY_MODE_LABELS: Record<PlayMode, string> = {
   order: "顺序播放",
 };
 
+export function resolveQQMacPlayModeLabel(mode: PlayMode): string {
+  return QQ_MUSIC_PLAY_MODE_LABELS[mode];
+}
+
 export function buildQQMusicSetPlayModeScript(mode: PlayMode): string {
-  const label = QQ_MUSIC_PLAY_MODE_LABELS[mode];
+  const label = resolveQQMacPlayModeLabel(mode);
   return `
 tell application "System Events"
   if exists process "QQMusic" then

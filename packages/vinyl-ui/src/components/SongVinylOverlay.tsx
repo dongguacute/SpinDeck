@@ -27,17 +27,14 @@ interface Props {
   visible: boolean;
   pageSessionId: string;
   theme?: "dark" | "light";
-  /** 样式名称，对应 sd-vinyl-style-${styleName} 类 */
   styleName?: string;
-  /** 唱臂 portal 容器（固定叠层，避免随封面切换跳动） */
   tonearmPortalRef?: React.RefObject<HTMLDivElement | null>;
   tonearmPortalReady?: boolean;
-  /** 歌曲播放结束（系统状态变为非播放且非手动抬臂） */
+  /** 歌曲播完：SpinDeck 按列表循环切下一首 */
   onSongEnd?: () => void;
-  /** 播放状态变更 */
   onPlayingChange?: (playing: boolean) => void;
-  /** 是否自动开始播放（用于切歌场景） */
   autoPlay?: boolean;
+  autoPlayToken?: number;
 }
 
 const FALLBACK_COLOR = "#6eb5d4";
@@ -46,10 +43,10 @@ const DRAG_RANGE_PX = 120;
 const SNAP_ON_THRESHOLD = 0.5;
 const ARM_REST_DEG = -28;
 const ARM_PLAY_DEG = 18;
-/** 本地播放/暂停后，忽略系统状态滞后的宽限期 */
 const PLAY_SYNC_GRACE_MS = 2800;
-/** 轮询系统播放状态，同步唱臂 / 光碟视觉（如 QQ 音乐内暂停） */
 const STATUS_POLL_MS = 800;
+const SONG_END_PADDING_MS = 800;
+const DEFAULT_SONG_DURATION_SEC = 300;
 
 function px(url: string) {
   return `/api/image?url=${encodeURIComponent(url)}`;
@@ -71,6 +68,7 @@ export default function SongVinylOverlay({
   onSongEnd,
   onPlayingChange,
   autoPlay = false,
+  autoPlayToken = 0,
 }: Props) {
   const [vinylColor, setVinylColor] = useState(FALLBACK_COLOR);
   const [labelColor, setLabelColor] = useState(mixColors(FALLBACK_COLOR, "#000", 0.25));
@@ -88,17 +86,52 @@ export default function SongVinylOverlay({
   const pendingRef = useRef(false);
   const draggingRef = useRef(false);
   const lastLocalActionAtRef = useRef(0);
+  const onSongEndRef = useRef(onSongEnd);
+  const endTimerRef = useRef<number | null>(null);
+  const songEndGuardRef = useRef(0);
+
+  useEffect(() => {
+    onSongEndRef.current = onSongEnd;
+  }, [onSongEnd]);
+
+  const clearSongEndTimer = useCallback(() => {
+    if (endTimerRef.current != null) {
+      window.clearTimeout(endTimerRef.current);
+      endTimerRef.current = null;
+    }
+  }, []);
+
+  const scheduleSongEndTimer = useCallback(
+    (target: SongInfo) => {
+      clearSongEndTimer();
+      const durationSec =
+        target.duration && target.duration > 0 ? target.duration : DEFAULT_SONG_DURATION_SEC;
+      endTimerRef.current = window.setTimeout(() => {
+        endTimerRef.current = null;
+        if (!playingRef.current || progressRef.current < SNAP_ON_THRESHOLD) return;
+        if (canResumeSong(target)) return;
+        const guard = ++songEndGuardRef.current;
+        void pauseSong(platform).finally(() => {
+          if (guard !== songEndGuardRef.current) return;
+          onSongEndRef.current?.();
+        });
+      }, durationSec * 1000 + SONG_END_PADDING_MS);
+    },
+    [clearSongEndTimer, platform],
+  );
 
   const stopPlayback = useCallback(() => {
     lastLocalActionAtRef.current = Date.now();
+    songEndGuardRef.current += 1;
+    clearSongEndTimer();
     playRequestRef.current += 1;
     setPendingPlay(false);
     setPlaying(false);
-    markSongPausedByArm(song); // 标记会话，供同页再次落针 resumeSong
+    markSongPausedByArm(song);
     void pauseSong(platform);
     progressRef.current = 0;
     setProgress(0);
-  }, [platform, song]);
+  }, [platform, song, clearSongEndTimer]);
 
   const setArmProgress = useCallback(
     (value: number) => {
@@ -117,7 +150,6 @@ export default function SongVinylOverlay({
     [stopPlayback],
   );
 
-  /** 落针：落针即转碟；播放指令走 @spindeck/player，失败再回滚视觉状态 */
   const startPlayback = useCallback(async () => {
     lastLocalActionAtRef.current = Date.now();
     setArmProgress(1);
@@ -140,6 +172,7 @@ export default function SongVinylOverlay({
         setPendingPlay(false);
         if (result.ok && result.playing) {
           markSongStarted(song);
+          scheduleSongEndTimer(song);
           return;
         }
         rollbackVisual();
@@ -151,6 +184,7 @@ export default function SongVinylOverlay({
       setPendingPlay(false);
       if (result.ok && result.playing) {
         markSongStarted(song);
+        scheduleSongEndTimer(song);
         return;
       }
       rollbackVisual();
@@ -160,12 +194,13 @@ export default function SongVinylOverlay({
       setPendingPlay(false);
       rollbackVisual();
     }
-  }, [platform, song, setArmProgress]);
+  }, [platform, song, setArmProgress, scheduleSongEndTimer]);
 
   useEffect(() => {
-    // pageSessionId 或换歌时重置光碟角度（同页暂停不重置，见 spinActive）
+    clearSongEndTimer();
+    songEndGuardRef.current += 1;
     setSpinActive(false);
-  }, [pageSessionId, song]);
+  }, [pageSessionId, song, clearSongEndTimer]);
 
   useEffect(() => {
     playingRef.current = playing;
@@ -238,7 +273,6 @@ export default function SongVinylOverlay({
       return;
     }
 
-    // 换歌 / 重进页面（pageSessionId 变）时重置唱臂，播放逻辑由 @spindeck/player 会话区分
     setProgress(0);
     progressRef.current = 0;
     setPlaying(false);
@@ -247,14 +281,12 @@ export default function SongVinylOverlay({
     const timer = window.setTimeout(() => {
       setInteractive(true);
       if (autoPlay) {
-        console.log(`[Vinyl] autoPlay triggered for ${song.name}`);
         void startPlayback();
       }
     }, ENTER_ANIM_MS);
     return () => window.clearTimeout(timer);
-  }, [visible, song, stopPlayback, pageSessionId, autoPlay, startPlayback]);
+  }, [visible, song, stopPlayback, pageSessionId, autoPlay, autoPlayToken, startPlayback]);
 
-  /** 松手吸附：落针 → startPlayback，抬起 → pauseSong（保留会话） */
   const snapArm = useCallback(
     (value: number) => {
       if (value >= SNAP_ON_THRESHOLD) {
@@ -298,7 +330,6 @@ export default function SongVinylOverlay({
       if (!dragRef.current.active) return;
       const deltaX = dragRef.current.startX - e.clientX;
       const deltaY = dragRef.current.startY - e.clientY;
-      // 取位移更大的轴（带符号），左/上落针，右/下抬起
       const delta = Math.abs(deltaX) >= Math.abs(deltaY) ? deltaX : deltaY;
       setArmProgress(dragRef.current.startProgress + delta / DRAG_RANGE_PX);
     },
@@ -324,7 +355,7 @@ export default function SongVinylOverlay({
     };
   }, [dragging, onPointerMove, onPointerUpGlobal]);
 
-  /** 实时监测系统播放状态，调整唱臂落针 / 抬起与光碟旋转（仅处理外部变化） */
+  /** 同步唱臂 / 光碟视觉 */
   const syncTonearmFromSystem = useCallback(async () => {
     if (draggingRef.current || pendingRef.current) return;
 
@@ -338,20 +369,7 @@ export default function SongVinylOverlay({
       const localPlaying = playingRef.current;
       const withinGrace = Date.now() - lastLocalActionAtRef.current < PLAY_SYNC_GRACE_MS;
 
-      // 检查系统当前播放的是否是当前选中的歌
-      const isSystemPlayingCorrectSong = 
-        !status.currentSongName || 
-        status.currentSongName.toLowerCase().includes(song.name.toLowerCase()) ||
-        song.name.toLowerCase().includes(status.currentSongName.toLowerCase());
-
       if (status.playing) {
-        // 如果系统正在播，但歌名对不上，且不在宽限期内，说明外部干扰（切歌了）
-        if (!isSystemPlayingCorrectSong && !withinGrace && inSession) {
-          onSongEnd?.();
-          return;
-        }
-
-        // 本地已暂停（canResume），忽略 QQ 音乐延迟上报的 playing
         if (canResume) return;
         if (!inSession && !armDown) return;
 
@@ -366,24 +384,20 @@ export default function SongVinylOverlay({
         return;
       }
 
-      // 系统未在播：本地刚触发播放，等待状态跟上
       if (localPlaying && inSession && !canResume && withinGrace) return;
-
       if (!localPlaying && !armDown) return;
 
       if (localPlaying || armDown) {
         progressRef.current = 0;
         setProgress(0);
         setPlaying(false);
+        if (inSession && localPlaying && canResume) return;
         if (inSession && localPlaying) {
           markSongPausedByArm(song);
-        } else if (inSession && !withinGrace) {
-          // 非手动抬臂导致的停止，且过了宽限期，认为是播放自然结束或外部停止
-          onSongEnd?.();
         }
       }
     } catch {
-      // 轮询失败时保持当前 UI，不打断用户操作
+      // 轮询失败时保持当前 UI
     }
   }, [platform, song]);
 

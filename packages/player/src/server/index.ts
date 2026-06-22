@@ -36,14 +36,13 @@ export async function serverPlaySong(
   platform: PlatformType,
   song: SongInfo,
   exec?: ExecFileAsync,
-  playMode?: PlayMode,
 ): Promise<PlayResult> {
   if (nodePlatform() !== "darwin") {
     return { ok: false, playing: false, error: "仅 macOS 支持服务端唤起" };
   }
 
   if (platform === "QQMusic") {
-    return qqMusicMac.playSongOnMac(song, await getExec(exec), playMode);
+    return qqMusicMac.playSongOnMac(song, await getExec(exec));
   }
 
   const urls = buildSongPlayUrls(platform, song, "macos");

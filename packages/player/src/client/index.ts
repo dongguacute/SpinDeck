@@ -29,9 +29,11 @@ const DEFAULT_API: Required<PlayerApiConfig> = {
   setPlayModeUrl: "/api/set-play-mode",
 };
 
+/** QQ 固定单曲循环，列表循环由 SpinDeck 计时到点后切歌 */
+const SHELF_QQ_PLAY_MODE: PlayMode = "single";
+
 let lastPlayAt = 0;
 let lastPlayKey = "";
-let shelfPlayMode: PlayMode = "single";
 
 function usesMacServer(platform: PlatformType): boolean {
   return getDeviceOS() === "macos" && platform === "QQMusic";
@@ -39,21 +41,34 @@ function usesMacServer(platform: PlatformType): boolean {
 
 export interface BeginShelfSessionOptions {
   api?: PlayerApiConfig;
-  /** 进入书架时同步到本地客户端的播放模式，默认单曲循环 */
-  playMode?: PlayMode;
 }
 
-/** 进入书架页：中断系统播放、设置循环模式并重置会话（再次落针从头播） */
+async function syncQQPlayMode(
+  platform: PlatformType,
+  mode: PlayMode,
+  api: PlayerApiConfig,
+): Promise<void> {
+  if (!usesMacServer(platform)) return;
+  try {
+    await fetch(api.setPlayModeUrl ?? DEFAULT_API.setPlayModeUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ platform, mode }),
+    });
+  } catch {
+    // 非关键路径
+  }
+}
+
+/** 进入书架页：暂停、设为单曲循环并重置页面会话 */
 export async function beginShelfSession(
   platform: PlatformType,
   options?: BeginShelfSessionOptions,
 ): Promise<string> {
   const api = { ...DEFAULT_API, ...options?.api };
-  const playMode = options?.playMode ?? "single";
-  shelfPlayMode = playMode;
   beginPageSession();
   await pauseSong(platform, api);
-  await setPlayMode(platform, playMode, api);
+  await syncQQPlayMode(platform, SHELF_QQ_PLAY_MODE, api);
   return getPageSessionId();
 }
 
@@ -98,38 +113,6 @@ export async function getPlaybackStatus(
     };
   } catch {
     return sessionFallback;
-  }
-}
-
-/** 向本地客户端同步播放模式（循环/随机等） */
-export async function setPlayMode(
-  platform: PlatformType,
-  mode: PlayMode,
-  api: PlayerApiConfig = DEFAULT_API,
-): Promise<PlayResult> {
-  if (!usesMacServer(platform)) {
-    return { ok: false, playing: false, error: "unsupported" };
-  }
-
-  try {
-    const res = await fetch(api.setPlayModeUrl ?? DEFAULT_API.setPlayModeUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ platform, mode }),
-    });
-    const data = (await res.json()) as PlayResult & { ok?: boolean };
-    if (res.ok && data.ok) {
-      console.log(`[PlayMode] ${platform} → ${mode} confirmed=${data.confirmed ?? "?"}`);
-      return {
-        ok: true,
-        playing: false,
-        confirmed: data.confirmed,
-        method: data.method,
-      };
-    }
-    return { ok: false, playing: false, error: "set play mode failed" };
-  } catch {
-    return { ok: false, playing: false, error: "network error" };
   }
 }
 
@@ -196,7 +179,7 @@ export async function playSong(
       const res = await fetch(api.playUrl ?? DEFAULT_API.playUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ platform, song, fresh: true, playMode: shelfPlayMode }),
+        body: JSON.stringify({ platform, song, fresh: true }),
       });
       const data = (await res.json()) as PlayResult & { ok?: boolean };
       if (res.ok && data.ok) {

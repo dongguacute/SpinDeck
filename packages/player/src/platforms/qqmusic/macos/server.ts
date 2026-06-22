@@ -35,27 +35,33 @@ export async function setPlayModeOnMac(
   mode: PlayMode,
   exec: ExecFileAsync,
 ): Promise<PlayResult> {
-  const { stdout } = await exec("osascript", ["-e", buildQQMusicSetPlayModeScript(mode)]);
-  const applied = String(stdout).trim() === "ok";
-  return {
-    ok: true,
-    playing: false,
-    method: "set-play-mode",
-    confirmed: applied,
-  };
+  try {
+    const { stdout } = await exec("osascript", ["-e", buildQQMusicSetPlayModeScript(mode)]);
+    const applied = String(stdout).trim() === "ok";
+    return {
+      ok: true,
+      playing: false,
+      method: "set-play-mode",
+      confirmed: applied,
+    };
+  } catch (err) {
+    console.warn("[QQMusic] setPlayMode AppleScript failed:", err);
+    return {
+      ok: true,
+      playing: false,
+      method: "set-play-mode",
+      confirmed: false,
+      error: err instanceof Error ? err.message : "set play mode failed",
+    };
+  }
 }
 
 export async function playSongOnMac(
   song: SongInfo,
   exec: ExecFileAsync,
-  playMode?: PlayMode,
 ): Promise<PlayResult> {
   if (song.platformNumericId == null) {
     return { ok: false, playing: false, error: "missing songid" };
-  }
-
-  if (playMode) {
-    await setPlayModeOnMac(playMode, exec);
   }
 
   const urls = buildQQMusicMacPlayUrls(song);
