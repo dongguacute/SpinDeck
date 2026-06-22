@@ -59,7 +59,7 @@ export default function PlaylistCard({ playlist, onDelete, onUpdateRefresh }: Pr
         const brightness = (r * 299 + g * 587 + b * 114) / 1000;
         // 阈值 170：只有比较亮的封面才认为是 light
         setIsDarkCover(brightness < 170);
-      } catch (e) {
+      } catch {
         if (isMounted) setIsDarkCover(theme === "dark");
       }
     };

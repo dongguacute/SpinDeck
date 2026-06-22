@@ -76,7 +76,7 @@ export default function ShelfPage() {
         { method: "POST", action: "/api/import" },
       );
     }
-  }, [playlist?.importUrl, playlist?.platform]);
+  }, [playlist?.importUrl, playlist?.platform, fetcher]);
 
   // 自动刷新逻辑（从 playlist.refreshInterval 读取）
   useEffect(() => {
@@ -99,7 +99,7 @@ export default function ShelfPage() {
         timerRef.current = null;
       }
     };
-  }, [playlist?.refreshInterval, playlist?.importUrl, playlist?.platform]);
+  }, [playlist?.refreshInterval, playlist?.importUrl, playlist?.platform, fetcher]);
 
   // @spindeck/player：进入书架 → beginShelfSession（中断系统播放 + 单曲循环 + 重置会话）
   useEffect(() => {

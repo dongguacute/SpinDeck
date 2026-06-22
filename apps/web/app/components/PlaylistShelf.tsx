@@ -304,6 +304,8 @@ export default function PlaylistShelf({
   const coverOverlayRef = useRef(coverOverlay);
   const onCoverToggleRef = useRef(onCoverToggle);
   const onBookThemeColorRef = useRef(onBookThemeColor);
+  const onSongSelectRef = useRef(onSongSelect);
+  const onSelectionAnimationCompleteRef = useRef(onSelectionAnimationComplete);
   const animatingRef = useRef(false);
   const prevCoverOverlayRef = useRef(coverOverlay);
   const coverPivotWorldRef = useRef<THREE.Vector3 | null>(null);
@@ -323,6 +325,18 @@ export default function PlaylistShelf({
   useEffect(() => {
     onBookThemeColorRef.current = onBookThemeColor;
   }, [onBookThemeColor]);
+
+  useEffect(() => {
+    onSongSelectRef.current = onSongSelect;
+  }, [onSongSelect]);
+
+  useEffect(() => {
+    onSelectionAnimationCompleteRef.current = onSelectionAnimationComplete;
+  }, [onSelectionAnimationComplete]);
+
+  useEffect(() => {
+    selectedIndexRef.current = selectedIndex;
+  }, [selectedIndex]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -405,7 +419,7 @@ export default function PlaylistShelf({
     };
 
     // 如果场景重建时仍有选中状态，立即应用（无动画）
-    const curSel = selectedIndex;
+    const curSel = selectedIndexRef.current;
     if (curSel !== null && curSel !== undefined && curSel < groups.length) {
       const selGroup = groups[curSel];
       selGroup.rotation.y = -Math.PI / 2;
@@ -436,7 +450,7 @@ export default function PlaylistShelf({
       camera.position.z = shelfCoverPlaybackCamZ(w, h);
       lookTarget.set(0, SHELF_LOOK_Y_PLAYBACK, 0);
       camera.lookAt(lookTarget);
-      onSelectionAnimationComplete?.(curSel);
+      onSelectionAnimationCompleteRef.current?.(curSel);
     }
 
     // --- 射线点击检测 ---
@@ -464,17 +478,17 @@ export default function PlaylistShelf({
             if (locked) {
               onCoverToggleRef.current?.();
             } else {
-              onSongSelect?.(null, null);
+              onSongSelectRef.current?.(null, null);
               onBookThemeColorRef.current?.(null);
             }
           } else {
             const bookColor = (groups[idx].userData.color as string) || COLORS[idx % COLORS.length];
-            onSongSelect?.(songs[idx], idx);
+            onSongSelectRef.current?.(songs[idx], idx);
             onBookThemeColorRef.current?.(bookColor);
           }
         }
       } else if (cur !== null && cur !== undefined && !locked) {
-        onSongSelect?.(null, null);
+        onSongSelectRef.current?.(null, null);
         onBookThemeColorRef.current?.(null);
       }
     };
@@ -791,7 +805,7 @@ export default function PlaylistShelf({
                 state.mainGroup.position.clone(),
               );
               if (selectedIndexRef.current === next) {
-                onSelectionAnimationComplete?.(next);
+                onSelectionAnimationCompleteRef.current?.(next);
               }
             },
           });

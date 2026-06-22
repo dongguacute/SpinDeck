@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 import { usePlaylistStore } from "./playlist-store";
-import type { Playlist } from "./types";
 
 /**
  * 全局背景刷新 Hook

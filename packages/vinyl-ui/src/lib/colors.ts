@@ -78,7 +78,7 @@ export function mixColors(hexA: string, hexB: string, amount: number): string {
 }
 
 export function derivePaleTint(baseHex: string, level: 50 | 100 | 200 | 300): string {
-  const { h, s } = rgbToHsl(...Object.values(hexToRgb(baseHex)) as [number, number, number]);
+  const { h } = rgbToHsl(...Object.values(hexToRgb(baseHex)) as [number, number, number]);
   const lightnessMap = { 50: 0.968, 100: 0.928, 200: 0.862, 300: 0.768 };
   const whiteMixMap = { 50: 0.86, 100: 0.74, 200: 0.58, 300: 0.42 };
   

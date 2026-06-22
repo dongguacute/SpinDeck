@@ -54,7 +54,7 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
       const t = setTimeout(() => setAnimState("hidden"), 250);
       return () => clearTimeout(t);
     }
-  }, [open]);
+  }, [open, mode]);
 
   useEffect(() => {
     if (!dropdownOpen) return;

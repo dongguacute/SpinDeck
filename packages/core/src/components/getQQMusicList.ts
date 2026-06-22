@@ -20,8 +20,35 @@ export interface PlaylistResult {
     songs: SongInfo[];
 }
 
+interface QQMusicSong {
+  songmid?: string;
+  media_mid?: string;
+  songname?: string;
+  songorig?: string;
+  title?: string;
+  albummid?: string;
+  albumname?: string;
+  album_name?: string;
+  singer?: { name?: string }[];
+  songid?: string | number;
+  songtype?: number;
+}
+
+interface QQMusicCD {
+  dissname?: string;
+  logo?: string;
+  diss_cover?: string;
+  nickname?: string;
+  nick?: string;
+  songlist?: QQMusicSong[];
+}
+
+interface QQMusicResponse {
+  cdlist?: QQMusicCD[];
+}
+
 // 获取QQ音乐歌单列表
-export async function getQQMusicList(url: string) {
+export async function getQQMusicList(url: string): Promise<QQMusicResponse> {
     let disstid: string;
     if (url.includes('c6.y.qq.com') || url.includes('c.y.qq.com')) {
         const redirectRes = await fetch(url, { redirect: 'manual' });
@@ -41,20 +68,20 @@ export async function getQQMusicList(url: string) {
 
     const apiUrl = `https://c.y.qq.com/qzone/fcg-bin/fcg_ucc_getcdinfo_byids_cp.fcg?disstid=${disstid}&type=1&json=1&utf8=1&onlysong=0&format=json&g_tk=5381&loginUin=0&hostUin=0&platform=yqq&needNewCode=0`;
 
-    const res: any = await ky.get(apiUrl, {
+    const res = await ky.get(apiUrl, {
         headers: { Referer: 'https://y.qq.com/' },
-    }).json();
+    }).json<QQMusicResponse>();
 
     // 详细日志：API 返回结构
     const cdlist = res?.cdlist;
     console.log(`[core] API 返回 cdlist 长度: ${cdlist?.length ?? 0}`);
-    if (cdlist?.length > 0) {
+    if (cdlist && cdlist.length > 0) {
         const cd = cdlist[0];
         console.log(`[core] cdlist[0] keys: ${Object.keys(cd).join(', ')}`);
         console.log(`[core] dissname="${cd.dissname}" logo="${cd.logo}" diss_cover="${cd.diss_cover}"`);
         const sl = cd.songlist;
         console.log(`[core] songlist 长度: ${sl?.length ?? 0}`);
-        if (sl?.length > 0) {
+        if (sl && sl.length > 0) {
             const first = sl[0];
             console.log(`[core] 第一首歌 keys: ${Object.keys(first).join(', ')}`);
             console.log(`[core] 第一首歌原始数据: ${JSON.stringify(first).slice(0, 500)}`);
@@ -64,11 +91,11 @@ export async function getQQMusicList(url: string) {
     return res;
 }
 
-function parseSonglistToDetails(songlist: any[]): SongInfo[] {
-    return songlist.map((item: any) => {
+function parseSonglistToDetails(songlist: QQMusicSong[]): SongInfo[] {
+    return songlist.map((item) => {
         const albummid = item.albummid ?? '';
         const singers = (item.singer ?? [])
-            .map((s: any) => decodeHtmlEntities(s.name ?? ''))
+            .map((s) => decodeHtmlEntities(s.name ?? ''))
             .filter(Boolean);
         return {
             name: decodeHtmlEntities(item.songname ?? item.songorig ?? item.title ?? ''),
@@ -90,9 +117,9 @@ function parseSonglistToDetails(songlist: any[]): SongInfo[] {
 }
 
 export async function getQQMusicPlaylistSongs(url: string): Promise<PlaylistResult> {
-    const playlistData: any = await getQQMusicList(url);
+    const playlistData = await getQQMusicList(url);
     const cdInfo = playlistData?.cdlist?.[0] ?? {};
-    const songlist: any[] = cdInfo.songlist ?? [];
+    const songlist = cdInfo.songlist ?? [];
 
     const songs = songlist.length > 0 ? parseSonglistToDetails(songlist) : [];
 

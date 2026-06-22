@@ -40,9 +40,9 @@ export async function action({ request }: Route.ActionArgs) {
       songCount: 0,
       songs: [],
     });
-  } catch (err: any) {
+  } catch (err) {
     return Response.json(
-      { error: err?.message || "获取歌单失败，请检查链接是否正确" },
+      { error: err instanceof Error ? err.message : "获取歌单失败，请检查链接是否正确" },
       { status: 502 },
     );
   }

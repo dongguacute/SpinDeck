@@ -11,12 +11,13 @@ describe('getQQMusicList', () => {
 
     it.skip('should batch fetch song details by songmids (best-effort)', async () => {
         const testurl = "https://c6.y.qq.com/base/fcgi-bin/u?__=1HknfjYZ705L"
-        const playlistData: any = await getQQMusicList(testurl)
-        const songlist: any[] = playlistData?.cdlist?.[0]?.songlist ?? []
-        const songmids: string[] = songlist.map((s: any) => s.songmid).filter(Boolean).slice(0, 3)
+        const playlistData = await getQQMusicList(testurl)
+        const songlist = playlistData?.cdlist?.[0]?.songlist ?? []
+        const songmids = songlist.map((s) => s.songmid).filter(Boolean).slice(0, 3)
+        console.log(`songmids for batch fetch: ${songmids.join(', ')}`)
 
         // TODO: getQQmusicSongs function not yet implemented
-        const songs: any[] = []
+        const songs: unknown[] = []
         console.log(`批量查询结果: ${songs.length} 首`, songs.length > 0 ? JSON.stringify(songs, null, 2) : '(empty)')
     })
 
