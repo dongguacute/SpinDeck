@@ -105,15 +105,31 @@ export default function PlaylistCard({ playlist, onDelete, onUpdateRefresh }: Pr
     <>
       <Link
         to={`/shelf/${playlist.id}`}
-        className="group relative rounded-2xl overflow-hidden border active:scale-[0.98] transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/40 block cursor-pointer select-none touch-manipulation"
+        className={`group relative rounded-2xl overflow-hidden border active:scale-[0.98] transition-all duration-200 hover:-translate-y-1 block cursor-pointer select-none touch-manipulation ${theme === 'light' ? 'nm-button border-none' : 'hover:shadow-2xl hover:shadow-black/40'}`}
         style={{
           background: "var(--surface-color)",
-          borderColor: "var(--border-color)",
+          borderColor: theme === 'light' ? 'transparent' : "var(--border-color)",
         }}
-        onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--border-hover)")}
-        onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--border-color)")}
-        onMouseDown={(e) => (e.currentTarget.style.borderColor = "color-mix(in srgb, var(--border-hover), black 20%))")}
-        onMouseUp={(e) => (e.currentTarget.style.borderColor = "var(--border-hover)")}
+        onMouseEnter={(e) => {
+          if (theme !== 'light') {
+            e.currentTarget.style.borderColor = "var(--border-hover)";
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (theme !== 'light') {
+            e.currentTarget.style.borderColor = "var(--border-color)";
+          }
+        }}
+        onMouseDown={(e) => {
+          if (theme !== 'light') {
+            e.currentTarget.style.borderColor = "color-mix(in srgb, var(--border-hover), black 20%))";
+          }
+        }}
+        onMouseUp={(e) => {
+          if (theme !== 'light') {
+            e.currentTarget.style.borderColor = "var(--border-hover)";
+          }
+        }}
       >
         {/* 封面区域 */}
         <div className="aspect-square relative overflow-hidden">
@@ -136,15 +152,19 @@ export default function PlaylistCard({ playlist, onDelete, onUpdateRefresh }: Pr
               e.stopPropagation();
               openModal();
             }}
-            className={`absolute top-2 right-2 z-10 w-9 h-9 flex items-center justify-center rounded-xl backdrop-blur-md transition-colors cursor-pointer active:scale-95 ${
+            className={`absolute top-2 right-2 z-10 w-9 h-9 flex items-center justify-center rounded-xl backdrop-blur-md transition-all cursor-pointer active:scale-95 ${
+              theme === 'light' ? 'nm-button border-none' : ''
+            } ${
               hasRefresh ? 'text-emerald-400/70' : ''
             }`}
             style={{
-              backgroundColor: hasRefresh 
-                ? 'rgba(16,185,129,0.15)' 
-                : isDarkCover 
-                  ? 'rgba(255,255,255,0.12)' 
-                  : 'rgba(0,0,0,0.08)',
+              backgroundColor: theme === 'light' 
+                ? undefined 
+                : hasRefresh 
+                  ? 'rgba(16,185,129,0.15)' 
+                  : isDarkCover 
+                    ? 'rgba(255,255,255,0.12)' 
+                    : 'rgba(0,0,0,0.08)',
               color: hasRefresh 
                 ? undefined 
                 : isDarkCover 
@@ -284,14 +304,14 @@ export default function PlaylistCard({ playlist, onDelete, onUpdateRefresh }: Pr
                           setShowCustomInput(false);
                           closeModal();
                         }}
-                        className="active:scale-[0.98] w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-colors cursor-pointer min-h-[48px] border border-transparent"
+                        className={`active:scale-[0.98] w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all cursor-pointer min-h-[48px] border border-transparent ${theme === 'light' && !isActive ? 'nm-button' : ''}`}
                         style={
                           isActive
                             ? { backgroundColor: "rgba(16,185,129,0.1)", color: "#34d399", borderColor: "rgba(16,185,129,0.2)" }
-                            : { backgroundColor: "var(--surface-color)", color: "var(--text-secondary)", opacity: 0.5 }
+                            : { backgroundColor: theme === 'light' ? undefined : "var(--surface-color)", color: "var(--text-secondary)", opacity: theme === 'light' ? 1 : 0.5 }
                         }
-                        onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.background = "var(--surface-hover)"; (e.currentTarget as HTMLButtonElement).style.opacity = "0.7"; } }}
-                        onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.background = "var(--surface-color)"; (e.currentTarget as HTMLButtonElement).style.opacity = "0.5"; } }}
+                        onMouseEnter={(e) => { if (!isActive && theme !== 'light') { e.currentTarget.style.background = "var(--surface-hover)"; (e.currentTarget as HTMLButtonElement).style.opacity = "0.7"; } }}
+                        onMouseLeave={(e) => { if (!isActive && theme !== 'light') { e.currentTarget.style.background = "var(--surface-color)"; (e.currentTarget as HTMLButtonElement).style.opacity = "0.5"; } }}
                       >
                         <span>{opt.label}</span>
                         {isActive && <span className="w-2 h-2 rounded-full bg-emerald-400" />}
@@ -311,14 +331,14 @@ export default function PlaylistCard({ playlist, onDelete, onUpdateRefresh }: Pr
                             setCustomMinutes("");
                           }
                         }}
-                        className={`active:scale-[0.98] w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-colors cursor-pointer min-h-[48px] border border-transparent`}
+                        className={`active:scale-[0.98] w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all cursor-pointer min-h-[48px] border border-transparent ${theme === 'light' && !isCustomInterval ? 'nm-button' : ''}`}
                         style={
                           isCustomInterval || showCustomInput
                             ? { backgroundColor: "rgba(59,130,246,0.1)", color: "#60a5fa", borderColor: "rgba(59,130,246,0.2)" }
-                            : { backgroundColor: "var(--surface-color)", color: "var(--text-secondary)", opacity: 0.5 }
+                            : { backgroundColor: theme === 'light' ? undefined : "var(--surface-color)", color: "var(--text-secondary)", opacity: theme === 'light' ? 1 : 0.5 }
                         }
-                        onMouseEnter={(e) => { if (!(isCustomInterval || showCustomInput)) { e.currentTarget.style.background = "var(--surface-hover)"; (e.currentTarget as HTMLButtonElement).style.opacity = "0.7"; } }}
-                        onMouseLeave={(e) => { if (!(isCustomInterval || showCustomInput)) { e.currentTarget.style.background = "var(--surface-color)"; (e.currentTarget as HTMLButtonElement).style.opacity = "0.5"; } }}
+                        onMouseEnter={(e) => { if (!(isCustomInterval || showCustomInput) && theme !== 'light') { e.currentTarget.style.background = "var(--surface-hover)"; (e.currentTarget as HTMLButtonElement).style.opacity = "0.7"; } }}
+                        onMouseLeave={(e) => { if (!(isCustomInterval || showCustomInput) && theme !== 'light') { e.currentTarget.style.background = "var(--surface-color)"; (e.currentTarget as HTMLButtonElement).style.opacity = "0.5"; } }}
                       >
                         <div className="flex items-center gap-2">
                           <Clock className="w-3.5 h-3.5" />
@@ -376,14 +396,26 @@ export default function PlaylistCard({ playlist, onDelete, onUpdateRefresh }: Pr
                   onDelete(playlist.id);
                   closeModal();
                 }}
-                className="active:scale-[0.98] w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-medium transition-colors cursor-pointer min-h-[52px]"
+                className={`active:scale-[0.98] w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-medium transition-all cursor-pointer min-h-[52px] ${theme === 'light' ? 'nm-button border-none' : ''}`}
                 style={{
-                  backgroundColor: "rgba(239,68,68,0.08)",
+                  backgroundColor: theme === 'light' ? undefined : "rgba(239,68,68,0.08)",
                   color: "#f87171",
-                  opacity: 0.7,
+                  opacity: theme === 'light' ? 1 : 0.7,
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(239,68,68,0.15)"; e.currentTarget.style.color = "#f87171"; e.currentTarget.style.opacity = 1; }}
-                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "rgba(239,68,68,0.08)"; e.currentTarget.style.color = "#f87171"; e.currentTarget.style.opacity = 0.7; }}
+                onMouseEnter={(e) => {
+                  if (theme !== 'light') {
+                    e.currentTarget.style.backgroundColor = "rgba(239,68,68,0.15)";
+                    e.currentTarget.style.color = "#f87171";
+                    e.currentTarget.style.opacity = 1;
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (theme !== 'light') {
+                    e.currentTarget.style.backgroundColor = "rgba(239,68,68,0.08)";
+                    e.currentTarget.style.color = "#f87171";
+                    e.currentTarget.style.opacity = 0.7;
+                  }
+                }}
               >
                 <Trash2 className="w-4 h-4" />
                 删除歌单
