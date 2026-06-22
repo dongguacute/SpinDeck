@@ -105,15 +105,23 @@ export default function PlaylistCard({ playlist, onDelete, onUpdateRefresh }: Pr
     <>
       <Link
         to={`/shelf/${playlist.id}`}
-        className="group relative rounded-2xl overflow-hidden border active:scale-[0.98] transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/40 block cursor-pointer select-none touch-manipulation"
+        className="group relative rounded-2xl overflow-hidden border active:scale-[0.96] transition-all duration-200 hover:-translate-y-1 block cursor-pointer select-none touch-manipulation"
         style={{
           background: "var(--surface-color)",
           borderColor: "var(--border-color)",
+          boxShadow: "var(--shadow-card)",
         }}
-        onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--border-hover)")}
-        onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--border-color)")}
-        onMouseDown={(e) => (e.currentTarget.style.borderColor = "color-mix(in srgb, var(--border-hover), black 20%))")}
-        onMouseUp={(e) => (e.currentTarget.style.borderColor = "var(--border-hover)")}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.borderColor = "var(--border-highlight)";
+          e.currentTarget.style.boxShadow = "var(--shadow-raised)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.borderColor = "var(--border-color)";
+          e.currentTarget.style.boxShadow = "var(--shadow-card)";
+        }}
+        onMouseDown={(e) => {
+          e.currentTarget.style.boxShadow = "var(--shadow-pressed)";
+        }}
       >
         {/* 封面区域 */}
         <div className="aspect-square relative overflow-hidden">
@@ -136,20 +144,22 @@ export default function PlaylistCard({ playlist, onDelete, onUpdateRefresh }: Pr
               e.stopPropagation();
               openModal();
             }}
-            className={`absolute top-2 right-2 z-10 w-9 h-9 flex items-center justify-center rounded-xl backdrop-blur-md transition-colors cursor-pointer active:scale-95 ${
-              hasRefresh ? 'text-emerald-400/70' : ''
+            className={`absolute top-2 right-2 z-10 w-9 h-9 flex items-center justify-center rounded-xl transition-all cursor-pointer active:scale-90 ${
+              hasRefresh ? 'text-emerald-400/90' : ''
             }`}
             style={{
               backgroundColor: hasRefresh 
-                ? 'rgba(16,185,129,0.15)' 
+                ? 'var(--surface-color)' 
                 : isDarkCover 
-                  ? 'rgba(255,255,255,0.12)' 
-                  : 'rgba(0,0,0,0.08)',
+                  ? 'rgba(0,0,0,0.3)' 
+                  : 'rgba(255,255,255,0.4)',
               color: hasRefresh 
                 ? undefined 
                 : isDarkCover 
-                  ? 'rgba(255,255,255,0.75)' 
-                  : 'rgba(0,0,0,0.55)',
+                  ? 'rgba(255,255,255,0.9)' 
+                  : 'rgba(0,0,0,0.7)',
+              boxShadow: "var(--shadow-raised)",
+              border: "1px solid var(--border-highlight)",
             }}
             title="歌单设置"
           >
@@ -190,7 +200,7 @@ export default function PlaylistCard({ playlist, onDelete, onUpdateRefresh }: Pr
           onClick={() => !isClosing && closeModal()}
         >
           <div
-            className={`absolute inset-0 backdrop-blur-sm transition-opacity duration-300 ${showSettingsModal ? 'opacity-100' : 'opacity-0'}`}
+            className={`absolute inset-0 transition-opacity duration-300 ${showSettingsModal ? 'opacity-100' : 'opacity-0'}`}
             style={{ background: "color-mix(in srgb, var(--bg-primary), transparent 40%)" }}
           />
 
@@ -203,7 +213,11 @@ export default function PlaylistCard({ playlist, onDelete, onUpdateRefresh }: Pr
                   ? 'translate-y-full sm:scale-95 sm:opacity-0'
                   : (dragY === 0 ? 'translate-y-0 sm:scale-100 opacity-100' : '')
             }`}
-            style={{ background: "var(--bg-tertiary)", borderColor: "var(--border-color)" }}
+            style={{ 
+              background: "var(--bg-tertiary)", 
+              borderColor: "var(--border-color)",
+              boxShadow: "var(--shadow-card)",
+            }}
             transform={dragY > 0 && !isClosing ? `translateY(${dragY}px)` : undefined}
             transition={dragY > 0 && !isClosing ? "none" : undefined}
             onClick={(e) => e.stopPropagation()}

@@ -16,9 +16,10 @@ export default function Playlists() {
   return (
     <div className="min-h-screen transition-colors duration-300" style={{ background: "var(--bg-primary)" }}>
       {/* 顶部导航 */}
-      <header className="sticky top-0 z-40 backdrop-blur-xl border-b transition-colors duration-200" style={{
-        background: "color-mix(in srgb, var(--bg-secondary), transparent 20%)",
+      <header className="sticky top-0 z-40 border-b transition-colors duration-200" style={{
+        background: "var(--bg-secondary)",
         borderColor: "var(--border-color)",
+        boxShadow: "var(--shadow-card)",
       }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -47,10 +48,25 @@ export default function Playlists() {
             </Link>
             <button
               onClick={() => setModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer"
-              style={{ backgroundColor: "var(--surface-hover)", color: "var(--text-primary)" }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "color-mix(in srgb, var(--surface-hover), black 10%))")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "var(--surface-hover)")}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 cursor-pointer"
+              style={{ 
+                backgroundColor: "var(--bg-tertiary)", 
+                color: "var(--text-primary)",
+                boxShadow: "var(--shadow-raised)",
+                border: "1px solid var(--border-highlight)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-1px)";
+                e.currentTarget.style.backgroundColor = "var(--surface-hover)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.backgroundColor = "var(--bg-tertiary)";
+              }}
+              onMouseDown={(e) => {
+                e.currentTarget.style.boxShadow = "var(--shadow-pressed)";
+                e.currentTarget.style.transform = "translateY(0)";
+              }}
             >
               <Plus className="w-4 h-4" />
               创建歌单

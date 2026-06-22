@@ -4,29 +4,53 @@
 
 :root,
 [data-theme="dark"] {
-  --bg-primary: #0a0a0a;
-  --bg-secondary: #111111;
-  --bg-tertiary: #1a1a1a;
-  --text-primary: rgba(255, 255, 255, 0.9);
-  --text-secondary: rgba(255, 255, 255, 0.6);
-  --text-muted: rgba(255, 255, 255, 0.35);
-  --border-color: rgba(255, 255, 255, 0.06);
-  --border-hover: rgba(255, 255, 255, 0.12);
-  --surface-color: rgba(255, 255, 255, 0.04);
-  --surface-hover: rgba(255, 255, 255, 0.08);
+  --bg-primary: #121212;
+  --bg-secondary: #1a1a1a;
+  --bg-tertiary: #242424;
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --text-muted: #666666;
+  --border-color: #000000;
+  --border-highlight: rgba(255, 255, 255, 0.05);
+  --surface-color: #1e1e1e;
+  --surface-hover: #252525;
+  
+  /* 拟物化阴影 */
+  --shadow-raised: 
+    -4px -4px 10px rgba(255, 255, 255, 0.02),
+    4px 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-pressed: 
+    inset -2px -2px 6px rgba(255, 255, 255, 0.01),
+    inset 2px 2px 8px rgba(0, 0, 0, 0.6);
+  --shadow-card:
+    0 1px 1px rgba(255, 255, 255, 0.05) inset,
+    0 10px 20px rgba(0, 0, 0, 0.4),
+    0 6px 6px rgba(0, 0, 0, 0.3);
 }
 
 [data-theme="light"] {
-  --bg-primary: #f8f9fa;
-  --bg-secondary: #ffffff;
-  --bg-tertiary: #f0f1f3;
-  --text-primary: #1a1a1a;
-  --text-secondary: #4a4a4a;
-  --text-muted: #8c8c8c;
-  --border-color: rgba(0, 0, 0, 0.08);
-  --border-hover: rgba(0, 0, 0, 0.15);
-  --surface-color: rgba(0, 0, 0, 0.03);
-  --surface-hover: rgba(0, 0, 0, 0.06);
+  --bg-primary: #e6e9ef;
+  --bg-secondary: #f0f2f5;
+  --bg-tertiary: #ffffff;
+  --text-primary: #2d3436;
+  --text-secondary: #636e72;
+  --text-muted: #b2bec3;
+  --border-color: #d1d9e6;
+  --border-highlight: #ffffff;
+  --surface-color: #e6e9ef;
+  --surface-hover: #eceff4;
+
+  /* 拟物化阴影 */
+  --shadow-raised: 
+    -6px -6px 12px rgba(255, 255, 255, 0.8),
+    6px 6px 12px rgba(0, 0, 0, 0.1);
+  --shadow-pressed: 
+    inset -3px -3px 7px rgba(255, 255, 255, 0.7),
+    inset 3px 3px 7px rgba(0, 0, 0, 0.08);
+  --shadow-card:
+    0 1px 0 #ffffff inset,
+    0 10px 20px rgba(0, 0, 0, 0.05),
+    0 6px 6px rgba(0, 0, 0, 0.05);
 }
 
 html, body {

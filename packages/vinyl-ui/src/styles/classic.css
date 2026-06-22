@@ -10,11 +10,10 @@
     radial-gradient(circle at 50% 50%, transparent 18.5%, rgba(255, 255, 255, 0.06) 19%, transparent 19.8%),
     radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--vinyl-color) 38%, transparent) 0%, color-mix(in srgb, var(--vinyl-color) 55%, transparent) 100%);
   box-shadow:
-    0 10px 48px rgba(0, 0, 0, 0.38),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.14),
-    inset 0 0 60px color-mix(in srgb, var(--vinyl-color) 18%, transparent);
-  border: 2px solid color-mix(in srgb, var(--vinyl-color) 35%, white 18%);
-  backdrop-filter: blur(3px);
+    0 15px 50px rgba(0, 0, 0, 0.5),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 0 60px color-mix(in srgb, var(--vinyl-color) 25%, transparent);
+  border: 3px solid color-mix(in srgb, var(--vinyl-color) 40%, white 10%);
 }
 
 .sd-vinyl-style-classic .sd-vinyl-disc::before {

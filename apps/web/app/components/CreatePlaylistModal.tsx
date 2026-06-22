@@ -135,8 +135,13 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
 
   return (
     <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-300 ${animState === "in" ? "opacity-100" : "opacity-0"}`} onClick={onClose}>
-      <div className="absolute inset-0 backdrop-blur-sm" style={{ background: "color-mix(in srgb, var(--bg-primary), transparent 30%)" }} />
-      <div className={`relative w-full max-w-md border rounded-3xl p-6 shadow-2xl transition-all duration-300 ${animState === "in" ? "scale-100 translate-y-0" : "scale-95 translate-y-4"}`} style={modalBgStyle} onClick={(e) => e.stopPropagation()}>
+      <div className="absolute inset-0" style={{ background: "rgba(0,0,0,0.4)" }} />
+      <div className={`relative w-full max-w-md border rounded-3xl p-6 shadow-2xl transition-all duration-300 ${animState === "in" ? "scale-100 translate-y-0" : "scale-95 translate-y-4"}`} 
+        style={{
+          ...modalBgStyle,
+          boxShadow: "var(--shadow-card)",
+        }} 
+        onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-lg font-semibold flex items-center gap-2" style={{ color: "var(--text-primary)", opacity: 0.9 }}><Plus className="w-5 h-5" />创建歌单</h2>
           <button onClick={onClose} className="p-2 rounded-xl transition-colors cursor-pointer"

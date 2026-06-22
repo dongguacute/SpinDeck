@@ -239,7 +239,7 @@ export default function ShelfPage() {
       {!inPlayback && (
         <Link
           to="/"
-          className="absolute top-6 left-6 z-10 flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-medium transition-all backdrop-blur-sm cursor-pointer"
+          className="absolute top-6 left-6 z-10 flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-medium transition-all cursor-pointer"
           style={{
             backgroundColor: chrome.surface,
             borderColor: chrome.border,
@@ -317,7 +317,13 @@ export default function ShelfPage() {
 
       {/* 歌单主信息（播放态隐藏） */}
       {playlist && !inPlayback && (
-        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2.5 backdrop-blur-sm">
+        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2.5 px-4 py-2 rounded-2xl border"
+          style={{
+            backgroundColor: "var(--surface-color)",
+            borderColor: "var(--border-color)",
+            boxShadow: "var(--shadow-card)",
+          }}
+        >
           {/* 名字和信息 */}
           <div className="flex items-center gap-2.5">
             <span
@@ -376,28 +382,55 @@ export default function ShelfPage() {
 
       {/* 加载中 */}
       {loading && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center backdrop-blur-sm" style={{ background: "color-mix(in srgb, var(--bg-primary), transparent 50%)" }}>
-          <div className="flex items-center gap-3" style={{ color: "var(--text-secondary)", opacity: 0.6 }}>
-            <LoaderCircle className="w-5 h-5 animate-spin" />
-            <span className="text-sm">加载歌单中…</span>
+        <div className="absolute inset-0 z-20 flex items-center justify-center" style={{ background: "var(--bg-primary)" }}>
+          <div className="flex flex-col items-center gap-4 p-8 rounded-3xl border"
+            style={{
+              backgroundColor: "var(--surface-color)",
+              borderColor: "var(--border-color)",
+              boxShadow: "var(--shadow-card)",
+            }}
+          >
+            <LoaderCircle className="w-8 h-8 animate-spin" style={{ color: "var(--text-secondary)" }} />
+            <span className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>正在加载歌单…</span>
           </div>
         </div>
       )}
 
       {/* 错误 */}
       {error && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center backdrop-blur-sm" style={{ background: "color-mix(in srgb, var(--bg-primary), transparent 50%)" }}>
-          <div className="text-center">
-            <p className="text-sm mb-3" style={{ color: "#f87171" }}>{error}</p>
+        <div className="absolute inset-0 z-20 flex items-center justify-center" style={{ background: "var(--bg-primary)" }}>
+          <div className="text-center p-8 rounded-3xl border"
+            style={{
+              backgroundColor: "var(--surface-color)",
+              borderColor: "var(--border-color)",
+              boxShadow: "var(--shadow-card)",
+            }}
+          >
+            <p className="text-sm mb-5 font-medium" style={{ color: "#f87171" }}>{error}</p>
             <button
               onClick={() => fetcher.submit(
                 { url: playlist!.importUrl, platform: playlist!.platform },
                 { method: "POST", action: "/api/import" },
               )}
-              className="px-4 py-2 rounded-xl text-xs font-medium transition-colors cursor-pointer"
-              style={{ backgroundColor: "var(--surface-hover)", color: "var(--text-secondary)" }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "color-mix(in srgb, var(--surface-hover), black 20%))")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "var(--surface-hover)")}
+              className="px-6 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+              style={{ 
+                backgroundColor: "var(--bg-tertiary)", 
+                color: "var(--text-primary)",
+                boxShadow: "var(--shadow-raised)",
+                border: "1px solid var(--border-highlight)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-1px)";
+                e.currentTarget.style.backgroundColor = "var(--surface-hover)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.backgroundColor = "var(--bg-tertiary)";
+              }}
+              onMouseDown={(e) => {
+                e.currentTarget.style.boxShadow = "var(--shadow-pressed)";
+                e.currentTarget.style.transform = "translateY(0)";
+              }}
             >
               重试
             </button>
@@ -407,27 +440,46 @@ export default function ShelfPage() {
 
       {/* 手动创建的歌单无 importUrl */}
       {!loading && !error && !playlist?.importUrl && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center backdrop-blur-sm" style={{ background: "color-mix(in srgb, var(--bg-primary), transparent 50%)" }}>
-          <p className="text-sm" style={{ color: "var(--text-muted)", opacity: 0.3 }}>该歌单为手动创建，暂无歌曲数据</p>
+        <div className="absolute inset-0 z-20 flex items-center justify-center" style={{ background: "var(--bg-primary)" }}>
+          <div className="p-8 rounded-3xl border"
+            style={{
+              backgroundColor: "var(--surface-color)",
+              borderColor: "var(--border-color)",
+              boxShadow: "var(--shadow-pressed)",
+            }}
+          >
+            <p className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>该歌单为手动创建，暂无歌曲数据</p>
+          </div>
         </div>
       )}
 
       {/* 歌单详情弹窗 */}
       {showDetail && playlist && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={() => setShowDetail(false)}>
-          <div className="absolute inset-0 backdrop-blur-sm" style={{ background: "color-mix(in srgb, var(--bg-primary), transparent 40%)" }} />
-          <div className="relative w-full max-w-sm border rounded-2xl p-6 shadow-2xl" style={{ background: "var(--bg-tertiary)", borderColor: "var(--border-color)" }} onClick={(e) => e.stopPropagation()}>
+          <div className="absolute inset-0" style={{ background: "rgba(0,0,0,0.4)" }} />
+          <div className="relative w-full max-w-sm border rounded-3xl p-6 shadow-2xl" 
+            style={{ 
+              background: "var(--bg-tertiary)", 
+              borderColor: "var(--border-color)",
+              boxShadow: "var(--shadow-card)",
+            }} 
+            onClick={(e) => e.stopPropagation()}>
             {/* 标题栏 */}
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-base font-semibold flex items-center gap-2" style={{ color: "var(--text-primary)", opacity: 0.9 }}>
-                <Disc3 className="w-4 h-4" style={{ color: "var(--text-muted)" }} />歌单信息
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-base font-bold flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
+                <Disc3 className="w-5 h-5" style={{ color: "var(--text-muted)" }} />歌单信息
               </h3>
               <button
                 onClick={() => setShowDetail(false)}
-                className="p-1.5 rounded-lg transition-colors cursor-pointer"
-                style={{ color: "var(--text-muted)", opacity: 0.3 }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = "var(--surface-color)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text-secondary)"; (e.currentTarget as HTMLButtonElement).style.opacity = "0.6"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text-muted)"; (e.currentTarget as HTMLButtonElement).style.opacity = "0.3"; }}
+                className="p-2 rounded-xl transition-all cursor-pointer"
+                style={{ 
+                  color: "var(--text-muted)",
+                  boxShadow: "var(--shadow-raised)",
+                  border: "1px solid var(--border-highlight)",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "var(--surface-hover)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text-secondary)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text-muted)"; }}
+                onMouseDown={(e) => { e.currentTarget.style.boxShadow = "var(--shadow-pressed)"; }}
               >
                 <X className="w-4 h-4" />
               </button>
@@ -435,13 +487,14 @@ export default function ShelfPage() {
 
             {/* 封面 */}
             {(fetcher.data?.cover || playlist.coverUrl) && (
-              <div className="mb-5 flex justify-center">
-                <img
-                  src={fetcher.data?.cover || playlist.coverUrl}
-                  alt={playlist.name}
-                  className="w-36 h-36 rounded-xl object-cover shadow-lg border"
-                  style={{ borderColor: "var(--border-color)" }}
-                />
+              <div className="mb-6 flex justify-center">
+                <div className="p-2 rounded-2xl border" style={{ backgroundColor: "var(--surface-color)", borderColor: "var(--border-color)", boxShadow: "var(--shadow-card)" }}>
+                  <img
+                    src={fetcher.data?.cover || playlist.coverUrl}
+                    alt={playlist.name}
+                    className="w-40 h-40 rounded-xl object-cover"
+                  />
+                </div>
               </div>
             )}
 

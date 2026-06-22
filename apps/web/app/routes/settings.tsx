@@ -73,10 +73,11 @@ export default function Settings() {
     >
       {/* 顶部导航 */}
       <header
-        className="sticky top-0 z-40 backdrop-blur-xl border-b transition-colors duration-300"
+        className="sticky top-0 z-40 border-b transition-colors duration-300"
         style={{
-          background: "color-mix(in srgb, var(--bg-secondary), transparent 20%)",
+          background: "var(--bg-secondary)",
           borderColor: "var(--border-color)",
+          boxShadow: "var(--shadow-card)",
         }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
