@@ -196,7 +196,7 @@ export default function PlaylistCard({ playlist, onDelete, onUpdateRefresh }: Pr
       {/* 设置弹窗 - 手机端底部滑出，PC端居中弹窗 */}
       {(showSettingsModal || isClosing) && (
         <div
-          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4"
+          className="fixed inset-0 z-100 flex items-end sm:items-center justify-center p-0 sm:p-4"
           onClick={() => !isClosing && closeModal()}
         >
           <div
@@ -217,9 +217,9 @@ export default function PlaylistCard({ playlist, onDelete, onUpdateRefresh }: Pr
               background: "var(--bg-tertiary)", 
               borderColor: "var(--border-color)",
               boxShadow: "var(--shadow-card)",
+              transform: dragY > 0 && !isClosing ? `translateY(${dragY}px)` : undefined,
+              transition: dragY > 0 && !isClosing ? "none" : undefined,
             }}
-            transform={dragY > 0 && !isClosing ? `translateY(${dragY}px)` : undefined}
-            transition={dragY > 0 && !isClosing ? "none" : undefined}
             onClick={(e) => e.stopPropagation()}
             onTouchStart={(e) => {
               if (isClosing) return;
@@ -396,8 +396,8 @@ export default function PlaylistCard({ playlist, onDelete, onUpdateRefresh }: Pr
                   color: "#f87171",
                   opacity: 0.7,
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(239,68,68,0.15)"; e.currentTarget.style.color = "#f87171"; e.currentTarget.style.opacity = 1; }}
-                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "rgba(239,68,68,0.08)"; e.currentTarget.style.color = "#f87171"; e.currentTarget.style.opacity = 0.7; }}
+                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "rgba(239,68,68,0.15)"; e.currentTarget.style.color = "#f87171"; e.currentTarget.style.opacity = "1"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "rgba(239,68,68,0.08)"; e.currentTarget.style.color = "#f87171"; e.currentTarget.style.opacity = "0.7"; }}
               >
                 <Trash2 className="w-4 h-4" />
                 删除歌单
