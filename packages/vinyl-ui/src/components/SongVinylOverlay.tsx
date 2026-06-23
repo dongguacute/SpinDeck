@@ -30,8 +30,6 @@ interface Props {
   styleName?: string;
   tonearmPortalRef?: React.RefObject<HTMLDivElement | null>;
   tonearmPortalReady?: boolean;
-  /** 歌曲播完：SpinDeck 按列表循环切下一首 */
-  onSongEnd?: () => void;
   onPlayingChange?: (playing: boolean) => void;
   autoPlay?: boolean;
   autoPlayToken?: number;
@@ -45,8 +43,6 @@ const ARM_REST_DEG = -28;
 const ARM_PLAY_DEG = 18;
 const PLAY_SYNC_GRACE_MS = 2800;
 const STATUS_POLL_MS = 800;
-const SONG_END_PADDING_MS = 800;
-const DEFAULT_SONG_DURATION_SEC = 300;
 
 function px(url: string) {
   return `/api/image?url=${encodeURIComponent(url)}`;
@@ -65,7 +61,6 @@ export default function SongVinylOverlay({
   styleName = "classic",
   tonearmPortalRef,
   tonearmPortalReady = false,
-  onSongEnd,
   onPlayingChange,
   autoPlay = false,
   autoPlayToken = 0,
@@ -86,44 +81,9 @@ export default function SongVinylOverlay({
   const pendingRef = useRef(false);
   const draggingRef = useRef(false);
   const lastLocalActionAtRef = useRef(0);
-  const onSongEndRef = useRef(onSongEnd);
-  const endTimerRef = useRef<number | null>(null);
-  const songEndGuardRef = useRef(0);
-
-  useEffect(() => {
-    onSongEndRef.current = onSongEnd;
-  }, [onSongEnd]);
-
-  const clearSongEndTimer = useCallback(() => {
-    if (endTimerRef.current != null) {
-      window.clearTimeout(endTimerRef.current);
-      endTimerRef.current = null;
-    }
-  }, []);
-
-  const scheduleSongEndTimer = useCallback(
-    (target: SongInfo) => {
-      clearSongEndTimer();
-      const durationSec =
-        target.duration && target.duration > 0 ? target.duration : DEFAULT_SONG_DURATION_SEC;
-      endTimerRef.current = window.setTimeout(() => {
-        endTimerRef.current = null;
-        if (!playingRef.current || progressRef.current < SNAP_ON_THRESHOLD) return;
-        if (canResumeSong(target)) return;
-        const guard = ++songEndGuardRef.current;
-        void pauseSong(platform).finally(() => {
-          if (guard !== songEndGuardRef.current) return;
-          onSongEndRef.current?.();
-        });
-      }, durationSec * 1000 + SONG_END_PADDING_MS);
-    },
-    [clearSongEndTimer, platform],
-  );
 
   const stopPlayback = useCallback(() => {
     lastLocalActionAtRef.current = Date.now();
-    songEndGuardRef.current += 1;
-    clearSongEndTimer();
     playRequestRef.current += 1;
     setPendingPlay(false);
     setPlaying(false);
@@ -131,7 +91,7 @@ export default function SongVinylOverlay({
     void pauseSong(platform);
     progressRef.current = 0;
     setProgress(0);
-  }, [platform, song, clearSongEndTimer]);
+  }, [platform, song]);
 
   const setArmProgress = useCallback(
     (value: number) => {
@@ -172,7 +132,6 @@ export default function SongVinylOverlay({
         setPendingPlay(false);
         if (result.ok && result.playing) {
           markSongStarted(song);
-          scheduleSongEndTimer(song);
           return;
         }
         rollbackVisual();
@@ -184,7 +143,6 @@ export default function SongVinylOverlay({
       setPendingPlay(false);
       if (result.ok && result.playing) {
         markSongStarted(song);
-        scheduleSongEndTimer(song);
         return;
       }
       rollbackVisual();
@@ -194,13 +152,11 @@ export default function SongVinylOverlay({
       setPendingPlay(false);
       rollbackVisual();
     }
-  }, [platform, song, setArmProgress, scheduleSongEndTimer]);
+  }, [platform, song, setArmProgress]);
 
   useEffect(() => {
-    clearSongEndTimer();
-    songEndGuardRef.current += 1;
     setSpinActive(false);
-  }, [pageSessionId, song, clearSongEndTimer]);
+  }, [pageSessionId, song]);
 
   useEffect(() => {
     playingRef.current = playing;

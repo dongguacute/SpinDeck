@@ -118,11 +118,6 @@ export default function ShelfPage() {
     handleSongSelect(songs[prevIndex], prevIndex, true);
   }, [songs, selectedIndex, handleSongSelect]);
 
-  /** 列表循环：播完自动下一首 */
-  const handleSongEnd = useCallback(() => {
-    playNextSong();
-  }, [playNextSong]);
-
   const handleBookAnimationComplete = useCallback((_index: number) => {
     setShowVinyl(true);
   }, []);
@@ -694,7 +689,6 @@ export default function ShelfPage() {
             theme={theme}
             tonearmPortalRef={tonearmPortalRef}
             tonearmPortalReady={tonearmPortalReady}
-            onSongEnd={handleSongEnd}
             autoPlay={autoPlayNext}
             autoPlayToken={autoPlayToken}
           />
