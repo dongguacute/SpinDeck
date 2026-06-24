@@ -33,6 +33,8 @@ interface Props {
   onPlayingChange?: (playing: boolean) => void;
   autoPlay?: boolean;
   autoPlayToken?: number;
+  vinylColor?: string;
+  labelColor?: string;
 }
 
 const FALLBACK_COLOR = "#6eb5d4";
@@ -64,9 +66,17 @@ export default function SongVinylOverlay({
   onPlayingChange,
   autoPlay = false,
   autoPlayToken = 0,
+  vinylColor: propVinylColor,
+  labelColor: propLabelColor,
 }: Props) {
-  const [vinylColor, setVinylColor] = useState(FALLBACK_COLOR);
-  const [labelColor, setLabelColor] = useState(deriveVinylLabelColor(FALLBACK_COLOR));
+  const [internalVinylColor, setInternalVinylColor] = useState(FALLBACK_COLOR);
+
+  const vinylColor = propVinylColor || internalVinylColor;
+  const labelColor = useMemo(() => {
+    if (propLabelColor) return propLabelColor;
+    return deriveVinylLabelColor(vinylColor);
+  }, [propLabelColor, vinylColor]);
+
   const [interactive, setInteractive] = useState(false);
   const [progress, setProgress] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -193,13 +203,11 @@ export default function SongVinylOverlay({
         const edge = await pickEdgeColors({ content: px(song.cover) });
         const main = rgbToHex(edge.top.r, edge.top.g, edge.top.b);
         if (!cancelled) {
-          setVinylColor(main);
-          setLabelColor(deriveVinylLabelColor(main));
+          setInternalVinylColor(main);
         }
       } catch {
         if (!cancelled) {
-          setVinylColor(FALLBACK_COLOR);
-          setLabelColor(deriveVinylLabelColor(FALLBACK_COLOR));
+          setInternalVinylColor(FALLBACK_COLOR);
         }
       }
     })();

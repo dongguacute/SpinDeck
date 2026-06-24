@@ -706,6 +706,7 @@ export default function ShelfPage() {
             pageSessionId={pageSessionId}
             theme={theme}
             styleName={settings.vinylStyle}
+            vinylColor={bookThemeColor || undefined}
             tonearmPortalRef={tonearmPortalRef}
             tonearmPortalReady={tonearmPortalReady}
             autoPlay={autoPlayNext}
@@ -821,16 +822,13 @@ export default function ShelfPage() {
               <div>
                 <label className="text-sm font-bold block mb-4" style={{ color: "var(--text-secondary)" }}>光碟样式</label>
                 <div className="grid grid-cols-3 gap-4">
-                  {[
-                    { id: "classic", label: "经典", color: "#6eb5d4" },
-                    { id: "modern", label: "现代", color: "#1a1a1a" }
-                  ].map((style) => (
-                    <div key={style.id}>
+                  {["classic", "modern"].map((styleId) => (
+                    <div key={styleId}>
                       <VinylStylePreview
-                        styleName={style.id}
-                        active={settings.vinylStyle === style.id}
-                        onClick={() => updateSettings({ vinylStyle: style.id })}
-                        color={style.color}
+                        styleName={styleId}
+                        active={settings.vinylStyle === styleId}
+                        onClick={() => updateSettings({ vinylStyle: styleId })}
+                        color={bookThemeColor || undefined}
                       />
                     </div>
                   ))}
