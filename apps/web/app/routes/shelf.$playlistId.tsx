@@ -794,64 +794,99 @@ export default function ShelfPage() {
 
       {/* 调节弹窗 */}
       {inPlayback && showSettings && (
-        <div className="fixed inset-0 z-100 flex items-end justify-center sm:items-center p-4" onClick={() => setShowSettings(false)}>
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+        <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center p-4" onClick={() => setShowSettings(false)}>
+          <div className="absolute inset-0 bg-black/20 backdrop-blur-md" />
           <div 
-            className="relative w-full max-w-md bg-white dark:bg-[#1a1a1a] rounded-t-3xl sm:rounded-3xl p-8 shadow-2xl animate-in slide-in-from-bottom duration-300"
+            className="relative w-full max-w-md rounded-t-[2.5rem] sm:rounded-[2.5rem] p-8 shadow-2xl animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 backdrop-blur-2xl"
             style={{ 
-              backgroundColor: "var(--surface-color)",
-              borderColor: "var(--border-color)",
-              borderWidth: "1px"
+              backgroundColor: chrome.surface,
+              borderColor: chrome.border,
+              borderWidth: "1px",
+              color: chrome.text
             }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-8">
-              <h3 className="text-lg font-bold flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
-                <Sliders className="w-5 h-5" /> 视觉调节
+              <h3 className="text-xl font-bold flex items-center gap-2.5">
+                <Settings2 className="w-5 h-5 opacity-60" /> 视觉调节
               </h3>
               <button
                 onClick={() => setShowSettings(false)}
-                className="p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                className="p-2 rounded-2xl transition-all hover:scale-110 active:scale-90 cursor-pointer"
+                style={{ backgroundColor: chrome.surfaceHover, color: chrome.textSecondary }}
               >
-                <X className="w-5 h-5" style={{ color: "var(--text-muted)" }} />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="space-y-8">
+            <div className="space-y-10">
               {/* 光碟样式 */}
-              <div>
-                <label className="text-sm font-bold block mb-4" style={{ color: "var(--text-secondary)" }}>光碟样式</label>
-                <div className="grid grid-cols-3 gap-4">
+              <section>
+                <div className="flex items-center gap-2 mb-4">
+                  <Disc3 className="w-4 h-4 opacity-40" />
+                  <label className="text-xs font-bold uppercase tracking-widest opacity-40">光碟样式</label>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
                   {["classic", "modern"].map((styleId) => (
-                    <div key={styleId}>
-                      <VinylStylePreview
-                        styleName={styleId}
-                        active={settings.vinylStyle === styleId}
-                        onClick={() => updateSettings({ vinylStyle: styleId })}
-                        color={bookThemeColor || undefined}
-                      />
-                    </div>
+                    <button 
+                      key={styleId}
+                      onClick={() => updateSettings({ vinylStyle: styleId })}
+                      className="relative group transition-all"
+                    >
+                      <div className={`p-4 rounded-3xl border-2 transition-all ${settings.vinylStyle === styleId ? 'scale-100' : 'scale-[0.98] opacity-60 hover:opacity-100 hover:scale-100'}`}
+                        style={{ 
+                          backgroundColor: chrome.surfaceHover,
+                          borderColor: settings.vinylStyle === styleId ? bookThemeColor || chrome.borderHover : 'transparent'
+                        }}
+                      >
+                        <VinylStylePreview
+                          styleName={styleId}
+                          active={settings.vinylStyle === styleId}
+                          onClick={() => {}} // 已经在父级 handle 了
+                          color={bookThemeColor || undefined}
+                        />
+                      </div>
+                      {settings.vinylStyle === styleId && (
+                        <div className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full flex items-center justify-center shadow-lg"
+                          style={{ backgroundColor: bookThemeColor || chrome.text, color: '#fff' }}
+                        >
+                          <Check className="w-3.5 h-3.5 stroke-[3]" />
+                        </div>
+                      )}
+                    </button>
                   ))}
                 </div>
-              </div>
+              </section>
 
               {/* 背景图片 */}
-              <div>
-                <label className="text-sm font-bold block mb-4" style={{ color: "var(--text-secondary)" }}>自定义背景</label>
-                <div className="flex items-center gap-4">
+              <section>
+                <div className="flex items-center gap-2 mb-4">
+                  <ImageIcon className="w-4 h-4 opacity-40" />
+                  <label className="text-xs font-bold uppercase tracking-widest opacity-40">自定义背景</label>
+                </div>
+                <div className="flex items-center gap-3">
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-blue-500 transition-colors cursor-pointer"
+                    className="flex-1 flex items-center justify-center gap-2.5 px-4 py-4 rounded-2xl border-2 border-dashed transition-all hover:border-solid cursor-pointer active:scale-[0.98]"
+                    style={{ 
+                      borderColor: chrome.border,
+                      backgroundColor: chrome.surfaceHover,
+                      color: chrome.textSecondary
+                    }}
                   >
-                    <ImageIcon className="w-4 h-4" />
-                    <span className="text-sm font-medium">上传图片</span>
+                    <div className="p-2 rounded-xl" style={{ backgroundColor: chrome.surface }}>
+                      <ImageIcon className="w-4 h-4" />
+                    </div>
+                    <span className="text-sm font-bold">上传背景图</span>
                   </button>
                   {settings.customBackground && (
                     <button
                       onClick={() => updateSettings({ customBackground: null })}
-                      className="px-4 py-3 rounded-xl bg-red-500/10 text-red-500 text-sm font-medium hover:bg-red-500/20 transition-colors"
+                      className="p-4 rounded-2xl transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                      style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }}
+                      title="清除自定义背景"
                     >
-                      重置
+                      <RotateCcw className="w-5 h-5" />
                     </button>
                   )}
                 </div>
@@ -862,36 +897,51 @@ export default function ShelfPage() {
                   accept="image/*"
                   className="hidden"
                 />
-              </div>
+              </section>
 
               {/* 模糊度 */}
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <label className="text-sm font-bold" style={{ color: "var(--text-secondary)" }}>背景模糊度</label>
-                  <span className="text-xs font-medium px-2 py-1 rounded bg-black/5 dark:bg-white/5">{settings.backgroundBlur}px</span>
+              <section>
+                <div className="flex items-center justify-between mb-5">
+                  <div className="flex items-center gap-2">
+                    <Sliders className="w-4 h-4 opacity-40" />
+                    <label className="text-xs font-bold uppercase tracking-widest opacity-40">背景模糊度</label>
+                  </div>
+                  <span className="text-xs font-black px-2.5 py-1 rounded-lg" style={{ backgroundColor: chrome.surfaceHover }}>
+                    {settings.backgroundBlur}<span className="opacity-40 ml-0.5">PX</span>
+                  </span>
                 </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={settings.backgroundBlur}
-                  onChange={(e) => updateSettings({ backgroundBlur: parseInt(e.target.value) })}
-                  className="w-full h-1.5 bg-gray-200 dark:bg-gray-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                />
-              </div>
+                <div className="relative flex items-center">
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={settings.backgroundBlur}
+                    onChange={(e) => updateSettings({ backgroundBlur: parseInt(e.target.value) })}
+                    className="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-current"
+                    style={{ 
+                      background: chrome.border,
+                      color: bookThemeColor || chrome.text
+                    }}
+                  />
+                </div>
+              </section>
 
               {/* 重置所有 */}
-              <div className="pt-4 border-t border-gray-100 dark:border-gray-800">
+              <div className="pt-6 border-t" style={{ borderColor: chrome.border }}>
                 <button
                   onClick={() => {
                     if (confirm("确定要重置所有视觉配置吗？")) {
                       resetSettings();
                     }
                   }}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-sm font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all active:scale-[0.98]"
+                  className="w-full flex items-center justify-center gap-2.5 px-4 py-4 rounded-2xl text-sm font-bold transition-all hover:opacity-80 active:scale-[0.98] cursor-pointer"
+                  style={{ 
+                    backgroundColor: chrome.surfaceHover,
+                    color: chrome.textMuted
+                  }}
                 >
                   <RotateCcw className="w-4 h-4" />
-                  重置所有配置
+                  重置所有视觉配置
                 </button>
               </div>
             </div>
