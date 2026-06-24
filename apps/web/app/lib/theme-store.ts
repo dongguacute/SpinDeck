@@ -88,5 +88,10 @@ export function useThemeStore() {
     emit();
   }, []);
 
-  return { theme, setTheme, toggleTheme, settings, updateSettings };
+  const resetSettings = useCallback(() => {
+    saveSettings(DEFAULT_SETTINGS);
+    emit();
+  }, []);
+
+  return { theme, setTheme, toggleTheme, settings, updateSettings, resetSettings };
 }

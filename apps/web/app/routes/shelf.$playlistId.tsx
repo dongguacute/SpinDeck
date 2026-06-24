@@ -1,5 +1,5 @@
 import { Link, useParams, useFetcher } from "react-router";
-import { ArrowLeft, Disc3, LoaderCircle, Info, X, ExternalLink, Clock, Music, Rocket, LogOut, SkipBack, SkipForward, Settings2, Image as ImageIcon, Sliders, Check } from "lucide-react";
+import { ArrowLeft, Disc3, LoaderCircle, Info, X, ExternalLink, Clock, Music, Rocket, LogOut, SkipBack, SkipForward, Settings2, Image as ImageIcon, Sliders, Check, RotateCcw } from "lucide-react";
 import { usePlaylistStore } from "../lib/playlist-store";
 import { useThemeStore } from "../lib/theme-store";
 import PlaylistShelf from "../components/PlaylistShelf";
@@ -25,7 +25,7 @@ function proxiedCover(coverUrl: string) {
 export default function ShelfPage() {
   const { playlistId } = useParams<{ playlistId: string }>();
   const { playlists, updatePlaylist } = usePlaylistStore();
-  const { theme, settings, updateSettings } = useThemeStore();
+  const { theme, settings, updateSettings, resetSettings } = useThemeStore();
   const playlist = playlists.find((p) => p.id === playlistId);
 
   const [showSettings, setShowSettings] = useState(false);
@@ -353,7 +353,7 @@ export default function ShelfPage() {
             }}
           />
         )}
-        {glassBackground && (
+        {glassBackground && !settings.customBackground && (
           <div className="playback-backdrop__glass" style={{ background: glassBackground }} />
         )}
         <div className="playback-backdrop__sheen" />
@@ -880,6 +880,21 @@ export default function ShelfPage() {
                   onChange={(e) => updateSettings({ backgroundBlur: parseInt(e.target.value) })}
                   className="w-full h-1.5 bg-gray-200 dark:bg-gray-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
                 />
+              </div>
+
+              {/* 重置所有 */}
+              <div className="pt-4 border-t border-gray-100 dark:border-gray-800">
+                <button
+                  onClick={() => {
+                    if (confirm("确定要重置所有视觉配置吗？")) {
+                      resetSettings();
+                    }
+                  }}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-sm font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all active:scale-[0.98]"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  重置所有配置
+                </button>
               </div>
             </div>
           </div>
