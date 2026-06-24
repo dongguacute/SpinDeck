@@ -9,7 +9,7 @@ import {
   applyVinylLayoutVars,
   computeVinylLayout,
 } from "../lib/vinyl-layout";
-import { deriveVinylGlowColor, hexToRgba, mixColors } from "../lib/colors";
+import { deriveVinylGlowColor, deriveVinylLabelColor, getContrastColor, hexToRgba, mixColors } from "../lib/colors";
 import {
   canResumeSong,
   getPlaybackStatus,
@@ -66,7 +66,7 @@ export default function SongVinylOverlay({
   autoPlayToken = 0,
 }: Props) {
   const [vinylColor, setVinylColor] = useState(FALLBACK_COLOR);
-  const [labelColor, setLabelColor] = useState(mixColors(FALLBACK_COLOR, "#000", 0.25));
+  const [labelColor, setLabelColor] = useState(deriveVinylLabelColor(FALLBACK_COLOR));
   const [interactive, setInteractive] = useState(false);
   const [progress, setProgress] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -194,12 +194,12 @@ export default function SongVinylOverlay({
         const main = rgbToHex(edge.top.r, edge.top.g, edge.top.b);
         if (!cancelled) {
           setVinylColor(main);
-          setLabelColor(mixColors(main, "#000", 0.22));
+          setLabelColor(deriveVinylLabelColor(main));
         }
       } catch {
         if (!cancelled) {
           setVinylColor(FALLBACK_COLOR);
-          setLabelColor(mixColors(FALLBACK_COLOR, "#000", 0.22));
+          setLabelColor(deriveVinylLabelColor(FALLBACK_COLOR));
         }
       }
     })();
@@ -407,6 +407,13 @@ export default function SongVinylOverlay({
     [glowColor],
   );
 
+  const centerTextStyle = useMemo(
+    () => ({
+      ["--vinyl-center-text" as string]: getContrastColor(labelColor),
+    }),
+    [labelColor],
+  );
+
   const tonearmEl = (
     <div
       className={`sd-vinyl-arm-wrap${dragging ? " sd-vinyl-arm-wrap--dragging" : ""}`}
@@ -454,7 +461,7 @@ export default function SongVinylOverlay({
             <div className="sd-vinyl-grooves sd-vinyl-grooves--fine" aria-hidden />
             <div className="sd-vinyl-sheen" aria-hidden />
 
-            <div className="sd-vinyl-center">
+            <div className="sd-vinyl-center" style={centerTextStyle}>
               <p className="sd-vinyl-title">{song.name}</p>
               <p className="sd-vinyl-artist">{song.artist}</p>
             </div>

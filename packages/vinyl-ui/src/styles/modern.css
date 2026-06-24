@@ -1,0 +1,78 @@
+/* ============================================================
+   现代样式 (Modern Style)
+   极简、扁平化、高对比度
+   ============================================================ */
+
+.sd-vinyl-style-modern .sd-vinyl-disc {
+  --vinyl-color: #1a1a1a;
+  --vinyl-label-color: #ffffff;
+  background: var(--vinyl-color);
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.6),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sd-vinyl-style-modern .sd-vinyl-grooves {
+  background: repeating-radial-gradient(
+    circle at 50% 50%,
+    rgba(255, 255, 255, 0.03) 0 1px,
+    transparent 1px 3px
+  );
+  -webkit-mask: radial-gradient(circle, transparent 0 19%, #000 19.5% 99%, transparent 100%);
+  mask: radial-gradient(circle, transparent 0 19%, #000 19.5% 99%, transparent 100%);
+  opacity: 0.5;
+}
+
+.sd-vinyl-style-modern .sd-vinyl-grooves--fine {
+  display: none;
+}
+
+.sd-vinyl-style-modern .sd-vinyl-sheen {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    transparent 40%,
+    rgba(255, 255, 255, 0.05) 50%,
+    transparent 60%,
+    rgba(255, 255, 255, 0.1) 100%
+  );
+  -webkit-mask: radial-gradient(circle, transparent 0 19%, #000 19.5% 100%);
+  mask: radial-gradient(circle, transparent 0 19%, #000 19.5% 100%);
+}
+
+.sd-vinyl-style-modern .sd-vinyl-center {
+  background: var(--vinyl-label-color);
+  width: 32%;
+  height: 32%;
+  border: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.sd-vinyl-style-modern .sd-vinyl-title {
+  color: var(--vinyl-center-text, #000);
+  font-family: system-ui, -apple-system, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+.sd-vinyl-style-modern .sd-vinyl-artist {
+  color: color-mix(in srgb, var(--vinyl-center-text, #000) 60%, transparent);
+  font-family: system-ui, -apple-system, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.7em;
+}
+
+.sd-vinyl-style-modern .sd-vinyl-hole {
+  background: #000;
+  width: 6px;
+  height: 6px;
+}
+
+.sd-vinyl-style-modern .sd-vinyl-arm {
+  --tonearm-base: #000000;
+  --tonearm-arm: #333333;
+  --tonearm-arm-shadow: #000000;
+  --tonearm-headshell: #000000;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+}

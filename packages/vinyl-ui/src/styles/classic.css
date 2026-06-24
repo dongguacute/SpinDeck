@@ -82,11 +82,11 @@
 }
 
 .sd-vinyl-style-classic .sd-vinyl-title {
-  color: #fff;
+  color: var(--vinyl-center-text, #fff);
 }
 
 .sd-vinyl-style-classic .sd-vinyl-artist {
-  color: rgba(255, 255, 255, 0.88);
+  color: color-mix(in srgb, var(--vinyl-center-text, #fff) 88%, transparent);
 }
 
 .sd-vinyl-style-classic .sd-vinyl-hole {

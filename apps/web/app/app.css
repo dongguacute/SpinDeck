@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "@spindeck/vinyl-ui/src/styles/base.css";
 @import "@spindeck/vinyl-ui/src/styles/classic.css";
+@import "@spindeck/vinyl-ui/src/styles/modern.css";
 
 :root,
 [data-theme="dark"] {

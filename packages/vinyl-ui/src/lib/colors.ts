@@ -105,3 +105,22 @@ export function deriveVinylGlowColor(vinylHex: string, theme: "dark" | "light" =
     b + (target - b) * amount
   );
 }
+
+export function deriveVinylLabelColor(vinylHex: string): string {
+  const { l } = rgbToHsl(...Object.values(hexToRgb(vinylHex)) as [number, number, number]);
+  
+  // 如果光碟颜色很深，标签颜色稍微调亮一点；如果光碟颜色较浅，标签颜色调深一点
+  if (l < 0.2) {
+    return mixColors(vinylHex, "#ffffff", 0.15);
+  }
+  return mixColors(vinylHex, "#000000", 0.22);
+}
+
+export function getContrastColor(hex: string): string {
+  const { r, g, b } = hexToRgb(hex);
+  // 使用 YIQ 公式计算亮度
+  const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+  return yiq >= 128 ? "#000000" : "#ffffff";
+}
+
+

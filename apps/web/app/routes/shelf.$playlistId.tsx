@@ -1,9 +1,9 @@
 import { Link, useParams, useFetcher } from "react-router";
-import { ArrowLeft, Disc3, LoaderCircle, Info, X, ExternalLink, Clock, Music, Rocket, LogOut, SkipBack, SkipForward } from "lucide-react";
+import { ArrowLeft, Disc3, LoaderCircle, Info, X, ExternalLink, Clock, Music, Rocket, LogOut, SkipBack, SkipForward, Settings2, Image as ImageIcon, Sliders, Check } from "lucide-react";
 import { usePlaylistStore } from "../lib/playlist-store";
 import { useThemeStore } from "../lib/theme-store";
 import PlaylistShelf from "../components/PlaylistShelf";
-import { SongVinylOverlay } from "@spindeck/vinyl-ui";
+import { SongVinylOverlay, VinylStylePreview } from "@spindeck/vinyl-ui";
 import { beginShelfSession, prelaunchApp, stopSong, pauseSong } from "@spindeck/player";
 import type { PlatformType, SongInfo } from "@spindeck/player";
 import { PLATFORM_CONFIG } from "../lib/types";
@@ -25,8 +25,11 @@ function proxiedCover(coverUrl: string) {
 export default function ShelfPage() {
   const { playlistId } = useParams<{ playlistId: string }>();
   const { playlists, updatePlaylist } = usePlaylistStore();
-  const { theme } = useThemeStore();
+  const { theme, settings, updateSettings } = useThemeStore();
   const playlist = playlists.find((p) => p.id === playlistId);
+
+  const [showSettings, setShowSettings] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 每次进入书架都请求歌单数据
   const fetcher = useFetcher<{
@@ -205,6 +208,17 @@ export default function ShelfPage() {
     setCoverThemePalette(null);
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        updateSettings({ customBackground: reader.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   // 从封面提取主色 → 极淡纯色背景
   useEffect(() => {
     if (!selectedSong?.cover) {
@@ -329,10 +343,14 @@ export default function ShelfPage() {
         className={`playback-backdrop${showThemeBackdrop ? " playback-backdrop--visible" : ""}`}
         aria-hidden
       >
-        {selectedSong?.cover && (
+        {(settings.customBackground || selectedSong?.cover) && (
           <div
             className="playback-backdrop__cover"
-            style={{ backgroundImage: `url(${proxiedCover(selectedSong.cover)})` }}
+            style={{ 
+              backgroundImage: `url(${settings.customBackground || (selectedSong?.cover ? proxiedCover(selectedSong.cover) : '')})`,
+              filter: `blur(${settings.backgroundBlur}px) saturate(1.4)`,
+              opacity: settings.customBackground ? 0.8 : 0.62
+            }}
           />
         )}
         {glassBackground && (
@@ -687,6 +705,7 @@ export default function ShelfPage() {
             visible={showVinyl}
             pageSessionId={pageSessionId}
             theme={theme}
+            styleName={settings.vinylStyle}
             tonearmPortalRef={tonearmPortalRef}
             tonearmPortalReady={tonearmPortalReady}
             autoPlay={autoPlayNext}
@@ -748,6 +767,122 @@ export default function ShelfPage() {
           >
             <SkipForward className="w-6 h-6 fill-current" />
           </button>
+        </div>
+      )}
+
+      {/* 调节按钮（左下角，仅播放态显示） */}
+      {inPlayback && (
+        <div className="absolute bottom-10 left-10 z-70">
+          <button
+            onClick={() => setShowSettings(true)}
+            className="p-3.5 rounded-2xl border backdrop-blur-md transition-all hover:scale-110 active:scale-95 cursor-pointer"
+            style={{
+              backgroundColor: chrome.surface,
+              borderColor: chrome.border,
+              color: chrome.text,
+              boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+              opacity: showVinyl ? 1 : 0,
+              transform: `translateY(${showVinyl ? 0 : 20}px)`,
+            }}
+            title="调节视觉样式"
+          >
+            <Settings2 className="w-5 h-5" />
+          </button>
+        </div>
+      )}
+
+      {/* 调节弹窗 */}
+      {inPlayback && showSettings && (
+        <div className="fixed inset-0 z-100 flex items-end justify-center sm:items-center p-4" onClick={() => setShowSettings(false)}>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div 
+            className="relative w-full max-w-md bg-white dark:bg-[#1a1a1a] rounded-t-3xl sm:rounded-3xl p-8 shadow-2xl animate-in slide-in-from-bottom duration-300"
+            style={{ 
+              backgroundColor: "var(--surface-color)",
+              borderColor: "var(--border-color)",
+              borderWidth: "1px"
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="text-lg font-bold flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
+                <Sliders className="w-5 h-5" /> 视觉调节
+              </h3>
+              <button
+                onClick={() => setShowSettings(false)}
+                className="p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+              >
+                <X className="w-5 h-5" style={{ color: "var(--text-muted)" }} />
+              </button>
+            </div>
+
+            <div className="space-y-8">
+              {/* 光碟样式 */}
+              <div>
+                <label className="text-sm font-bold block mb-4" style={{ color: "var(--text-secondary)" }}>光碟样式</label>
+                <div className="grid grid-cols-3 gap-4">
+                  {[
+                    { id: "classic", label: "经典", color: "#6eb5d4" },
+                    { id: "modern", label: "现代", color: "#1a1a1a" }
+                  ].map((style) => (
+                    <div key={style.id}>
+                      <VinylStylePreview
+                        styleName={style.id}
+                        active={settings.vinylStyle === style.id}
+                        onClick={() => updateSettings({ vinylStyle: style.id })}
+                        color={style.color}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 背景图片 */}
+              <div>
+                <label className="text-sm font-bold block mb-4" style={{ color: "var(--text-secondary)" }}>自定义背景</label>
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-blue-500 transition-colors cursor-pointer"
+                  >
+                    <ImageIcon className="w-4 h-4" />
+                    <span className="text-sm font-medium">上传图片</span>
+                  </button>
+                  {settings.customBackground && (
+                    <button
+                      onClick={() => updateSettings({ customBackground: null })}
+                      className="px-4 py-3 rounded-xl bg-red-500/10 text-red-500 text-sm font-medium hover:bg-red-500/20 transition-colors"
+                    >
+                      重置
+                    </button>
+                  )}
+                </div>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleImageUpload}
+                  accept="image/*"
+                  className="hidden"
+                />
+              </div>
+
+              {/* 模糊度 */}
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <label className="text-sm font-bold" style={{ color: "var(--text-secondary)" }}>背景模糊度</label>
+                  <span className="text-xs font-medium px-2 py-1 rounded bg-black/5 dark:bg-white/5">{settings.backgroundBlur}px</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={settings.backgroundBlur}
+                  onChange={(e) => updateSettings({ backgroundBlur: parseInt(e.target.value) })}
+                  className="w-full h-1.5 bg-gray-200 dark:bg-gray-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                />
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
