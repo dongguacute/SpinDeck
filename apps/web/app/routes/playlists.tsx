@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Disc3, Settings } from "lucide-react";
+import { Plus, Disc3, Settings, Trash2, CheckSquare, Square, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import PlaylistCard from "../components/PlaylistCard";
 import CreatePlaylistModal from "../components/CreatePlaylistModal";
@@ -8,17 +8,114 @@ import { Link } from "react-router";
 
 export default function Playlists() {
   const { t } = useTranslation('common');
-  const { playlists, addPlaylist, removePlaylist, updatePlaylist } = usePlaylistStore();
+  const { playlists, addPlaylist, removePlaylist, removePlaylists, updatePlaylist } = usePlaylistStore();
 
   const handleUpdateRefresh = (id: string, interval: number) => {
     updatePlaylist(id, { refreshInterval: interval });
   };
   const [modalOpen, setModalOpen] = useState(false);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  const toggleSelectionMode = () => {
+    setIsSelectionMode(!isSelectionMode);
+    setSelectedIds([]);
+  };
+
+  const handleSelect = (id: string, selected: boolean) => {
+    if (selected) {
+      setSelectedIds([...selectedIds, id]);
+    } else {
+      setSelectedIds(selectedIds.filter(i => i !== id));
+    }
+  };
+
+  const handleSelectAll = () => {
+    if (selectedIds.length === playlists.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(playlists.map(p => p.id));
+    }
+  };
+
+  const handleDeleteSelected = () => {
+    if (selectedIds.length === 0) return;
+    if (confirm(t('playlists.delete_selected_confirm', { count: selectedIds.length }))) {
+      removePlaylists(selectedIds);
+      setSelectedIds([]);
+      setIsSelectionMode(false);
+    }
+  };
 
   return (
     <div className="min-h-screen transition-colors duration-300" style={{ background: "var(--bg-primary)" }}>
       {/* 主体内容 */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-32">
+        {playlists.length > 0 && (
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
+              {isSelectionMode 
+                ? t('playlists.selected_count', { count: selectedIds.length }) 
+                : t('playlists.all_playlists', { count: playlists.length })}
+            </h2>
+            <div className="flex items-center gap-2">
+              {isSelectionMode ? (
+                <>
+                  <button
+                    onClick={handleSelectAll}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer border"
+                    style={{
+                      background: "var(--surface-color)",
+                      color: "var(--text-secondary)",
+                      borderColor: "var(--border-color)",
+                    }}
+                  >
+                    {selectedIds.length === playlists.length ? <CheckSquare className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}
+                    {selectedIds.length === playlists.length ? t('playlists.deselect_all') : t('playlists.select_all')}
+                  </button>
+                  <button
+                    onClick={handleDeleteSelected}
+                    disabled={selectedIds.length === 0}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer border disabled:opacity-30 disabled:cursor-not-allowed"
+                    style={{
+                      background: "rgba(239,68,68,0.1)",
+                      color: "#f87171",
+                      borderColor: "rgba(239,68,68,0.2)",
+                    }}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    {t('playlists.delete_selected')}
+                  </button>
+                  <button
+                    onClick={toggleSelectionMode}
+                    className="flex items-center justify-center w-8 h-8 rounded-xl transition-all cursor-pointer border"
+                    style={{
+                      background: "var(--surface-color)",
+                      color: "var(--text-secondary)",
+                      borderColor: "var(--border-color)",
+                    }}
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={toggleSelectionMode}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer border"
+                  style={{
+                    background: "var(--surface-color)",
+                    color: "var(--text-secondary)",
+                    borderColor: "var(--border-color)",
+                  }}
+                >
+                  <CheckSquare className="w-3.5 h-3.5" />
+                  {t('playlists.batch_manage')}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         {playlists.length === 0 ? (
           /* 空状态 */
           <div className="flex flex-col items-center justify-center py-32 text-center">
@@ -27,10 +124,10 @@ export default function Playlists() {
             >
               <Disc3 className="w-10 h-10" style={{ color: "var(--text-muted)" }} />
             </div>
-            <h2 className="text-lg font-medium mb-2" style={{ color: "var(--text-secondary)", opacity: 0.45 }}>
+            <h2 className="text-lg font-medium mb-2" style={{ color: "var(--text-secondary)" }}>
               {t('playlists.empty_title')}
             </h2>
-            <p className="text-sm mb-8 max-w-xs leading-relaxed" style={{ color: "var(--text-muted)", opacity: 0.45 }}>
+            <p className="text-sm mb-8 max-w-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>
               {t('playlists.empty_description')}
             </p>
             <button
@@ -55,6 +152,9 @@ export default function Playlists() {
                 playlist={playlist}
                 onDelete={removePlaylist}
                 onUpdateRefresh={handleUpdateRefresh}
+                isSelectionMode={isSelectionMode}
+                isSelected={selectedIds.includes(playlist.id)}
+                onSelect={handleSelect}
               />
             ))}
           </div>
@@ -79,7 +179,7 @@ export default function Playlists() {
             >
               <Disc3 className="w-5 h-5" style={{ color: "var(--text-secondary)" }} />
             </div>
-            <h1 className="font-semibold text-base tracking-wide" style={{ color: "var(--text-primary)", opacity: 0.8 }}>
+            <h1 className="font-semibold text-base tracking-wide" style={{ color: "var(--text-primary)" }}>
               SpinDeck
             </h1>
           </div>

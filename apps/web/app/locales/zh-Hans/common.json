@@ -82,7 +82,14 @@
     "empty_title": "还没有歌单",
     "empty_description": "创建你的第一个歌单，开始整理你喜欢的音乐",
     "create_first": "创建第一个歌单",
-    "create_playlist": "创建歌单"
+    "create_playlist": "创建歌单",
+    "all_playlists": "所有歌单 ({{count}})",
+    "selected_count": "已选择 {{count}} 个歌单",
+    "batch_manage": "批量管理",
+    "select_all": "全选",
+    "deselect_all": "取消全选",
+    "delete_selected": "删除所选",
+    "delete_selected_confirm": "确定要删除所选的 {{count}} 个歌单吗？"
   },
   "playlist_card": {
     "settings_title": "歌单设置",
@@ -110,9 +117,12 @@
     "create_btn": "创建歌单",
     "playlist_link": "歌单链接",
     "playlist_link_placeholder": "粘贴歌单分享链接...",
+    "playlist_link_placeholder_multi": "粘贴歌单链接，支持多链接（换行或逗号分隔）...",
     "get_info_btn": "获取歌单信息",
     "getting_info": "正在获取歌单...",
     "import_success": "获取成功",
+    "import_success_count": "成功获取 {{count}} 个歌单",
+    "import_all": "导入全部",
     "unnamed_playlist": "未命名歌单",
     "add_to_shelf": "添加到歌单",
     "import_from_platform": "来自 {{platform}} 的歌单"

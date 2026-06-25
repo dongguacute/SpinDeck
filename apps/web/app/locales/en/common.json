@@ -82,7 +82,14 @@
     "empty_title": "No playlists yet",
     "empty_description": "Create your first playlist to start organizing your favorite music",
     "create_first": "Create First Playlist",
-    "create_playlist": "Create Playlist"
+    "create_playlist": "Create Playlist",
+    "all_playlists": "All Playlists ({{count}})",
+    "selected_count": "Selected {{count}} playlists",
+    "batch_manage": "Batch Manage",
+    "select_all": "Select All",
+    "deselect_all": "Deselect All",
+    "delete_selected": "Delete Selected",
+    "delete_selected_confirm": "Are you sure you want to delete the selected {{count}} playlists?"
   },
   "playlist_card": {
     "settings_title": "Playlist Settings",
@@ -110,9 +117,12 @@
     "create_btn": "Create Playlist",
     "playlist_link": "Playlist Link",
     "playlist_link_placeholder": "Paste playlist share link...",
+    "playlist_link_placeholder_multi": "Paste playlist links, supports multiple links (separated by newline or comma)...",
     "get_info_btn": "Get Info",
     "getting_info": "Getting info...",
     "import_success": "Success",
+    "import_success_count": "Successfully fetched {{count}} playlists",
+    "import_all": "Import All",
     "unnamed_playlist": "Unnamed Playlist",
     "add_to_shelf": "Add to Shelf",
     "import_from_platform": "Playlist from {{platform}}"

@@ -59,6 +59,12 @@ export function usePlaylistStore() {
     emit();
   }, []);
 
+  const removePlaylists = useCallback((ids: string[]) => {
+    const next = load().filter((p) => !ids.includes(p.id));
+    save(next);
+    emit();
+  }, []);
+
   const updatePlaylist = useCallback((id: string, data: Partial<Omit<Playlist, "id" | "createdAt">>) => {
     const current = load();
     const next = current.map((p) => (p.id === id ? { ...p, ...data } : p));
@@ -66,5 +72,5 @@ export function usePlaylistStore() {
     emit();
   }, []);
 
-  return { playlists, addPlaylist, removePlaylist, updatePlaylist };
+  return { playlists, addPlaylist, removePlaylist, removePlaylists, updatePlaylist };
 }

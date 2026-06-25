@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect } from "react";
 import { useFetcher } from "react-router";
-import { X, Music, ChevronDown, Plus, Link, LoaderCircle, Check } from "lucide-react";
+import { X, Music, ChevronDown, Plus, Link, LoaderCircle, Check, Clock } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import type { PlatformType, SongInfo } from "../lib/types";
 import { PLATFORM_CONFIG } from "../lib/types";
+import QQMusicIcon from "../assets/icons/QQMusicIcon.svg?react";
 
 interface CreateData {
   name: string;
@@ -11,6 +13,7 @@ interface CreateData {
   coverUrl: string;
   songCount: number;
   importUrl: string;
+  refreshInterval?: number;
 }
 
 interface Props {
@@ -23,6 +26,14 @@ const PLATFORMS: PlatformType[] = [
   "QQMusic", "NetEaseMusic", "KugouMusic", "AppleMusic", "Spotify", "YTMusic",
 ];
 
+const REFRESH_OPTIONS = (t: TFunction) => [
+  { label: t('playlist_card.refresh_off'), value: 0 },
+  { label: t('playlist_card.refresh_minutes', { count: 5 }), value: 5 * 60 * 1000 },
+  { label: t('playlist_card.refresh_minutes', { count: 15 }), value: 15 * 60 * 1000 },
+  { label: t('playlist_card.refresh_minutes', { count: 30 }), value: 30 * 60 * 1000 },
+  { label: t('playlist_card.refresh_hour'), value: 60 * 60 * 1000 },
+];
+
 type Mode = "manual" | "import";
 
 export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) {
@@ -30,8 +41,15 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
   const [mode, setMode] = useState<Mode>("manual");
   const [animState, setAnimState] = useState<"in" | "out" | "hidden">("hidden");
   const importFetcher = useFetcher<{
-    name?: string; cover?: string; songCount?: number;
-    songs?: SongInfo[]; error?: string;
+    results?: Array<{
+      url: string;
+      name?: string;
+      cover?: string;
+      songCount?: number;
+      songs?: SongInfo[];
+      error?: string;
+    }>;
+    error?: string;
   }>();
 
   const [name, setName] = useState("");
@@ -39,14 +57,52 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
   const [coverUrl, setCoverUrl] = useState("");
   const [songCount, setSongCount] = useState(0);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [dropdownDirection, setDropdownDirection] = useState<"up" | "down">("down");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
 
   const [importUrl, setImportUrl] = useState("");
   const [importPlatform, setImportPlatform] = useState<PlatformType>("QQMusic");
   const [importDropdownOpen, setImportDropdownOpen] = useState(false);
+  const [importDropdownDirection, setImportDropdownDirection] = useState<"up" | "down">("down");
   const importDropdownRef = useRef<HTMLDivElement>(null);
+  const [refreshInterval, setRefreshInterval] = useState(0);
+  const [refreshDropdownOpen, setRefreshDropdownOpen] = useState(false);
+  const [refreshDropdownDirection, setRefreshDropdownDirection] = useState<"up" | "down">("down");
+  const refreshDropdownRef = useRef<HTMLDivElement>(null);
   const [imported, setImported] = useState(false);
+  const [previewResults, setPreviewResults] = useState<Array<{
+    url: string;
+    name?: string;
+    cover?: string;
+    songCount?: number;
+    songs?: SongInfo[];
+    error?: string;
+    added?: boolean;
+  }>>([]);
+
+  const checkDirection = (ref: React.RefObject<HTMLDivElement | null>, setDirection: (dir: "up" | "down") => void) => {
+    if (!ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const neededSpace = 200; // 预估下拉菜单高度
+    setDirection(spaceBelow < neededSpace ? "up" : "down");
+  };
+
+  const toggleDropdown = () => {
+    if (!dropdownOpen) checkDirection(dropdownRef, setDropdownDirection);
+    setDropdownOpen(!dropdownOpen);
+  };
+
+  const toggleImportDropdown = () => {
+    if (!importDropdownOpen) checkDirection(importDropdownRef, setImportDropdownDirection);
+    setImportDropdownOpen(!importDropdownOpen);
+  };
+
+  const toggleRefreshDropdown = () => {
+    if (!refreshDropdownOpen) checkDirection(refreshDropdownRef, setRefreshDropdownDirection);
+    setRefreshDropdownOpen(!refreshDropdownOpen);
+  };
 
   useEffect(() => {
     if (open) { setAnimState("in");
@@ -74,7 +130,20 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
   }, [importDropdownOpen]);
 
   useEffect(() => {
-    if (importFetcher.data && importFetcher.state === "idle" && !importFetcher.data.error) setImported(true);
+    if (!refreshDropdownOpen) return;
+    const h = (e: MouseEvent) => {
+      if (refreshDropdownRef.current && !refreshDropdownRef.current.contains(e.target as Node)) setRefreshDropdownOpen(false);
+    };
+    document.addEventListener("mousedown", h); return () => document.removeEventListener("mousedown", h);
+  }, [refreshDropdownOpen]);
+
+  useEffect(() => {
+    if (importFetcher.data && importFetcher.state === "idle" && !importFetcher.data.error) {
+      setImported(true);
+      if (importFetcher.data.results) {
+        setPreviewResults(importFetcher.data.results.map(r => ({ ...r, added: false })));
+      }
+    }
   }, [importFetcher.data, importFetcher.state]);
 
   if (animState === "hidden") return null;
@@ -82,12 +151,21 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
   const resetAll = () => {
     setName(""); setPlatform("QQMusic"); setCoverUrl(""); setSongCount(0);
     setImportUrl(""); setImportPlatform("QQMusic"); setImported(false);
+    setRefreshInterval(0); setRefreshDropdownOpen(false);
+    setPreviewResults([]);
     importFetcher.data = undefined; setMode("manual");
   };
 
   const handleManualCreate = () => {
     if (!name.trim()) return;
-    onCreate({ name: name.trim(), platform, coverUrl: coverUrl.trim(), songCount, importUrl: "" });
+    onCreate({ 
+      name: name.trim(), 
+      platform, 
+      coverUrl: coverUrl.trim(), 
+      songCount, 
+      importUrl: "",
+      refreshInterval 
+    });
     resetAll(); onClose();
   };
 
@@ -100,38 +178,66 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
   };
 
   const handleImportCreate = () => {
-    const data = importFetcher.data;
-    if (!data) return;
-    onCreate({
-      name: data.name || t('create_modal.import_from_platform', { platform: PLATFORM_CONFIG[importPlatform].label }),
-      platform: importPlatform,
-      coverUrl: data.cover || "",
-      songCount: data.songCount || 0,
-      importUrl: importUrl.trim(),
+    const validResults = previewResults.filter(r => !r.error && !r.added);
+    if (validResults.length === 0) return;
+    
+    validResults.forEach(res => {
+      onCreate({
+        name: res.name || t('create_modal.import_from_platform', { platform: PLATFORM_CONFIG[importPlatform].label }),
+        platform: importPlatform,
+        coverUrl: res.cover || "",
+        songCount: res.songCount || 0,
+        importUrl: res.url,
+        refreshInterval,
+      });
     });
+    
     resetAll(); onClose();
+  };
+
+  const handleSingleImport = (index: number) => {
+    const res = previewResults[index];
+    if (!res || res.error || res.added) return;
+
+    onCreate({
+      name: res.name || t('create_modal.import_from_platform', { platform: PLATFORM_CONFIG[importPlatform].label }),
+      platform: importPlatform,
+      coverUrl: res.cover || "",
+      songCount: res.songCount || 0,
+      importUrl: res.url,
+      refreshInterval,
+    });
+
+    const next = [...previewResults];
+    next[index] = { ...res, added: true };
+    setPreviewResults(next);
+
+    // 如果全部都添加了，就关闭弹窗
+    if (next.every(r => r.error || r.added)) {
+      setTimeout(() => {
+        resetAll(); onClose();
+      }, 500);
+    }
   };
 
   const selectedCfg = PLATFORM_CONFIG[platform];
   const importSelectedCfg = PLATFORM_CONFIG[importPlatform];
   const importing = importFetcher.state !== "idle";
-  const fetchedData = importFetcher.data && !importFetcher.data.error ? importFetcher.data : null;
+  const hasValidResults = previewResults.some(r => !r.error && !r.added);
   const importError = importFetcher.data?.error || "";
+  const refreshOptions = REFRESH_OPTIONS(t);
+  const selectedRefresh = refreshOptions.find(opt => opt.value === refreshInterval) || refreshOptions[0];
 
-  // 通用样式
   const inputStyle = {
     backgroundColor: "var(--surface-color)",
     borderColor: "var(--border-color)",
     color: "var(--text-primary)",
-    opacity: 0.8,
   };
-  const labelStyle = { color: "var(--text-muted)" };
+  const labelStyle = { color: "var(--text-secondary)" };
   const selectBtnStyle = {
     backgroundColor: "var(--surface-color)",
     borderColor: "var(--border-color)",
   };
-  const optionHoverStyle = { background: "var(--surface-hover)" };
-  const optionActiveStyle = { background: "var(--surface-color)", color: "var(--text-secondary)", opacity: 0.7 };
   const dropdownBgStyle = { background: "var(--bg-tertiary)", borderColor: "var(--border-color)" };
   const modalBgStyle = { background: "var(--bg-tertiary)", borderColor: "var(--border-color)" };
 
@@ -145,43 +251,37 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
         }} 
         onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-semibold flex items-center gap-2" style={{ color: "var(--text-primary)", opacity: 0.9 }}><Plus className="w-5 h-5" />{t('create_modal.title')}</h2>
-          <button onClick={onClose} className="p-2 rounded-xl transition-colors cursor-pointer"
-            style={{ color: "var(--text-muted)", opacity: 0.4 }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--surface-color)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text-secondary)"; (e.currentTarget as HTMLButtonElement).style.opacity = "0.7"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text-muted)"; (e.currentTarget as HTMLButtonElement).style.opacity = "0.4"; }}
+          <h2 className="text-lg font-semibold flex items-center gap-2" style={{ color: "var(--text-primary)" }}><Plus className="w-5 h-5" />{t('create_modal.title')}</h2>
+          <button onClick={onClose} className="p-2 rounded-xl transition-colors cursor-pointer hover:bg-[var(--surface-color)] hover:text-[var(--text-secondary)]"
+            style={{ color: "var(--text-muted)" }}
           ><X className="w-5 h-5" /></button>
         </div>
 
         <div className="flex rounded-xl p-1 mb-6" style={{ backgroundColor: "var(--surface-color)" }}>
           <button onClick={() => setMode("manual")} className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-            mode === "manual" ? "" : ""
+            mode === "manual" ? "" : "hover:opacity-80"
           }`}
             style={
               mode === "manual"
-                ? { backgroundColor: "var(--surface-hover)", color: "var(--text-primary)", opacity: 0.8 }
-                : { color: "var(--text-muted)", opacity: 0.3 }
+                ? { backgroundColor: "var(--surface-hover)", color: "var(--text-primary)" }
+                : { color: "var(--text-muted)" }
             }
-            onMouseEnter={(e) => { if (mode !== "manual") e.currentTarget.style.opacity = "0.5"; }}
-            onMouseLeave={(e) => { if (mode !== "manual") e.currentTarget.style.opacity = "0.3"; }}
           >{t('create_modal.manual_mode')}</button>
           <button onClick={() => setMode("import")} className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-            mode === "import" ? "" : ""
+            mode === "import" ? "" : "hover:opacity-80"
           }`}
             style={
               mode === "import"
-                ? { backgroundColor: "var(--surface-hover)", color: "var(--text-primary)", opacity: 0.8 }
-                : { color: "var(--text-muted)", opacity: 0.3 }
+                ? { backgroundColor: "var(--surface-hover)", color: "var(--text-primary)" }
+                : { color: "var(--text-muted)" }
             }
-            onMouseEnter={(e) => { if (mode !== "import") e.currentTarget.style.opacity = "0.5"; }}
-            onMouseLeave={(e) => { if (mode !== "import") e.currentTarget.style.opacity = "0.3"; }}
           >{t('create_modal.import_mode')}</button>
         </div>
 
         {mode === "manual" && (
           <div className="space-y-5">
             <div><label className="block text-xs font-medium mb-1.5" style={labelStyle}>{t('create_modal.playlist_name')}</label>
-              <div className="relative"><Music className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "var(--text-muted)", opacity: 0.25 }} />
+              <div className="relative"><Music className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "var(--text-muted)" }} />
                 <input ref={nameRef} type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('create_modal.playlist_name_placeholder')} className="w-full border rounded-xl py-3 pl-10 pr-4 text-sm outline-none transition-colors"
                   style={inputStyle}
                   onFocus={(e) => (e.currentTarget.style.borderColor = "var(--border-hover)")}
@@ -190,34 +290,42 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
               </div></div>
             <div><label className="block text-xs font-medium mb-1.5" style={labelStyle}>{t('create_modal.music_platform')}</label>
               <div className="relative" ref={dropdownRef}>
-                <button type="button" onClick={() => setDropdownOpen(!dropdownOpen)} className="w-full flex items-center justify-between border rounded-xl py-3 px-4 text-sm outline-none transition-colors cursor-pointer"
+                <button type="button" onClick={toggleDropdown} className="w-full flex items-center justify-between border rounded-xl py-3 px-4 text-sm outline-none transition-colors cursor-pointer"
                   style={selectBtnStyle}
                   onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--border-hover)")}
                   onBlur={(e) => (e.currentTarget.style.borderColor = "var(--border-color)")}
                 >
-                  <span className="flex items-center gap-2.5"><span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: selectedCfg.color }} /><span style={{ color: "var(--text-secondary)", opacity: 0.7 }}>{selectedCfg.label}</span></span>
-                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""}`} style={{ color: "var(--text-muted)", opacity: 0.3 }} />
+                  <span className="flex items-center gap-2.5">
+                    {platform === "QQMusic" ? (
+                      <QQMusicIcon className="w-4 h-4" />
+                    ) : (
+                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: selectedCfg.color }} />
+                    )}
+                    <span style={{ color: "var(--text-primary)" }}>{selectedCfg.label}</span>
+                  </span>
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""}`} style={{ color: "var(--text-muted)" }} />
                 </button>
-                {dropdownOpen && <div className="absolute top-full left-0 right-0 mt-1.5 border rounded-xl py-1 shadow-xl z-10 overflow-hidden" style={dropdownBgStyle}>
+                {dropdownOpen && <div className={`absolute left-0 right-0 border rounded-xl py-1 shadow-xl z-10 overflow-hidden ${dropdownDirection === "up" ? "bottom-full mb-1.5" : "top-full mt-1.5"}`} style={dropdownBgStyle}>
                   {PLATFORMS.map((p) => { const cfg = PLATFORM_CONFIG[p]; return (
-                    <button key={p} type="button" onClick={() => { setPlatform(p); setDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors cursor-pointer ${
-                      platform === p ? "" : ""
-                    }`}
+                    <button key={p} type="button" onClick={() => { setPlatform(p); setDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors cursor-pointer hover:bg-[var(--surface-hover)]`}
                       style={
                         platform === p
-                          ? { backgroundColor: "var(--surface-hover)", color: "var(--text-secondary)", opacity: 0.7 }
-                          : undefined
+                          ? { backgroundColor: "var(--surface-hover)", color: "var(--text-primary)" }
+                          : { color: "var(--text-primary)" }
                       }
-                      onMouseEnter={(e) => { if (platform !== p) Object.assign(e.currentTarget.style, optionHoverStyle); }}
-                      onMouseLeave={(e) => { if (platform !== p) Object.assign(e.currentTarget.style, optionActiveStyle); }}
                     >
-                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cfg.color }} /><span style={{ color: "var(--text-secondary)", opacity: 0.7 }}>{cfg.label}</span>
+                      {p === "QQMusic" ? (
+                        <QQMusicIcon className="w-4 h-4" />
+                      ) : (
+                        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cfg.color }} />
+                      )}
+                      <span style={{ color: "var(--text-primary)" }}>{cfg.label}</span>
                     </button>
                   );})}
                 </div>}
               </div></div>
-            <div><label className="block text-xs font-medium mb-1.5" style={labelStyle}>{t('create_modal.cover_url')} <span style={{ opacity: 0.35 }}>{t('create_modal.optional')}</span></label>
-              <div className="relative"><Link className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "var(--text-muted)", opacity: 0.25 }} />
+            <div><label className="block text-xs font-medium mb-1.5" style={labelStyle}>{t('create_modal.cover_url')} <span style={{ color: "var(--text-muted)" }}>{t('create_modal.optional')}</span></label>
+              <div className="relative"><Link className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "var(--text-muted)" }} />
                 <input type="url" value={coverUrl} onChange={(e) => setCoverUrl(e.target.value)} placeholder={t('create_modal.cover_url_placeholder')} className="w-full border rounded-xl py-3 pl-10 pr-4 text-sm outline-none transition-colors"
                   style={inputStyle}
                   onFocus={(e) => (e.currentTarget.style.borderColor = "var(--border-hover)")}
@@ -230,11 +338,35 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
                 onFocus={(e) => (e.currentTarget.style.borderColor = "var(--border-hover)")}
                 onBlur={(e) => (e.currentTarget.style.borderColor = "var(--border-color)")}
               /></div>
+            <div><label className="block text-xs font-medium mb-1.5" style={labelStyle}>{t('playlist_card.refresh_interval_label')}</label>
+              <div className="relative" ref={refreshDropdownRef}>
+                <button type="button" onClick={toggleRefreshDropdown} className="w-full flex items-center justify-between border rounded-xl py-3 px-4 text-sm outline-none transition-colors cursor-pointer"
+                  style={selectBtnStyle}
+                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--border-hover)")}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = "var(--border-color)")}
+                >
+                  <span className="flex items-center gap-2.5"><Clock className="w-4 h-4" style={{ color: "var(--text-muted)" }} /><span style={{ color: "var(--text-primary)" }}>{selectedRefresh.label}</span></span>
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${refreshDropdownOpen ? "rotate-180" : ""}`} style={{ color: "var(--text-muted)" }} />
+                </button>
+                {refreshDropdownOpen && <div className={`absolute left-0 right-0 border rounded-xl py-1 shadow-xl z-10 overflow-hidden ${refreshDropdownDirection === "up" ? "bottom-full mb-1.5" : "top-full mt-1.5"}`} style={dropdownBgStyle}>
+                  {refreshOptions.map((opt) => (
+                    <button key={opt.value} type="button" onClick={() => { setRefreshInterval(opt.value); setRefreshDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors cursor-pointer hover:bg-[var(--surface-hover)]`}
+                      style={
+                        refreshInterval === opt.value
+                          ? { backgroundColor: "var(--surface-hover)", color: "var(--text-primary)" }
+                          : { color: "var(--text-primary)" }
+                      }
+                    >
+                      <span style={{ color: "var(--text-primary)" }}>{opt.label}</span>
+                    </button>
+                  ))}
+                </div>}
+              </div></div>
             <button onClick={handleManualCreate} disabled={!name.trim()} className="w-full py-3 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer disabled:cursor-not-allowed"
               style={{
                 backgroundColor: name.trim() ? selectedCfg.color : "var(--surface-color)",
                 color: name.trim() ? "#000" : "var(--text-muted)",
-                opacity: name.trim() ? 1 : 0.2,
+                opacity: name.trim() ? 1 : 0.5,
               }}
             >{t('create_modal.create_btn')}</button>
           </div>
@@ -244,35 +376,43 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
           <div className="space-y-5">
             <div><label className="block text-xs font-medium mb-1.5" style={labelStyle}>{t('create_modal.music_platform')}</label>
               <div className="relative" ref={importDropdownRef}>
-                <button type="button" onClick={() => setImportDropdownOpen(!importDropdownOpen)} className="w-full flex items-center justify-between border rounded-xl py-3 px-4 text-sm outline-none transition-colors cursor-pointer"
+                <button type="button" onClick={toggleImportDropdown} className="w-full flex items-center justify-between border rounded-xl py-3 px-4 text-sm outline-none transition-colors cursor-pointer"
                   style={selectBtnStyle}
                   onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--border-hover)")}
                   onBlur={(e) => (e.currentTarget.style.borderColor = "var(--border-color)")}
                 >
-                  <span className="flex items-center gap-2.5"><span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: importSelectedCfg.color }} /><span style={{ color: "var(--text-secondary)", opacity: 0.7 }}>{importSelectedCfg.label}</span></span>
-                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${importDropdownOpen ? "rotate-180" : ""}`} style={{ color: "var(--text-muted)", opacity: 0.3 }} />
+                  <span className="flex items-center gap-2.5">
+                    {importPlatform === "QQMusic" ? (
+                      <QQMusicIcon className="w-4 h-4" />
+                    ) : (
+                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: importSelectedCfg.color }} />
+                    )}
+                    <span style={{ color: "var(--text-primary)" }}>{importSelectedCfg.label}</span>
+                  </span>
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${importDropdownOpen ? "rotate-180" : ""}`} style={{ color: "var(--text-muted)" }} />
                 </button>
-                {importDropdownOpen && <div className="absolute top-full left-0 right-0 mt-1.5 border rounded-xl py-1 shadow-xl z-10 overflow-hidden" style={dropdownBgStyle}>
+                {importDropdownOpen && <div className={`absolute left-0 right-0 border rounded-xl py-1 shadow-xl z-10 overflow-hidden ${importDropdownDirection === "up" ? "bottom-full mb-1.5" : "top-full mt-1.5"}`} style={dropdownBgStyle}>
                   {PLATFORMS.map((p) => { const cfg = PLATFORM_CONFIG[p]; return (
-                    <button key={p} type="button" onClick={() => { setImportPlatform(p); setImportDropdownOpen(false); setImported(false); }} className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors cursor-pointer ${
-                      importPlatform === p ? "" : ""
-                    }`}
+                    <button key={p} type="button" onClick={() => { setImportPlatform(p); setImportDropdownOpen(false); setImported(false); }} className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors cursor-pointer hover:bg-[var(--surface-hover)]`}
                       style={
                         importPlatform === p
-                          ? { backgroundColor: "var(--surface-hover)", color: "var(--text-secondary)", opacity: 0.7 }
-                          : undefined
+                          ? { backgroundColor: "var(--surface-hover)", color: "var(--text-primary)" }
+                          : { color: "var(--text-primary)" }
                       }
-                      onMouseEnter={(e) => { if (importPlatform !== p) Object.assign(e.currentTarget.style, optionHoverStyle); }}
-                      onMouseLeave={(e) => { if (importPlatform !== p) Object.assign(e.currentTarget.style, optionActiveStyle); }}
                     >
-                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cfg.color }} /><span style={{ color: "var(--text-secondary)", opacity: 0.7 }}>{cfg.label}</span>
+                      {p === "QQMusic" ? (
+                        <QQMusicIcon className="w-4 h-4" />
+                      ) : (
+                        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cfg.color }} />
+                      )}
+                      <span style={{ color: "var(--text-primary)" }}>{cfg.label}</span>
                     </button>
                   );})}
                 </div>}
               </div></div>
             <div><label className="block text-xs font-medium mb-1.5" style={labelStyle}>{t('create_modal.playlist_link')}</label>
-              <div className="relative"><Link className="absolute left-3.5 top-3.5 w-4 h-4" style={{ color: "var(--text-muted)", opacity: 0.25 }} />
-                <textarea value={importUrl} onChange={(e) => { setImportUrl(e.target.value); setImported(false); }} placeholder={t('create_modal.playlist_link_placeholder')} rows={2} className="w-full border rounded-xl py-3 pl-10 pr-4 text-sm outline-none transition-colors resize-none"
+              <div className="relative"><Link className="absolute left-3.5 top-3.5 w-4 h-4" style={{ color: "var(--text-muted)" }} />
+                <textarea value={importUrl} onChange={(e) => { setImportUrl(e.target.value); setImported(false); }} placeholder={t('create_modal.playlist_link_placeholder_multi')} rows={3} className="w-full border rounded-xl py-3 pl-10 pr-4 text-sm outline-none transition-colors resize-none"
                   style={inputStyle}
                   onFocus={(e) => (e.currentTarget.style.borderColor = "var(--border-hover)")}
                   onBlur={(e) => (e.currentTarget.style.borderColor = "var(--border-color)")}
@@ -283,30 +423,84 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
               style={{
                 backgroundColor: importUrl.trim() ? importSelectedCfg.color : "var(--surface-color)",
                 color: importUrl.trim() ? "#000" : "var(--text-muted)",
-                opacity: importing ? 0.7 : (importUrl.trim() ? 1 : 0.2),
+                opacity: importing ? 0.7 : (importUrl.trim() ? 1 : 0.5),
               }}
             >
               {importing ? <><LoaderCircle className="w-4 h-4 animate-spin" />{t('create_modal.getting_info')}</> : t('create_modal.get_info_btn')}
             </button>
+            <div className="pt-1">
+              <label className="block text-xs font-medium mb-1.5" style={labelStyle}>{t('playlist_card.refresh_interval_label')}</label>
+              <div className="relative" ref={refreshDropdownRef}>
+                <button type="button" onClick={toggleRefreshDropdown} className="w-full flex items-center justify-between border rounded-xl py-3 px-4 text-sm outline-none transition-colors cursor-pointer"
+                  style={selectBtnStyle}
+                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--border-hover)")}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = "var(--border-color)")}
+                >
+                  <span className="flex items-center gap-2.5"><Clock className="w-4 h-4" style={{ color: "var(--text-muted)" }} /><span style={{ color: "var(--text-primary)" }}>{selectedRefresh.label}</span></span>
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${refreshDropdownOpen ? "rotate-180" : ""}`} style={{ color: "var(--text-muted)" }} />
+                </button>
+                {refreshDropdownOpen && <div className={`absolute left-0 right-0 border rounded-xl py-1 shadow-xl z-10 overflow-hidden ${refreshDropdownDirection === "up" ? "bottom-full mb-1.5" : "top-full mt-1.5"}`} style={dropdownBgStyle}>
+                  {refreshOptions.map((opt) => (
+                    <button key={opt.value} type="button" onClick={() => { setRefreshInterval(opt.value); setRefreshDropdownOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors cursor-pointer hover:bg-[var(--surface-hover)]`}
+                      style={
+                        refreshInterval === opt.value
+                          ? { backgroundColor: "var(--surface-hover)", color: "var(--text-primary)" }
+                          : { color: "var(--text-primary)" }
+                      }
+                    >
+                      <span style={{ color: "var(--text-primary)" }}>{opt.label}</span>
+                    </button>
+                  ))}
+                </div>}
+              </div>
+            </div>
             {importError && <div className="rounded-xl p-3 text-xs border" style={{ backgroundColor: "rgba(239,68,68,0.1)", borderColor: "rgba(239,68,68,0.2)", color: "#f87171" }}>{importError}</div>}
-            {imported && fetchedData && (
-              <div className="border rounded-2xl p-4 space-y-3" style={{ backgroundColor: "var(--surface-color)", borderColor: "var(--border-color)" }}>
-                <div className="flex items-center gap-1 text-emerald-400 text-xs font-medium"><Check className="w-3.5 h-3.5" />{t('create_modal.import_success')}</div>
-                <div className="flex gap-4">
-                  {fetchedData.cover ? <img src={fetchedData.cover} alt="cover" className="w-20 h-20 rounded-xl object-cover border" style={{ borderColor: "var(--border-color)" }} />
-                    : <div className="w-20 h-20 rounded-xl border flex items-center justify-center" style={{ backgroundColor: "var(--surface-color)", borderColor: "var(--border-color)" }}><Music className="w-8 h-8" style={{ color: "var(--text-muted)" }} /></div>}
-                  <div className="flex-1 min-w-0 space-y-1.5">
-                    <p className="text-sm font-medium truncate" style={{ color: "var(--text-secondary)", opacity: 0.7 }}>{fetchedData.name || t('create_modal.unnamed_playlist')}</p>
-                    <p className="text-xs" style={{ color: "var(--text-muted)", opacity: 0.3 }}>{(fetchedData.songCount ?? 0) > 0 ? t('shelf.songs_count_with_text', { count: fetchedData.songCount }) : ""}</p>
-                    <p className="inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-md"
-                      style={{
-                        color: importSelectedCfg.color,
-                        backgroundColor: importSelectedCfg.bg || "var(--surface-color)",
-                      }}
-                    >{importSelectedCfg.label}</p>
+            {imported && previewResults.length > 0 && (
+              <div className="border rounded-2xl p-4 space-y-3 max-h-[300px] overflow-y-auto" style={{ backgroundColor: "var(--surface-color)", borderColor: "var(--border-color)" }}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1 text-emerald-400 text-xs font-medium">
+                    <Check className="w-3.5 h-3.5" />
+                    {t('create_modal.import_success_count', { count: previewResults.filter(r => !r.error).length })}
                   </div>
+                  {previewResults.filter(r => !r.error && !r.added).length > 1 && (
+                    <button 
+                      onClick={handleImportCreate}
+                      className="text-[10px] font-bold px-2 py-1 rounded-lg transition-all"
+                      style={{ backgroundColor: importSelectedCfg.color, color: "#000" }}
+                    >
+                      {t('create_modal.import_all')}
+                    </button>
+                  )}
                 </div>
-                <button onClick={handleImportCreate} className="w-full py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer" style={{ backgroundColor: importSelectedCfg.color, color: "#000" }}>{t('create_modal.add_to_shelf')}</button>
+                <div className="space-y-3">
+                  {previewResults.map((res, idx) => (
+                    <div key={idx} className="flex gap-3 items-center p-2 rounded-xl border transition-all" style={{ borderColor: res.error ? "rgba(239,68,68,0.2)" : "var(--border-color)", backgroundColor: res.error ? "rgba(239,68,68,0.05)" : (res.added ? "rgba(16,185,129,0.05)" : "transparent"), opacity: res.added ? 0.6 : 1 }}>
+                      {res.cover ? <img src={res.cover} alt="cover" className="w-12 h-12 rounded-lg object-cover border" style={{ borderColor: "var(--border-color)" }} />
+                        : <div className="w-12 h-12 rounded-lg border flex items-center justify-center" style={{ backgroundColor: "var(--surface-color)", borderColor: "var(--border-color)" }}><Music className="w-6 h-6" style={{ color: "var(--text-muted)" }} /></div>}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium truncate" style={{ color: res.error ? "#f87171" : (res.added ? "#34d399" : "var(--text-primary)") }}>{res.error ? res.error : (res.name || t('create_modal.unnamed_playlist'))}</p>
+                        {!res.error && <p className="text-[10px]" style={{ color: "var(--text-secondary)" }}>{(res.songCount ?? 0) > 0 ? t('shelf.songs_count_with_text', { count: res.songCount }) : ""}</p>}
+                      </div>
+                      {!res.error && !res.added && (
+                        <button 
+                          onClick={() => handleSingleImport(idx)}
+                          className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
+                          style={{ color: importSelectedCfg.color }}
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      )}
+                      {res.added && (
+                        <div className="p-1.5 text-emerald-400">
+                          <Check className="w-4 h-4" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {!previewResults.every(r => r.error || r.added) && (
+                  <button onClick={handleImportCreate} disabled={!hasValidResults} className="w-full py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" style={{ backgroundColor: importSelectedCfg.color, color: "#000" }}>{t('create_modal.add_to_shelf')}</button>
+                )}
               </div>
             )}
           </div>
