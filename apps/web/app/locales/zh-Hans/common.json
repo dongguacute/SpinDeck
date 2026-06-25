@@ -1,0 +1,126 @@
+{
+  "settings": {
+    "title": "设置",
+    "appearance": {
+      "title": "外观模式",
+      "light": "浅色",
+      "dark": "深色",
+      "system": "系统"
+    },
+    "theme": {
+      "title": "主题风格"
+    },
+    "about": {
+      "title": "关于",
+      "description": "SpinDeck — 音乐歌单管理工具",
+      "version": "当前版本 {{version}}",
+      "github": "GitHub 项目地址",
+      "source_code": "查看源码",
+      "author_douyin": "作者抖音主页",
+      "follow_author": "关注作者"
+    },
+    "disclaimer": {
+      "title": "免责声明",
+      "personal_use": "仅供个人学习使用",
+      "content_1": "本项目仅作为个人学习和技术交流使用，不得用于任何商业用途。",
+      "content_2": "所有媒体内容和数据均由第三方服务提供，本项目不托管也不存储任何受版权保护的音乐文件。"
+    },
+    "device_info": {
+      "title": "设备信息",
+      "os": "系统",
+      "browser": "浏览器",
+      "engine": "内核",
+      "unknown": "未知"
+    },
+    "external_link": {
+      "title": "外部链接确认",
+      "message": "您即将离开 SpinDeck，前往：",
+      "trust_warning": "请确保您信任该链接。",
+      "cancel": "取消",
+      "confirm": "确认前往"
+    }
+  },
+  "shelf": {
+    "loading": "正在加载歌单...",
+    "error_manual": "该歌单为手动创建，暂无歌曲数据",
+    "songs_count": "{{count}} 首",
+    "songs_count_with_text": "{{count}} 首歌曲",
+    "empty": "空歌单",
+    "refreshing": "刷新中",
+    "auto_refreshing": "自动刷新中",
+    "back_to_shelf": "返回歌单",
+    "exit_playback": "退出播放",
+    "exit_playback_title": "退出播放并停止音乐",
+    "prelaunch_app": "预启动播放应用",
+    "prelaunch_app_title": "启动 {{platform}}",
+    "playlist_detail": "歌单详情",
+    "visual_settings": "视觉调节",
+    "disc_style": "光碟样式",
+    "custom_background": "自定义背景",
+    "upload_background": "上传背景图",
+    "clear_background": "清除自定义背景",
+    "background_blur": "背景模糊度",
+    "reset_visual": "重置所有视觉配置",
+    "reset_visual_confirm": "确定要重置所有视觉配置吗？",
+    "playlist_info": "歌单信息",
+    "playlist_name": "歌单名称",
+    "music_platform": "音乐平台",
+    "original_link": "原始链接",
+    "songs_amount": "歌曲数量",
+    "create_time": "创建时间",
+    "prev_song": "上一首",
+    "next_song": "下一首",
+    "adjust_visual": "调节视觉样式"
+  },
+  "playlists": {
+    "empty_title": "还没有歌单",
+    "empty_description": "创建你的第一个歌单，开始整理你喜欢的音乐",
+    "create_first": "创建第一个歌单",
+    "create_playlist": "创建歌单"
+  },
+  "playlist_card": {
+    "settings_title": "歌单设置",
+    "refresh_off": "关闭",
+    "refresh_minutes": "{{count}} 分钟",
+    "refresh_hour": "1 小时",
+    "custom": "自定义",
+    "input_refresh_interval": "输入刷新间隔（分钟）",
+    "refresh_range": "范围：1 - 1440 分钟（24 小时）",
+    "no_refresh_options": "手动创建的歌单暂无刷新选项",
+    "delete_playlist": "删除歌单",
+    "refresh_interval_label": "自动刷新间隔"
+  },
+  "create_modal": {
+    "title": "创建歌单",
+    "manual_mode": "手动创建",
+    "import_mode": "链接导入",
+    "playlist_name": "歌单名称",
+    "playlist_name_placeholder": "输入歌单名称...",
+    "music_platform": "音乐平台",
+    "cover_url": "封面图片链接",
+    "optional": "（可选）",
+    "cover_url_placeholder": "https://...",
+    "songs_count": "歌曲数量",
+    "create_btn": "创建歌单",
+    "playlist_link": "歌单链接",
+    "playlist_link_placeholder": "粘贴歌单分享链接...",
+    "get_info_btn": "获取歌单信息",
+    "getting_info": "正在获取歌单...",
+    "import_success": "获取成功",
+    "unnamed_playlist": "未命名歌单",
+    "add_to_shelf": "添加到歌单",
+    "import_from_platform": "来自 {{platform}} 的歌单"
+  },
+  "vinyl": {
+    "tonearm_title": "拖动唱臂到唱片上，松手播放",
+    "pause": "暂停",
+    "play": "播放"
+  },
+  "common": {
+    "back": "返回",
+    "confirm": "确认",
+    "cancel": "取消",
+    "loading": "正在加载...",
+    "retry": "重试"
+  }
+}

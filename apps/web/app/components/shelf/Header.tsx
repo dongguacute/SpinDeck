@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 import { ArrowLeft, Info, LogOut, Rocket } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { ChromeStyle, ThemePalette } from "../../lib/theme-color";
 import { PLATFORM_CONFIG } from "../../lib/types";
 import { prelaunchApp } from "@spindeck/player";
@@ -35,6 +36,7 @@ export function Header({
   handleExitPlayback,
   setShowDetail,
 }: HeaderProps) {
+  const { t } = useTranslation('common');
   if (!playlist) return null;
 
   return (
@@ -61,7 +63,7 @@ export function Header({
             (e.currentTarget as HTMLAnchorElement).style.opacity = String(chromeIdleOpacity);
           }}
         >
-          <ArrowLeft className="w-3.5 h-3.5" />返回歌单
+          <ArrowLeft className="w-3.5 h-3.5" />{t('shelf.back_to_shelf')}
         </Link>
       )}
 
@@ -87,9 +89,9 @@ export function Header({
             e.currentTarget.style.opacity = String(chromeBtnIdleOpacity);
             e.currentTarget.style.transform = "scale(1)";
           }}
-          title="退出播放并停止音乐"
+          title={t('shelf.exit_playback_title')}
         >
-          <LogOut className="w-3.5 h-3.5" />退出播放
+          <LogOut className="w-3.5 h-3.5" />{t('shelf.exit_playback')}
         </button>
       ) : (
         <button
@@ -111,9 +113,9 @@ export function Header({
             e.currentTarget.style.opacity = "0.7";
             e.currentTarget.style.transform = "scale(1)";
           }}
-          title={`启动 ${PLATFORM_CONFIG[playlist.platform]?.label || playlist.platform}`}
+          title={t('shelf.prelaunch_app_title', { platform: PLATFORM_CONFIG[playlist.platform]?.label || playlist.platform })}
         >
-          <Rocket className="w-3.5 h-3.5" />预启动播放应用
+          <Rocket className="w-3.5 h-3.5" />{t('shelf.prelaunch_app')}
         </button>
       )}
 
@@ -141,7 +143,7 @@ export function Header({
                 borderColor: chrome.border,
               }}
             >
-              {songs.length > 0 ? `${songs.length} 首` : playlist.songCount > 0 ? `${playlist.songCount} 首` : ""}
+              {songs.length > 0 ? t('shelf.songs_count', { count: songs.length }) : playlist.songCount > 0 ? t('shelf.songs_count', { count: playlist.songCount }) : ""}
             </span>
 
             <button
@@ -158,7 +160,7 @@ export function Header({
                 e.currentTarget.style.opacity = showThemeBackdrop ? "0.65" : "0.25";
                 e.currentTarget.style.background = "transparent";
               }}
-              title="歌单详情"
+              title={t('shelf.playlist_detail')}
             >
               <Info className="w-3.5 h-3.5" />
             </button>
@@ -172,7 +174,7 @@ export function Header({
                   className={`inline-block w-1.5 h-1.5 rounded-full${showThemeBackdrop ? "" : " bg-emerald-400/60"}`}
                   style={showThemeBackdrop && themePalette ? { backgroundColor: themePalette.pale200 } : undefined}
                 />
-                自动刷新中
+                {t('shelf.auto_refreshing')}
               </span>
             )}
           </div>

@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { Plus, Disc3, Settings } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import PlaylistCard from "../components/PlaylistCard";
 import CreatePlaylistModal from "../components/CreatePlaylistModal";
 import { usePlaylistStore } from "../lib/playlist-store";
 import { Link } from "react-router";
 
 export default function Playlists() {
+  const { t } = useTranslation('common');
   const { playlists, addPlaylist, removePlaylist, updatePlaylist } = usePlaylistStore();
 
   const handleUpdateRefresh = (id: string, interval: number) => {
@@ -26,10 +28,10 @@ export default function Playlists() {
               <Disc3 className="w-10 h-10" style={{ color: "var(--text-muted)" }} />
             </div>
             <h2 className="text-lg font-medium mb-2" style={{ color: "var(--text-secondary)", opacity: 0.45 }}>
-              还没有歌单
+              {t('playlists.empty_title')}
             </h2>
             <p className="text-sm mb-8 max-w-xs leading-relaxed" style={{ color: "var(--text-muted)", opacity: 0.45 }}>
-              创建你的第一个歌单，开始整理你喜欢的音乐
+              {t('playlists.empty_description')}
             </p>
             <button
               onClick={() => setModalOpen(true)}
@@ -41,7 +43,7 @@ export default function Playlists() {
               }}
             >
               <Plus className="w-4 h-4" />
-              创建第一个歌单
+              {t('playlists.create_first')}
             </button>
           </div>
         ) : (
@@ -115,7 +117,7 @@ export default function Playlists() {
               }}
             >
               <Plus className="w-4 h-4" />
-              创建歌单
+              {t('playlists.create_playlist')}
             </button>
           </div>
         </div>

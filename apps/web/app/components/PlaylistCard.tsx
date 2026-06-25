@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 import { Trash2, Disc3, Settings2, X, Clock } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import type { Playlist } from "../lib/types";
 import { PLATFORM_CONFIG } from "../lib/types";
 import { useThemeStore } from "../lib/theme-store";
@@ -18,15 +19,16 @@ function px(url: string) {
   return `https://images.weserv.nl/?url=${encodeURIComponent(url.replace(/^https?:\/\//, ""))}`;
 }
 
-const REFRESH_OPTIONS = [
-  { label: "关闭", value: 0 },
-  { label: "5 分钟", value: 5 * 60 * 1000 },
-  { label: "15 分钟", value: 15 * 60 * 1000 },
-  { label: "30 分钟", value: 30 * 60 * 1000 },
-  { label: "1 小时", value: 60 * 60 * 1000 },
+const REFRESH_OPTIONS = (t: any) => [
+  { label: t('playlist_card.refresh_off'), value: 0 },
+  { label: t('playlist_card.refresh_minutes', { count: 5 }), value: 5 * 60 * 1000 },
+  { label: t('playlist_card.refresh_minutes', { count: 15 }), value: 15 * 60 * 1000 },
+  { label: t('playlist_card.refresh_minutes', { count: 30 }), value: 30 * 60 * 1000 },
+  { label: t('playlist_card.refresh_hour'), value: 60 * 60 * 1000 },
 ];
 
 export default function PlaylistCard({ playlist, onDelete, onUpdateRefresh }: Props) {
+  const { t } = useTranslation('common');
   const { theme } = useThemeStore();
   const cfg = PLATFORM_CONFIG[playlist.platform];
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -40,7 +42,8 @@ export default function PlaylistCard({ playlist, onDelete, onUpdateRefresh }: Pr
   const hasRefresh = (playlist.refreshInterval ?? 0) > 0;
   // 检查当前是否使用了自定义时长（不在预设选项中）
   const currentInterval = playlist.refreshInterval ?? 0;
-  const isCustomInterval = !REFRESH_OPTIONS.some((opt) => opt.value === currentInterval) && currentInterval > 0;
+  const refreshOptions = REFRESH_OPTIONS(t);
+  const isCustomInterval = !refreshOptions.some((opt) => opt.value === currentInterval) && currentInterval > 0;
 
   useEffect(() => {
     if (!playlist.coverUrl) {
@@ -153,7 +156,7 @@ export default function PlaylistCard({ playlist, onDelete, onUpdateRefresh }: Pr
               boxShadow: "var(--shadow-raised)",
               border: "1px solid var(--border-highlight)",
             }}
-            title="歌单设置"
+            title={t('playlist_card.settings_title')}
           >
             <Settings2 
               className={`w-3.5 h-3.5 transition-transform duration-500 ${!hasRefresh ? 'group-hover/btn:rotate-90' : ''}`} 
@@ -175,13 +178,13 @@ export default function PlaylistCard({ playlist, onDelete, onUpdateRefresh }: Pr
           <div className="flex items-center justify-between mt-1.5">
             <p className="text-xs" style={{ color: "var(--text-secondary)", opacity: 0.35 }}>
               {playlist.songCount > 0
-                ? `${playlist.songCount} 首歌曲`
-                : "空歌单"}
+                ? t('shelf.songs_count_with_text', { count: playlist.songCount })
+                : t('shelf.empty')}
             </p>
             {hasRefresh && (
               <span className="text-emerald-400/50 text-[10px] flex items-center gap-1">
                 <span className="inline-block w-1 h-1 rounded-full bg-emerald-400/60 animate-pulse" />
-                刷新中
+                {t('shelf.refreshing')}
               </span>
             )}
           </div>
@@ -259,7 +262,7 @@ export default function PlaylistCard({ playlist, onDelete, onUpdateRefresh }: Pr
             {/* 标题栏 - 增大触控区域 */}
             <div className="flex items-center justify-between p-5 pb-4 sm:p-6 sm:pb-5">
               <h3 className="text-base font-semibold flex items-center gap-2" style={{ color: "var(--text-primary)", opacity: 0.9 }}>
-                <Settings2 className="w-4 h-4" style={{ color: "var(--text-muted)" }} />歌单设置
+                <Settings2 className="w-4 h-4" style={{ color: "var(--text-muted)" }} />{t('playlist_card.settings_title')}
               </h3>
               <button
                 onClick={() => closeModal()}
@@ -275,15 +278,15 @@ export default function PlaylistCard({ playlist, onDelete, onUpdateRefresh }: Pr
             {/* 歌单信息 */}
             <div className="mx-5 mb-5 pb-4 border-b sm:mx-6 sm:mb-6 sm:pb-5" style={{ borderColor: "var(--border-color)" }}>
               <p className="text-sm font-medium truncate" style={{ color: "var(--text-secondary)", opacity: 0.7 }}>{playlist.name}</p>
-              <p className="text-xs mt-1" style={{ color: "var(--text-muted)", opacity: 0.25 }}>{cfg.label} · {playlist.songCount > 0 ? `${playlist.songCount} 首` : '空歌单'}</p>
+              <p className="text-xs mt-1" style={{ color: "var(--text-muted)", opacity: 0.25 }}>{cfg.label} · {playlist.songCount > 0 ? t('shelf.songs_count', { count: playlist.songCount }) : t('shelf.empty')}</p>
             </div>
 
             {/* 自动刷新设置 */}
             {playlist.importUrl && onUpdateRefresh ? (
               <div className="px-5 pb-4 sm:px-6 sm:pb-5">
-                <label className="block text-xs font-medium mb-3" style={{ color: "var(--text-muted)" }}>自动刷新间隔</label>
+                <label className="block text-xs font-medium mb-3" style={{ color: "var(--text-muted)" }}>{t('playlist_card.refresh_interval_label')}</label>
                 <div className="space-y-2">
-                  {REFRESH_OPTIONS.map((opt) => {
+                  {refreshOptions.map((opt) => {
                     const isActive = (playlist.refreshInterval ?? 0) === opt.value;
                     return (
                       <button
@@ -331,15 +334,15 @@ export default function PlaylistCard({ playlist, onDelete, onUpdateRefresh }: Pr
                       >
                         <div className="flex items-center gap-2">
                           <Clock className="w-3.5 h-3.5" />
-                          <span>自定义</span>
+                          <span>{t('playlist_card.custom')}</span>
                         </div>
                         {isCustomInterval && !showCustomInput && (
-                          <span className="text-[11px]" style={{ opacity: 0.7 }}>{Math.round(currentInterval / 60000)} 分钟</span>
+                          <span className="text-[11px]" style={{ opacity: 0.7 }}>{t('playlist_card.refresh_minutes', { count: Math.round(currentInterval / 60000) })}</span>
                         )}
                       </button>
                     ) : (
                       <div className="px-4 py-4 rounded-xl border space-y-3" style={{ backgroundColor: "var(--surface-color)", borderColor: "var(--border-color)" }}>
-                        <label className="text-xs" style={{ color: "var(--text-muted)", opacity: 0.3 }}>输入刷新间隔（分钟）</label>
+                        <label className="text-xs" style={{ color: "var(--text-muted)", opacity: 0.3 }}>{t('playlist_card.input_refresh_interval')}</label>
                         <div className="flex gap-2">
                           <input
                             type="number"
@@ -363,10 +366,10 @@ export default function PlaylistCard({ playlist, onDelete, onUpdateRefresh }: Pr
                             disabled={!customMinutes || parseInt(customMinutes, 10) <= 0}
                             className="px-5 py-3 rounded-lg bg-blue-500/90 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-black text-sm font-semibold transition-colors cursor-pointer min-h-[44px]"
                           >
-                            确认
+                            {t('common.confirm')}
                           </button>
                         </div>
-                        <p className="text-[10px]" style={{ color: "var(--text-muted)", opacity: 0.15 }}>范围：1 - 1440 分钟（24 小时）</p>
+                        <p className="text-[10px]" style={{ color: "var(--text-muted)", opacity: 0.15 }}>{t('playlist_card.refresh_range')}</p>
                       </div>
                     )}
                   </div>
@@ -374,7 +377,7 @@ export default function PlaylistCard({ playlist, onDelete, onUpdateRefresh }: Pr
               </div>
             ) : (
               <div className="py-10 text-center">
-                <p className="text-sm" style={{ color: "var(--text-muted)", opacity: 0.25 }}>手动创建的歌单暂无刷新选项</p>
+                <p className="text-sm" style={{ color: "var(--text-muted)", opacity: 0.25 }}>{t('playlist_card.no_refresh_options')}</p>
               </div>
             )}
 
@@ -395,7 +398,7 @@ export default function PlaylistCard({ playlist, onDelete, onUpdateRefresh }: Pr
                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "rgba(239,68,68,0.08)"; e.currentTarget.style.color = "#f87171"; e.currentTarget.style.opacity = "0.7"; }}
               >
                 <Trash2 className="w-4 h-4" />
-                删除歌单
+                {t('playlist_card.delete_playlist')}
               </button>
             </div>
           </div>

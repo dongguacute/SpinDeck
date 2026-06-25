@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useFetcher } from "react-router";
 import { X, Music, ChevronDown, Plus, Link, LoaderCircle, Check } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { PlatformType, SongInfo } from "../lib/types";
 import { PLATFORM_CONFIG } from "../lib/types";
 
@@ -25,6 +26,7 @@ const PLATFORMS: PlatformType[] = [
 type Mode = "manual" | "import";
 
 export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) {
+  const { t } = useTranslation('common');
   const [mode, setMode] = useState<Mode>("manual");
   const [animState, setAnimState] = useState<"in" | "out" | "hidden">("hidden");
   const importFetcher = useFetcher<{
@@ -101,7 +103,7 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
     const data = importFetcher.data;
     if (!data) return;
     onCreate({
-      name: data.name || `来自 ${PLATFORM_CONFIG[importPlatform].label} 的歌单`,
+      name: data.name || t('create_modal.import_from_platform', { platform: PLATFORM_CONFIG[importPlatform].label }),
       platform: importPlatform,
       coverUrl: data.cover || "",
       songCount: data.songCount || 0,
@@ -143,7 +145,7 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
         }} 
         onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-semibold flex items-center gap-2" style={{ color: "var(--text-primary)", opacity: 0.9 }}><Plus className="w-5 h-5" />创建歌单</h2>
+          <h2 className="text-lg font-semibold flex items-center gap-2" style={{ color: "var(--text-primary)", opacity: 0.9 }}><Plus className="w-5 h-5" />{t('create_modal.title')}</h2>
           <button onClick={onClose} className="p-2 rounded-xl transition-colors cursor-pointer"
             style={{ color: "var(--text-muted)", opacity: 0.4 }}
             onMouseEnter={(e) => { e.currentTarget.style.background = "var(--surface-color)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text-secondary)"; (e.currentTarget as HTMLButtonElement).style.opacity = "0.7"; }}
@@ -162,7 +164,7 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
             }
             onMouseEnter={(e) => { if (mode !== "manual") e.currentTarget.style.opacity = "0.5"; }}
             onMouseLeave={(e) => { if (mode !== "manual") e.currentTarget.style.opacity = "0.3"; }}
-          >手动创建</button>
+          >{t('create_modal.manual_mode')}</button>
           <button onClick={() => setMode("import")} className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all cursor-pointer ${
             mode === "import" ? "" : ""
           }`}
@@ -173,20 +175,20 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
             }
             onMouseEnter={(e) => { if (mode !== "import") e.currentTarget.style.opacity = "0.5"; }}
             onMouseLeave={(e) => { if (mode !== "import") e.currentTarget.style.opacity = "0.3"; }}
-          >链接导入</button>
+          >{t('create_modal.import_mode')}</button>
         </div>
 
         {mode === "manual" && (
           <div className="space-y-5">
-            <div><label className="block text-xs font-medium mb-1.5" style={labelStyle}>歌单名称</label>
+            <div><label className="block text-xs font-medium mb-1.5" style={labelStyle}>{t('create_modal.playlist_name')}</label>
               <div className="relative"><Music className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "var(--text-muted)", opacity: 0.25 }} />
-                <input ref={nameRef} type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="输入歌单名称…" className="w-full border rounded-xl py-3 pl-10 pr-4 text-sm outline-none transition-colors"
+                <input ref={nameRef} type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('create_modal.playlist_name_placeholder')} className="w-full border rounded-xl py-3 pl-10 pr-4 text-sm outline-none transition-colors"
                   style={inputStyle}
                   onFocus={(e) => (e.currentTarget.style.borderColor = "var(--border-hover)")}
                   onBlur={(e) => (e.currentTarget.style.borderColor = "var(--border-color)")}
                 />
               </div></div>
-            <div><label className="block text-xs font-medium mb-1.5" style={labelStyle}>音乐平台</label>
+            <div><label className="block text-xs font-medium mb-1.5" style={labelStyle}>{t('create_modal.music_platform')}</label>
               <div className="relative" ref={dropdownRef}>
                 <button type="button" onClick={() => setDropdownOpen(!dropdownOpen)} className="w-full flex items-center justify-between border rounded-xl py-3 px-4 text-sm outline-none transition-colors cursor-pointer"
                   style={selectBtnStyle}
@@ -214,15 +216,15 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
                   );})}
                 </div>}
               </div></div>
-            <div><label className="block text-xs font-medium mb-1.5" style={labelStyle}>封面图片链接 <span style={{ opacity: 0.35 }}>（可选）</span></label>
+            <div><label className="block text-xs font-medium mb-1.5" style={labelStyle}>{t('create_modal.cover_url')} <span style={{ opacity: 0.35 }}>{t('create_modal.optional')}</span></label>
               <div className="relative"><Link className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "var(--text-muted)", opacity: 0.25 }} />
-                <input type="url" value={coverUrl} onChange={(e) => setCoverUrl(e.target.value)} placeholder="https://…" className="w-full border rounded-xl py-3 pl-10 pr-4 text-sm outline-none transition-colors"
+                <input type="url" value={coverUrl} onChange={(e) => setCoverUrl(e.target.value)} placeholder={t('create_modal.cover_url_placeholder')} className="w-full border rounded-xl py-3 pl-10 pr-4 text-sm outline-none transition-colors"
                   style={inputStyle}
                   onFocus={(e) => (e.currentTarget.style.borderColor = "var(--border-hover)")}
                   onBlur={(e) => (e.currentTarget.style.borderColor = "var(--border-color)")}
                 />
               </div></div>
-            <div><label className="block text-xs font-medium mb-1.5" style={labelStyle}>歌曲数量</label>
+            <div><label className="block text-xs font-medium mb-1.5" style={labelStyle}>{t('create_modal.songs_count')}</label>
               <input type="number" min={0} value={songCount} onChange={(e) => setSongCount(Math.max(0, Number(e.target.value)))} className="w-full border rounded-xl py-3 px-4 text-sm outline-none transition-colors"
                 style={inputStyle}
                 onFocus={(e) => (e.currentTarget.style.borderColor = "var(--border-hover)")}
@@ -234,13 +236,13 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
                 color: name.trim() ? "#000" : "var(--text-muted)",
                 opacity: name.trim() ? 1 : 0.2,
               }}
-            >创建歌单</button>
+            >{t('create_modal.create_btn')}</button>
           </div>
         )}
 
         {mode === "import" && (
           <div className="space-y-5">
-            <div><label className="block text-xs font-medium mb-1.5" style={labelStyle}>音乐平台</label>
+            <div><label className="block text-xs font-medium mb-1.5" style={labelStyle}>{t('create_modal.music_platform')}</label>
               <div className="relative" ref={importDropdownRef}>
                 <button type="button" onClick={() => setImportDropdownOpen(!importDropdownOpen)} className="w-full flex items-center justify-between border rounded-xl py-3 px-4 text-sm outline-none transition-colors cursor-pointer"
                   style={selectBtnStyle}
@@ -268,9 +270,9 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
                   );})}
                 </div>}
               </div></div>
-            <div><label className="block text-xs font-medium mb-1.5" style={labelStyle}>歌单链接</label>
+            <div><label className="block text-xs font-medium mb-1.5" style={labelStyle}>{t('create_modal.playlist_link')}</label>
               <div className="relative"><Link className="absolute left-3.5 top-3.5 w-4 h-4" style={{ color: "var(--text-muted)", opacity: 0.25 }} />
-                <textarea value={importUrl} onChange={(e) => { setImportUrl(e.target.value); setImported(false); }} placeholder="粘贴歌单分享链接…" rows={2} className="w-full border rounded-xl py-3 pl-10 pr-4 text-sm outline-none transition-colors resize-none"
+                <textarea value={importUrl} onChange={(e) => { setImportUrl(e.target.value); setImported(false); }} placeholder={t('create_modal.playlist_link_placeholder')} rows={2} className="w-full border rounded-xl py-3 pl-10 pr-4 text-sm outline-none transition-colors resize-none"
                   style={inputStyle}
                   onFocus={(e) => (e.currentTarget.style.borderColor = "var(--border-hover)")}
                   onBlur={(e) => (e.currentTarget.style.borderColor = "var(--border-color)")}
@@ -284,18 +286,18 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
                 opacity: importing ? 0.7 : (importUrl.trim() ? 1 : 0.2),
               }}
             >
-              {importing ? <><LoaderCircle className="w-4 h-4 animate-spin" />正在获取歌单…</> : "获取歌单信息"}
+              {importing ? <><LoaderCircle className="w-4 h-4 animate-spin" />{t('create_modal.getting_info')}</> : t('create_modal.get_info_btn')}
             </button>
             {importError && <div className="rounded-xl p-3 text-xs border" style={{ backgroundColor: "rgba(239,68,68,0.1)", borderColor: "rgba(239,68,68,0.2)", color: "#f87171" }}>{importError}</div>}
             {imported && fetchedData && (
               <div className="border rounded-2xl p-4 space-y-3" style={{ backgroundColor: "var(--surface-color)", borderColor: "var(--border-color)" }}>
-                <div className="flex items-center gap-1 text-emerald-400 text-xs font-medium"><Check className="w-3.5 h-3.5" />获取成功</div>
+                <div className="flex items-center gap-1 text-emerald-400 text-xs font-medium"><Check className="w-3.5 h-3.5" />{t('create_modal.import_success')}</div>
                 <div className="flex gap-4">
                   {fetchedData.cover ? <img src={fetchedData.cover} alt="cover" className="w-20 h-20 rounded-xl object-cover border" style={{ borderColor: "var(--border-color)" }} />
                     : <div className="w-20 h-20 rounded-xl border flex items-center justify-center" style={{ backgroundColor: "var(--surface-color)", borderColor: "var(--border-color)" }}><Music className="w-8 h-8" style={{ color: "var(--text-muted)" }} /></div>}
                   <div className="flex-1 min-w-0 space-y-1.5">
-                    <p className="text-sm font-medium truncate" style={{ color: "var(--text-secondary)", opacity: 0.7 }}>{fetchedData.name || "未命名歌单"}</p>
-                    <p className="text-xs" style={{ color: "var(--text-muted)", opacity: 0.3 }}>{(fetchedData.songCount ?? 0) > 0 ? `${fetchedData.songCount} 首歌曲` : ""}</p>
+                    <p className="text-sm font-medium truncate" style={{ color: "var(--text-secondary)", opacity: 0.7 }}>{fetchedData.name || t('create_modal.unnamed_playlist')}</p>
+                    <p className="text-xs" style={{ color: "var(--text-muted)", opacity: 0.3 }}>{(fetchedData.songCount ?? 0) > 0 ? t('shelf.songs_count_with_text', { count: fetchedData.songCount }) : ""}</p>
                     <p className="inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-md"
                       style={{
                         color: importSelectedCfg.color,
@@ -304,7 +306,7 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
                     >{importSelectedCfg.label}</p>
                   </div>
                 </div>
-                <button onClick={handleImportCreate} className="w-full py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer" style={{ backgroundColor: importSelectedCfg.color, color: "#000" }}>添加到歌单</button>
+                <button onClick={handleImportCreate} className="w-full py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer" style={{ backgroundColor: importSelectedCfg.color, color: "#000" }}>{t('create_modal.add_to_shelf')}</button>
               </div>
             )}
           </div>

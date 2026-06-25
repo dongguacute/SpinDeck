@@ -35,6 +35,9 @@ interface Props {
   autoPlayToken?: number;
   vinylColor?: string;
   labelColor?: string;
+  tonearmTitle?: string;
+  playLabel?: string;
+  pauseLabel?: string;
 }
 
 const FALLBACK_COLOR = "#6eb5d4";
@@ -68,6 +71,9 @@ export default function SongVinylOverlay({
   autoPlayToken = 0,
   vinylColor: propVinylColor,
   labelColor: propLabelColor,
+  tonearmTitle = "拖动唱臂到唱片上，松手播放",
+  playLabel = "播放",
+  pauseLabel = "暂停",
 }: Props) {
   const [internalVinylColor, setInternalVinylColor] = useState(FALLBACK_COLOR);
 
@@ -426,7 +432,7 @@ export default function SongVinylOverlay({
     <div
       className={`sd-vinyl-arm-wrap${dragging ? " sd-vinyl-arm-wrap--dragging" : ""}`}
       onPointerDown={onPointerDown}
-      title="拖动唱臂到唱片上，松手播放"
+      title={tonearmTitle}
     >
       <Tonearm className="sd-vinyl-arm" armDeg={armDeg} />
     </div>
@@ -456,7 +462,7 @@ export default function SongVinylOverlay({
             onClick={onDiscClick}
             role="button"
             tabIndex={interactive ? 0 : -1}
-            aria-label={playing || pendingPlay ? "暂停" : "播放"}
+            aria-label={playing || pendingPlay ? pauseLabel : playLabel}
             onKeyDown={(e) => {
               if (!interactive) return;
               if (e.key === "Enter" || e.key === " ") {

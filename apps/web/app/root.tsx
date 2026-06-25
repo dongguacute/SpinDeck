@@ -8,6 +8,7 @@ import {
 import { useEffect } from "react";
 import { useThemeStore } from "./lib/theme-store";
 import { useBackgroundRefresh } from "./lib/use-background-refresh";
+import i18n from "./i18n";
 
 import "./app.css";
 
@@ -20,7 +21,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   }, [theme]);
 
   return (
-    <html lang="en" data-theme={theme} suppressHydrationWarning>
+    <html lang={i18n.language} data-theme={theme} suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />

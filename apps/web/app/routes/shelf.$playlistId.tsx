@@ -1,5 +1,6 @@
 import { useParams } from "react-router";
 import { LoaderCircle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useThemeStore } from "../lib/theme-store";
 import PlaylistShelf from "../components/PlaylistShelf";
 import { SongVinylOverlay } from "@spindeck/vinyl-ui";
@@ -22,6 +23,7 @@ import { PlaybackControls } from "../components/shelf/PlaybackControls";
 import { SettingsModal } from "../components/shelf/SettingsModal";
 
 export default function ShelfPage() {
+  const { t } = useTranslation('common');
   const { playlistId } = useParams<{ playlistId: string }>();
   const { theme, resolvedMode, settings, updateSettings, resetSettings } = useThemeStore();
   
@@ -174,7 +176,7 @@ export default function ShelfPage() {
             }}
           >
             <LoaderCircle className="w-8 h-8 animate-spin" style={{ color: "var(--text-secondary)" }} />
-            <span className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>正在加载歌单…</span>
+            <span className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>{t('shelf.loading')}</span>
           </div>
         </div>
       )}
@@ -212,7 +214,7 @@ export default function ShelfPage() {
                 e.currentTarget.style.transform = "translateY(0)";
               }}
             >
-              重试
+              {t('common.retry')}
             </button>
           </div>
         </div>
@@ -228,7 +230,7 @@ export default function ShelfPage() {
               boxShadow: "var(--shadow-pressed)",
             }}
           >
-            <p className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>该歌单为手动创建，暂无歌曲数据</p>
+            <p className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t('shelf.error_manual')}</p>
           </div>
         </div>
       )}
@@ -256,6 +258,9 @@ export default function ShelfPage() {
             tonearmPortalReady={tonearmPortalReady}
             autoPlay={autoPlayNext}
             autoPlayToken={autoPlayToken}
+            tonearmTitle={t('vinyl.tonearm_title')}
+            playLabel={t('vinyl.play')}
+            pauseLabel={t('vinyl.pause')}
           />
         )}
 

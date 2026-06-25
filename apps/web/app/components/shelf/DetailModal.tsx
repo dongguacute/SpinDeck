@@ -1,4 +1,5 @@
 import { Disc3, X, ExternalLink, Music, Clock } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { Playlist } from "../../lib/playlist-store";
 import type { SongInfo } from "@spindeck/player";
 import { PLATFORM_CONFIG } from "../../lib/types";
@@ -18,6 +19,7 @@ export function DetailModal({
   songs,
   coverUrl,
 }: DetailModalProps) {
+  const { t, i18n } = useTranslation('common');
   if (!showDetail || !playlist) return null;
 
   return (
@@ -32,7 +34,7 @@ export function DetailModal({
         onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-base font-bold flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
-            <Disc3 className="w-5 h-5" style={{ color: "var(--text-muted)" }} />歌单信息
+            <Disc3 className="w-5 h-5" style={{ color: "var(--text-muted)" }} />{t('shelf.playlist_info')}
           </h3>
           <button
             onClick={() => setShowDetail(false)}
@@ -64,12 +66,12 @@ export function DetailModal({
 
         <div className="space-y-4">
           <div>
-            <label className="text-xs font-medium block mb-1" style={{ color: "var(--text-muted)", opacity: 0.25 }}>歌单名称</label>
+            <label className="text-xs font-medium block mb-1" style={{ color: "var(--text-muted)", opacity: 0.25 }}>{t('shelf.playlist_name')}</label>
             <p className="text-sm font-medium" style={{ color: "var(--text-secondary)", opacity: 0.7 }}>{playlist.name}</p>
           </div>
 
           <div>
-            <label className="text-xs font-medium block mb-1" style={{ color: "var(--text-muted)", opacity: 0.25 }}>音乐平台</label>
+            <label className="text-xs font-medium block mb-1" style={{ color: "var(--text-muted)", opacity: 0.25 }}>{t('shelf.music_platform')}</label>
             <span
               className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-md"
               style={{
@@ -87,7 +89,7 @@ export function DetailModal({
 
           {playlist.importUrl && (
             <div>
-              <label className="text-xs font-medium block mb-1" style={{ color: "var(--text-muted)", opacity: 0.25 }}>原始链接</label>
+              <label className="text-xs font-medium block mb-1" style={{ color: "var(--text-muted)", opacity: 0.25 }}>{t('shelf.original_link')}</label>
               <a
                 href={playlist.importUrl}
                 target="_blank"
@@ -104,18 +106,18 @@ export function DetailModal({
           )}
 
           <div>
-            <label className="text-xs font-medium block mb-1" style={{ color: "var(--text-muted)", opacity: 0.25 }}>歌曲数量</label>
+            <label className="text-xs font-medium block mb-1" style={{ color: "var(--text-muted)", opacity: 0.25 }}>{t('shelf.songs_amount')}</label>
             <p className="flex items-center gap-1.5 text-sm" style={{ color: "var(--text-secondary)", opacity: 0.5 }}>
               <Music className="w-3.5 h-3.5" />
-              {songs.length > 0 ? `${songs.length} 首` : playlist.songCount > 0 ? `${playlist.songCount} 首` : "暂无"}
+              {songs.length > 0 ? t('shelf.songs_count', { count: songs.length }) : playlist.songCount > 0 ? t('shelf.songs_count', { count: playlist.songCount }) : t('shelf.empty')}
             </p>
           </div>
 
           <div>
-            <label className="text-xs font-medium block mb-1" style={{ color: "var(--text-muted)", opacity: 0.25 }}>创建时间</label>
+            <label className="text-xs font-medium block mb-1" style={{ color: "var(--text-muted)", opacity: 0.25 }}>{t('shelf.create_time')}</label>
             <p className="flex items-center gap-1.5 text-sm" style={{ color: "var(--text-secondary)", opacity: 0.5 }}>
               <Clock className="w-3.5 h-3.5" />
-              {new Date(playlist.createdAt).toLocaleString('zh-CN', {
+              {new Date(playlist.createdAt).toLocaleString(i18n.language === 'zh-Hans' ? 'zh-CN' : 'en-US', {
                 year: 'numeric',
                 month: '2-digit',
                 day: '2-digit',

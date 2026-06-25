@@ -24,6 +24,9 @@ This project is a monorepo managed with `pnpm` and `turborepo`. To ensure consis
 ## Project Structure
 
 - `apps/web`: The main web application. See [README.md](apps/web/README.md)
+  - **Asset Management**: Do NOT put any files that need modification (like images, icons, or translation files) in the `public` folder.
+  - **i18n**: Translation files MUST be placed in `apps/web/app/locales`.
+  - **Assets**: Images and other static assets that are part of the source code should be placed in `apps/web/app/assets`.
 - `packages/`: Shared libraries and components.
   - `packages/core`: Core logic and utilities. See [README.md](packages/core/README.md)
   - `packages/player`: Music player integration logic. See [README.md](packages/player/README.md)
@@ -37,6 +40,20 @@ This project is a monorepo managed with `pnpm` and `turborepo`. To ensure consis
 - Follow the existing coding style in the repository.
 - Use the shared ESLint configurations provided in `packages/eslint-config`.
 - Prefer using existing components from `packages/vinyl-ui` or `packages/ui` before creating new ones.
+
+## Internationalization (i18n)
+
+- **Framework**: Use `i18next` and `react-i18next` for internationalization.
+- **Translation Files**:
+  - All translation keys MUST be stored in `apps/web/app/locales/{lang}/common.json`.
+  - Use hierarchical keys (e.g., `settings.appearance.title`) to keep the files organized.
+- **Usage in Components**:
+  - Use the `useTranslation` hook from `react-i18next`.
+  - Example: `const { t } = useTranslation('common');` and then `{t('key.name')}`.
+- **Shared Packages**:
+  - Shared UI packages (like `packages/vinyl-ui`) should NOT have a direct dependency on `i18next`.
+  - Pass translated strings as props from the application layer to components in shared packages.
+- **Hardcoded Strings**: Avoid hardcoding any user-facing Chinese or English strings in the source code. Always use translation keys.
 
 ## Git Commit Standards
 

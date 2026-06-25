@@ -1,6 +1,7 @@
 import { useThemeStore } from "../lib/theme-store";
 import { useState } from "react";
 import { ArrowLeft, Monitor, Check, Sun, Moon, ExternalLink, ShieldAlert, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const GithubIcon = () => (
   <svg
@@ -30,10 +31,11 @@ import { Link } from "react-router";
 import { THEME_CONFIGS, THEMES, type AppearanceMode, type ThemeType } from "@spindeck/ui";
 
 // 获取系统信息的辅助函数
-function getSystemInfo() {
-  if (typeof navigator === "undefined") return { os: "未知", osVersion: "", browser: "未知", browserVersion: "" };
+function getSystemInfo(t: any) {
+  const unknown = t('settings.device_info.unknown');
+  if (typeof navigator === "undefined") return { os: unknown, osVersion: "", browser: unknown, browserVersion: "" };
   const ua = navigator.userAgent;
-  let os = "未知系统";
+  let os = unknown;
   let osVersion = "";
 
   if (ua.includes("Mac OS X")) {
@@ -59,7 +61,7 @@ function getSystemInfo() {
     if (match) osVersion = match[1].replace(/_/g, ".");
   }
 
-  let browser = "未知浏览器";
+  let browser = unknown;
   let browserVersion = "";
   if (ua.includes("Firefox") && !ua.includes("Seamonkey")) {
     browser = "Firefox";
@@ -80,7 +82,7 @@ function getSystemInfo() {
   }
 
   // 检测内核
-  let engine = "未知内核";
+  let engine = unknown;
   if (ua.includes("AppleWebKit")) engine = "WebKit";
   if (ua.includes("Gecko") && !ua.includes("WebKit")) engine = "Gecko";
   if (ua.includes("Presto")) engine = "Presto";
@@ -90,8 +92,9 @@ function getSystemInfo() {
 }
 
 export default function Settings() {
+  const { t } = useTranslation('common');
   const { theme, setTheme, mode, setMode, resolvedMode } = useThemeStore();
-  const systemInfo = getSystemInfo();
+  const systemInfo = getSystemInfo(t);
   const [confirmLink, setConfirmLink] = useState<{ url: string; title: string } | null>(null);
 
   const handleLinkClick = (e: React.MouseEvent, url: string, title: string) => {
@@ -136,7 +139,7 @@ export default function Settings() {
             className="font-bold text-lg tracking-tight"
             style={{ color: "var(--text-primary)" }}
           >
-            设置
+            {t('settings.title')}
           </h1>
 
           <div className="w-10" /> {/* 保持居中对齐的占位 */}
@@ -151,7 +154,7 @@ export default function Settings() {
             className="text-xs font-semibold uppercase tracking-wider mb-4"
             style={{ color: "var(--text-muted)" }}
           >
-            外观模式
+            {t('settings.appearance.title')}
           </h2>
           <div
             className="rounded-2xl border p-1.5 flex gap-1.5 transition-colors duration-300"
@@ -161,9 +164,9 @@ export default function Settings() {
             }}
           >
             {[
-              { id: 'light', name: '浅色', icon: Sun },
-              { id: 'dark', name: '深色', icon: Moon },
-              { id: 'system', name: '系统', icon: Monitor },
+              { id: 'light', name: t('settings.appearance.light'), icon: Sun },
+              { id: 'dark', name: t('settings.appearance.dark'), icon: Moon },
+              { id: 'system', name: t('settings.appearance.system'), icon: Monitor },
             ].map((item) => {
               const isActive = mode === item.id;
               const Icon = item.icon;
@@ -196,7 +199,7 @@ export default function Settings() {
             className="text-xs font-semibold uppercase tracking-wider mb-4"
             style={{ color: "var(--text-muted)" }}
           >
-            主题风格
+            {t('settings.theme.title')}
           </h2>
           <div
             className="rounded-2xl border overflow-hidden transition-colors duration-300"
@@ -262,7 +265,7 @@ export default function Settings() {
             className="text-xs font-semibold uppercase tracking-wider mb-4"
             style={{ color: "var(--text-muted)" }}
           >
-            关于
+            {t('settings.about.title')}
           </h2>
           <div
             className="rounded-2xl border overflow-hidden transition-colors duration-300"
@@ -273,16 +276,16 @@ export default function Settings() {
           >
             <div className="px-5 py-4" style={{ borderBottom: "1px solid var(--border-color)" }}>
               <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-                SpinDeck — 音乐歌单管理工具
+                {t('settings.about.description')}
               </p>
               <p className="text-xs mt-2" style={{ color: "var(--text-muted)" }}>
-                当前版本 v0.1.0
+                {t('settings.about.version', { version: 'v0.1.0' })}
               </p>
             </div>
             
             <a
               href="https://github.com/dongguacute/SpinDeck"
-              onClick={(e) => handleLinkClick(e, "https://github.com/dongguacute/SpinDeck", "GitHub 项目地址")}
+              onClick={(e) => handleLinkClick(e, "https://github.com/dongguacute/SpinDeck", t('settings.about.github'))}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-between px-5 py-4 hover:bg-(--bg-tertiary) transition-colors duration-200 group cursor-pointer"
@@ -291,12 +294,12 @@ export default function Settings() {
               <div className="flex items-center gap-3" style={{ color: "var(--text-secondary)" }}>
                 <GithubIcon />
                 <span className="text-sm" style={{ color: "var(--text-primary)" }}>
-                  GitHub 项目地址
+                  {t('settings.about.github')}
                 </span>
               </div>
               <div className="flex items-center gap-1">
                 <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-                  查看源码
+                  {t('settings.about.source_code')}
                 </span>
                 <ArrowLeft className="w-4 h-4 rotate-180 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" style={{ color: "var(--text-muted)" }} />
               </div>
@@ -304,7 +307,7 @@ export default function Settings() {
 
             <a
               href="https://v.douyin.com/fPdV873AnKo"
-              onClick={(e) => handleLinkClick(e, "https://v.douyin.com/fPdV873AnKo", "作者抖音主页")}
+              onClick={(e) => handleLinkClick(e, "https://v.douyin.com/fPdV873AnKo", t('settings.about.author_douyin'))}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-between px-5 py-4 hover:bg-(--bg-tertiary) transition-colors duration-200 group cursor-pointer"
@@ -312,12 +315,12 @@ export default function Settings() {
               <div className="flex items-center gap-3" style={{ color: "var(--text-secondary)" }}>
                 <DouyinIcon />
                 <span className="text-sm" style={{ color: "var(--text-primary)" }}>
-                  作者抖音主页
+                  {t('settings.about.author_douyin')}
                 </span>
               </div>
               <div className="flex items-center gap-1">
                 <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-                  关注作者
+                  {t('settings.about.follow_author')}
                 </span>
                 <ArrowLeft className="w-4 h-4 rotate-180 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" style={{ color: "var(--text-muted)" }} />
               </div>
@@ -331,7 +334,7 @@ export default function Settings() {
             className="text-xs font-semibold uppercase tracking-wider mb-4"
             style={{ color: "var(--text-muted)" }}
           >
-            免责声明
+            {t('settings.disclaimer.title')}
           </h2>
           <div
             className="rounded-2xl border px-5 py-4 transition-colors duration-300"
@@ -344,11 +347,11 @@ export default function Settings() {
               <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5" style={{ color: "var(--text-muted)" }} />
               <div className="space-y-2">
                 <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
-                  仅供个人学习使用
+                  {t('settings.disclaimer.personal_use')}
                 </p>
                 <p className="text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-                  本项目仅作为个人学习和技术交流使用，不得用于任何商业用途。
-                  所有媒体内容和数据均由第三方服务提供，本项目不托管也不存储任何受版权保护的音乐文件。
+                  {t('settings.disclaimer.content_1')}
+                  {t('settings.disclaimer.content_2')}
                 </p>
               </div>
             </div>
@@ -361,7 +364,7 @@ export default function Settings() {
             className="text-xs font-semibold uppercase tracking-wider mb-4"
             style={{ color: "var(--text-muted)" }}
           >
-            设备信息
+            {t('settings.device_info.title')}
           </h2>
           <div
             className="rounded-2xl border overflow-hidden transition-colors duration-300"
@@ -378,7 +381,7 @@ export default function Settings() {
               <div className="flex items-center gap-3">
                 <Monitor className="w-5 h-5" style={{ color: "var(--text-secondary)" }} />
                 <span className="text-sm" style={{ color: "var(--text-primary)" }}>
-                  系统
+                  {t('settings.device_info.os')}
                 </span>
               </div>
               <span className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
@@ -394,7 +397,7 @@ export default function Settings() {
               <div className="flex items-center gap-3">
                 <Monitor className="w-5 h-5" style={{ color: "var(--text-secondary)" }} />
                 <span className="text-sm" style={{ color: "var(--text-primary)" }}>
-                  浏览器
+                  {t('settings.device_info.browser')}
                 </span>
               </div>
               <span className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
@@ -408,7 +411,7 @@ export default function Settings() {
               <div className="flex items-center gap-3">
                 <Monitor className="w-5 h-5" style={{ color: "var(--text-secondary)" }} />
                 <span className="text-sm" style={{ color: "var(--text-primary)" }}>
-                  内核
+                  {t('settings.device_info.engine')}
                 </span>
               </div>
               <span className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
@@ -438,7 +441,7 @@ export default function Settings() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-bold flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
                 <ExternalLink className="w-5 h-5" style={{ color: "var(--text-muted)" }} />
-                外部链接确认
+                {t('settings.external_link.title')}
               </h3>
               <button
                 onClick={() => setConfirmLink(null)}
@@ -451,7 +454,7 @@ export default function Settings() {
 
             <div className="mb-6">
               <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-                您即将离开 SpinDeck，前往：
+                {t('settings.external_link.message')}
               </p>
               <div 
                 className="mt-2 p-3 rounded-xl border text-xs break-all font-mono"
@@ -464,7 +467,7 @@ export default function Settings() {
                 {confirmLink.url}
               </div>
               <p className="mt-4 text-xs" style={{ color: "var(--text-muted)" }}>
-                请确保您信任该链接。
+                {t('settings.external_link.trust_warning')}
               </p>
             </div>
 
@@ -477,7 +480,7 @@ export default function Settings() {
                   color: "var(--text-secondary)"
                 }}
               >
-                取消
+                {t('settings.external_link.cancel')}
               </button>
               <button
                 onClick={confirmJump}
@@ -488,7 +491,7 @@ export default function Settings() {
                   boxShadow: "var(--shadow-raised)"
                 }}
               >
-                确认前往
+                {t('settings.external_link.confirm')}
               </button>
             </div>
           </div>

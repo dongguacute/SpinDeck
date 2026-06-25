@@ -1,4 +1,5 @@
 import { SkipBack, SkipForward, Settings2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { ChromeStyle } from "../../lib/theme-color";
 
 interface PlaybackControlsProps {
@@ -18,6 +19,7 @@ export function PlaybackControls({
   playNextSong,
   setShowSettings,
 }: PlaybackControlsProps) {
+  const { t } = useTranslation('common');
   if (!inPlayback) return null;
 
   return (
@@ -37,7 +39,7 @@ export function PlaybackControls({
           onClick={playPrevSong}
           className="p-2 rounded-xl transition-all hover:scale-110 active:scale-95"
           style={{ color: chrome.textSecondary }}
-          title="上一首"
+          title={t('shelf.prev_song')}
         >
           <SkipBack className="w-6 h-6 fill-current" />
         </button>
@@ -46,7 +48,7 @@ export function PlaybackControls({
           onClick={playNextSong}
           className="p-2 rounded-xl transition-all hover:scale-110 active:scale-95"
           style={{ color: chrome.textSecondary }}
-          title="下一首"
+          title={t('shelf.next_song')}
         >
           <SkipForward className="w-6 h-6 fill-current" />
         </button>
@@ -64,7 +66,7 @@ export function PlaybackControls({
             opacity: showVinyl ? 1 : 0,
             transform: `translateY(${showVinyl ? 0 : 20}px)`,
           }}
-          title="调节视觉样式"
+          title={t('shelf.adjust_visual')}
         >
           <Settings2 className="w-5 h-5" />
         </button>

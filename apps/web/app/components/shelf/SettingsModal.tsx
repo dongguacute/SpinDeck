@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import { Disc3, X, Image as ImageIcon, Sliders, Check, RotateCcw, Settings2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { VinylStylePreview } from "@spindeck/vinyl-ui";
 import type { ChromeStyle } from "../../lib/theme-color";
 import type { VisualSettings } from "../../lib/theme-store";
@@ -23,6 +24,7 @@ export function SettingsModal({
   resetSettings,
   bookThemeColor,
 }: SettingsModalProps) {
+  const { t } = useTranslation('common');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!showSettings) return null;
@@ -53,7 +55,7 @@ export function SettingsModal({
       >
         <div className="flex items-center justify-between mb-8">
           <h3 className="text-xl font-bold flex items-center gap-2.5">
-            <Settings2 className="w-5 h-5 opacity-60" /> 视觉调节
+            <Settings2 className="w-5 h-5 opacity-60" /> {t('shelf.visual_settings')}
           </h3>
           <button
             onClick={() => setShowSettings(false)}
@@ -68,7 +70,7 @@ export function SettingsModal({
           <section>
             <div className="flex items-center gap-2 mb-4">
               <Disc3 className="w-4 h-4 opacity-40" />
-              <label className="text-xs font-bold uppercase tracking-widest opacity-40">光碟样式</label>
+              <label className="text-xs font-bold uppercase tracking-widest opacity-40">{t('shelf.disc_style')}</label>
             </div>
             <div className="grid grid-cols-2 gap-4">
               {["classic", "modern"].map((styleId) => (
@@ -105,7 +107,7 @@ export function SettingsModal({
           <section>
             <div className="flex items-center gap-2 mb-4">
               <ImageIcon className="w-4 h-4 opacity-40" />
-              <label className="text-xs font-bold uppercase tracking-widest opacity-40">自定义背景</label>
+              <label className="text-xs font-bold uppercase tracking-widest opacity-40">{t('shelf.custom_background')}</label>
             </div>
             <div className="flex items-center gap-3">
               <button
@@ -120,14 +122,14 @@ export function SettingsModal({
                 <div className="p-2 rounded-xl" style={{ backgroundColor: chrome.surface }}>
                   <ImageIcon className="w-4 h-4" />
                 </div>
-                <span className="text-sm font-bold">上传背景图</span>
+                <span className="text-sm font-bold">{t('shelf.upload_background')}</span>
               </button>
               {settings.customBackground && (
                 <button
                   onClick={() => updateSettings({ customBackground: null })}
                   className="p-4 rounded-2xl transition-all hover:scale-105 active:scale-95 cursor-pointer"
                   style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }}
-                  title="清除自定义背景"
+                  title={t('shelf.clear_background')}
                 >
                   <RotateCcw className="w-5 h-5" />
                 </button>
@@ -146,7 +148,7 @@ export function SettingsModal({
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2">
                 <Sliders className="w-4 h-4 opacity-40" />
-                <label className="text-xs font-bold uppercase tracking-widest opacity-40">背景模糊度</label>
+                <label className="text-xs font-bold uppercase tracking-widest opacity-40">{t('shelf.background_blur')}</label>
               </div>
               <span className="text-xs font-black px-2.5 py-1 rounded-lg" style={{ backgroundColor: chrome.surfaceHover }}>
                 {settings.backgroundBlur}<span className="opacity-40 ml-0.5">PX</span>
@@ -171,7 +173,7 @@ export function SettingsModal({
           <div className="pt-6 border-t" style={{ borderColor: chrome.border }}>
             <button
               onClick={() => {
-                if (confirm("确定要重置所有视觉配置吗？")) {
+                if (confirm(t('shelf.reset_visual_confirm'))) {
                   resetSettings();
                 }
               }}
@@ -182,7 +184,7 @@ export function SettingsModal({
               }}
             >
               <RotateCcw className="w-4 h-4" />
-              重置所有视觉配置
+              {t('shelf.reset_visual')}
             </button>
           </div>
         </div>
