@@ -15,13 +15,59 @@ export default function Playlists() {
 
   return (
     <div className="min-h-screen transition-colors duration-300" style={{ background: "var(--bg-primary)" }}>
-      {/* 顶部导航 */}
-      <header className="sticky top-0 z-40 border-b transition-colors duration-200" style={{
-        background: "var(--bg-secondary)",
-        borderColor: "var(--border-color)",
-        boxShadow: "var(--shadow-card)",
-      }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      {/* 主体内容 */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-32">
+        {playlists.length === 0 ? (
+          /* 空状态 */
+          <div className="flex flex-col items-center justify-center py-32 text-center">
+            <div className="w-20 h-20 rounded-3xl border flex items-center justify-center mb-6 transition-colors duration-200"
+              style={{ background: "var(--surface-color)", borderColor: "var(--border-color)" }}
+            >
+              <Disc3 className="w-10 h-10" style={{ color: "var(--text-muted)" }} />
+            </div>
+            <h2 className="text-lg font-medium mb-2" style={{ color: "var(--text-secondary)", opacity: 0.45 }}>
+              还没有歌单
+            </h2>
+            <p className="text-sm mb-8 max-w-xs leading-relaxed" style={{ color: "var(--text-muted)", opacity: 0.45 }}>
+              创建你的第一个歌单，开始整理你喜欢的音乐
+            </p>
+            <button
+              onClick={() => setModalOpen(true)}
+              className="flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-medium transition-all cursor-pointer border duration-200"
+              style={{
+                background: "var(--surface-hover)",
+                color: "var(--text-secondary)",
+                borderColor: "var(--border-color)",
+              }}
+            >
+              <Plus className="w-4 h-4" />
+              创建第一个歌单
+            </button>
+          </div>
+        ) : (
+          /* 歌单网格 */
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5">
+            {playlists.map((playlist) => (
+              <PlaylistCard
+                key={playlist.id}
+                playlist={playlist}
+                onDelete={removePlaylist}
+                onUpdateRefresh={handleUpdateRefresh}
+              />
+            ))}
+          </div>
+        )}
+      </main>
+
+      {/* 底部导航栏 */}
+      <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-2rem)] max-w-lg px-4 py-3 rounded-2xl border backdrop-blur-lg transition-all duration-300"
+        style={{
+          background: "var(--bg-secondary)",
+          borderColor: "var(--border-color)",
+          boxShadow: "var(--shadow-card)",
+        }}
+      >
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl border flex items-center justify-center transition-colors duration-200"
               style={{
@@ -73,51 +119,7 @@ export default function Playlists() {
             </button>
           </div>
         </div>
-      </header>
-
-      {/* 主体内容 */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {playlists.length === 0 ? (
-          /* 空状态 */
-          <div className="flex flex-col items-center justify-center py-32 text-center">
-            <div className="w-20 h-20 rounded-3xl border flex items-center justify-center mb-6 transition-colors duration-200"
-              style={{ background: "var(--surface-color)", borderColor: "var(--border-color)" }}
-            >
-              <Disc3 className="w-10 h-10" style={{ color: "var(--text-muted)" }} />
-            </div>
-            <h2 className="text-lg font-medium mb-2" style={{ color: "var(--text-secondary)", opacity: 0.45 }}>
-              还没有歌单
-            </h2>
-            <p className="text-sm mb-8 max-w-xs leading-relaxed" style={{ color: "var(--text-muted)", opacity: 0.45 }}>
-              创建你的第一个歌单，开始整理你喜欢的音乐
-            </p>
-            <button
-              onClick={() => setModalOpen(true)}
-              className="flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-medium transition-all cursor-pointer border duration-200"
-              style={{
-                background: "var(--surface-hover)",
-                color: "var(--text-secondary)",
-                borderColor: "var(--border-color)",
-              }}
-            >
-              <Plus className="w-4 h-4" />
-              创建第一个歌单
-            </button>
-          </div>
-        ) : (
-          /* 歌单网格 */
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5">
-            {playlists.map((playlist) => (
-              <PlaylistCard
-                key={playlist.id}
-                playlist={playlist}
-                onDelete={removePlaylist}
-                onUpdateRefresh={handleUpdateRefresh}
-              />
-            ))}
-          </div>
-        )}
-      </main>
+      </nav>
 
       {/* 创建歌单弹窗 */}
       <CreatePlaylistModal
