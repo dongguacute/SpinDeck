@@ -144,26 +144,21 @@ export default function PlaylistCard({ playlist, onDelete, onUpdateRefresh }: Pr
               e.stopPropagation();
               openModal();
             }}
-            className={`absolute top-2 right-2 z-10 w-9 h-9 flex items-center justify-center rounded-xl transition-all cursor-pointer active:scale-90 ${
-              hasRefresh ? 'text-emerald-400/90' : ''
+            className={`absolute top-2.5 right-2.5 z-10 w-8 h-8 flex items-center justify-center rounded-lg transition-all cursor-pointer active:scale-95 active:shadow-inner group/btn ${
+              hasRefresh ? 'text-emerald-500' : ''
             }`}
             style={{
-              backgroundColor: hasRefresh 
-                ? 'var(--surface-color)' 
-                : isDarkCover 
-                  ? 'rgba(0,0,0,0.3)' 
-                  : 'rgba(255,255,255,0.4)',
-              color: hasRefresh 
-                ? undefined 
-                : isDarkCover 
-                  ? 'rgba(255,255,255,0.9)' 
-                  : 'rgba(0,0,0,0.7)',
+              backgroundColor: "var(--bg-tertiary)",
+              color: hasRefresh ? undefined : "var(--text-secondary)",
               boxShadow: "var(--shadow-raised)",
               border: "1px solid var(--border-highlight)",
             }}
             title="歌单设置"
           >
-            <Settings2 className="w-4 h-4" style={hasRefresh ? { animation: 'spin 3s linear infinite' } : undefined} />
+            <Settings2 
+              className={`w-3.5 h-3.5 transition-transform duration-500 ${!hasRefresh ? 'group-hover/btn:rotate-90' : ''}`} 
+              style={hasRefresh ? { animation: 'spin 3s linear infinite' } : undefined} 
+            />
           </button>
 
           {/* QQ 音乐图标 - 仅 QQ 平台显示在右下角 */}

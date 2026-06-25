@@ -1,9 +1,9 @@
 import { useEffect, useState, useCallback } from "react";
+import { THEMES, THEME_CONFIGS, type ThemeType, type AppearanceMode } from "@spindeck/ui";
 
-const STORAGE_KEY = "spindeck_theme";
+const THEME_KEY = "spindeck_theme_family";
+const MODE_KEY = "spindeck_appearance_mode";
 const SETTINGS_KEY = "spindeck_visual_settings";
-
-export type Theme = "dark" | "light";
 
 export interface VisualSettings {
   vinylStyle: string;
@@ -17,13 +17,23 @@ const DEFAULT_SETTINGS: VisualSettings = {
   backgroundBlur: 20,
 };
 
-function loadTheme(): Theme {
-  if (typeof window === "undefined") return "dark";
+function loadTheme(): ThemeType {
+  if (typeof window === "undefined") return THEMES.CAFE;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return (raw as Theme) || "dark";
+    const raw = localStorage.getItem(THEME_KEY);
+    return (raw as ThemeType) || THEMES.CAFE;
   } catch {
-    return "dark";
+    return THEMES.CAFE;
+  }
+}
+
+function loadMode(): AppearanceMode {
+  if (typeof window === "undefined") return "system";
+  try {
+    const raw = localStorage.getItem(MODE_KEY);
+    return (raw as AppearanceMode) || "system";
+  } catch {
+    return "system";
   }
 }
 
@@ -38,8 +48,12 @@ function loadSettings(): VisualSettings {
   }
 }
 
-function saveTheme(theme: Theme) {
-  localStorage.setItem(STORAGE_KEY, theme);
+function saveTheme(theme: ThemeType) {
+  localStorage.setItem(THEME_KEY, theme);
+}
+
+function saveMode(mode: AppearanceMode) {
+  localStorage.setItem(MODE_KEY, mode);
 }
 
 function saveSettings(settings: VisualSettings) {
@@ -54,30 +68,75 @@ function emit() {
 
 /* ---------- Hook ---------- */
 export function useThemeStore() {
-  const [theme, setThemeState] = useState<Theme>("dark");
+  const [theme, setThemeState] = useState<ThemeType>(THEMES.CAFE);
+  const [mode, setModeState] = useState<AppearanceMode>("system");
   const [settings, setSettingsState] = useState<VisualSettings>(DEFAULT_SETTINGS);
 
+  // 计算实际生效的 mode (解决 system 逻辑)
+  const [resolvedMode, setResolvedMode] = useState<"light" | "dark">("dark");
+
   useEffect(() => {
-    setThemeState(loadTheme());
+    const t = loadTheme();
+    const m = loadMode();
+    setThemeState(t);
+    setModeState(m);
     setSettingsState(loadSettings());
+
+    const updateResolved = () => {
+      const currentMode = loadMode();
+      if (currentMode === "system") {
+        const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        setResolvedMode(isDark ? "dark" : "light");
+      } else {
+        setResolvedMode(currentMode as "light" | "dark");
+      }
+    };
+
+    updateResolved();
+
     const listener = () => {
       setThemeState(loadTheme());
+      setModeState(loadMode());
       setSettingsState(loadSettings());
+      updateResolved();
     };
+
     listeners.add(listener);
+
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const mediaListener = () => {
+      if (loadMode() === "system") updateResolved();
+    };
+    mediaQuery.addEventListener("change", mediaListener);
+
     return () => {
       listeners.delete(listener);
+      mediaQuery.removeEventListener("change", mediaListener);
     };
   }, []);
 
-  const setTheme = useCallback((t: Theme) => {
+  // 同步 DOM 状态
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", resolvedMode);
+    
+    // 移除旧的主题类名
+    Object.values(THEME_CONFIGS).forEach(cfg => {
+      document.body.classList.remove(cfg.className);
+    });
+    // 添加当前主题类名
+    const currentCfg = THEME_CONFIGS[theme];
+    if (currentCfg) {
+      document.body.classList.add(currentCfg.className);
+    }
+  }, [resolvedMode, theme]);
+
+  const setTheme = useCallback((t: ThemeType) => {
     saveTheme(t);
     emit();
   }, []);
 
-  const toggleTheme = useCallback(() => {
-    const next = loadTheme() === "dark" ? "light" : "dark";
-    saveTheme(next);
+  const setMode = useCallback((m: AppearanceMode) => {
+    saveMode(m);
     emit();
   }, []);
 
@@ -93,5 +152,10 @@ export function useThemeStore() {
     emit();
   }, []);
 
-  return { theme, setTheme, toggleTheme, settings, updateSettings, resetSettings };
+  return { 
+    theme, setTheme, 
+    mode, setMode, 
+    resolvedMode,
+    settings, updateSettings, resetSettings 
+  };
 }

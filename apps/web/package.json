@@ -15,6 +15,7 @@
     "@spindeck/core": "workspace:*",
     "@spindeck/picker": "workspace:*",
     "@spindeck/player": "workspace:*",
+    "@spindeck/ui": "workspace:*",
     "@spindeck/vinyl-ui": "workspace:*",
     "gsap": "^3.15.0",
     "isbot": "^5.1.36",

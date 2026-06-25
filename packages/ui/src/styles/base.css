@@ -1,0 +1,53 @@
+/**
+ * @spindeck/ui 材质系统 (Material System)
+ * 
+ * 核心原则：主题仅允许改变“材质”属性（颜色、阴影、质感），
+ * 不允许通过主题改变布局、间距、字体大小等核心 UI 结构。
+ */
+
+:root {
+  /* --- 基础动画 --- */
+  --sd-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --sd-transition-normal: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  --sd-transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* --- 材质契约 (Material Contract) --- */
+  /* 所有主题族必须且仅能覆盖以下变量 */
+  
+  /* 1. 背景材质 */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f9fafb;
+  --bg-tertiary: #f3f4f6;
+  
+  /* 2. 表面材质 (卡片、按钮、面板) */
+  --surface-color: #ffffff;
+  --surface-hover: #f3f4f6;
+  
+  /* 3. 文字材质 */
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-muted: #9ca3af;
+  
+  /* 4. 边界材质 */
+  --border-color: #e5e7eb;
+  --border-highlight: rgba(255, 255, 255, 0.1);
+  
+  /* 5. 阴影材质 (核心拟物化定义) */
+  --shadow-raised: 0 1px 3px rgba(0,0,0,0.1);
+  --shadow-pressed: inset 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-card: 0 4px 6px -1px rgba(0,0,0,0.1);
+
+  /* 6. 核心半径 (材质感的一部分) */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --radius-full: 9999px;
+}
+
+/* 基础全局样式应用材质 */
+html, body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color var(--sd-transition-normal), color var(--sd-transition-normal);
+}

@@ -1,66 +1,14 @@
 @import "tailwindcss";
-@import "@spindeck/vinyl-ui/src/styles/base.css";
-@import "@spindeck/vinyl-ui/src/styles/classic.css";
-@import "@spindeck/vinyl-ui/src/styles/modern.css";
+@import "@spindeck/ui/styles/base.css";
+@import "@spindeck/ui/themes/cafe.css";
+@import "@spindeck/vinyl-ui/styles/base.css";
+@import "@spindeck/vinyl-ui/styles/classic.css";
+@import "@spindeck/vinyl-ui/styles/modern.css";
 
-:root,
-[data-theme="dark"] {
-  --bg-primary: #1a1614;
-  --bg-secondary: #231f1c;
-  --bg-tertiary: #2d2824;
-  --text-primary: #e8e2d9;
-  --text-secondary: #b5a48b;
-  --text-muted: #73675a;
-  --border-color: #0f0d0c;
-  --border-highlight: rgba(232, 226, 217, 0.05);
-  --surface-color: #231f1c;
-  --surface-hover: #2d2824;
-  
-  /* 拟物化阴影 - 咖啡馆深烘质感 */
-  --shadow-raised: 
-    -4px -4px 10px rgba(255, 255, 255, 0.01),
-    4px 4px 12px rgba(0, 0, 0, 0.6);
-  --shadow-pressed: 
-    inset -2px -2px 6px rgba(255, 255, 255, 0.005),
-    inset 2px 2px 8px rgba(0, 0, 0, 0.7);
-  --shadow-card:
-    0 1px 1px rgba(232, 226, 217, 0.05) inset,
-    0 10px 20px rgba(0, 0, 0, 0.5),
-    0 6px 6px rgba(0, 0, 0, 0.4);
-}
-
-[data-theme="light"] {
-  --bg-primary: #fdfaf2;
-  --bg-secondary: #ffffff;
-  --bg-tertiary: #ffffff;
-  --text-primary: #4a3f35;
-  --text-secondary: #8c7e6d;
-  --text-muted: #bdae9d;
-  --border-color: #ebe3d5;
-  --border-highlight: #ffffff;
-  --surface-color: #ffffff;
-  --surface-hover: #fdfaf2;
-
-  /* 拟物化阴影 - 奶油白温暖质感 */
-  --shadow-raised: 
-    -4px -4px 12px rgba(255, 255, 255, 1),
-    4px 4px 12px rgba(180, 160, 120, 0.15);
-  --shadow-pressed: 
-    inset -2px -2px 6px rgba(255, 255, 255, 0.8),
-    inset 2px 2px 6px rgba(180, 160, 120, 0.12);
-  --shadow-card:
-    0 1px 0 #ffffff inset,
-    0 12px 24px rgba(180, 160, 120, 0.1),
-    0 4px 8px rgba(180, 160, 120, 0.06);
-}
-
-html, body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  background: var(--bg-primary);
-  color: var(--text-primary);
-}
+/* 
+   应用层样式
+   所有组件应严格遵循 @spindeck/ui 的材质系统契约。
+*/
 
 /* ============================================================
    歌曲选中弹层动画
@@ -123,7 +71,3 @@ html, body {
 [data-theme="light"] .playback-backdrop__sheen {
   opacity: 0.65;
 }
-
-/* ============================================================
-   信息面板 — 淡入 + 弹入
-   ============================================================ */

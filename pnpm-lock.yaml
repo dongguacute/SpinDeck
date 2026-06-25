@@ -50,6 +50,9 @@ importers:
       '@spindeck/player':
         specifier: workspace:*
         version: link:../../packages/player
+      '@spindeck/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       '@spindeck/vinyl-ui':
         specifier: workspace:*
         version: link:../../packages/vinyl-ui
@@ -153,6 +156,15 @@ importers:
         version: 22.19.21
       typescript:
         specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/ui:
+    devDependencies:
+      tsup:
+        specifier: ^8.0.0
+        version: 8.5.1(jiti@2.7.0)(postcss@8.5.15)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.0.0
         version: 5.9.3
 
   packages/vinyl-ui:
