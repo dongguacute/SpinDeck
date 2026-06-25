@@ -26,10 +26,13 @@ function emit() {
 /* ---------- Hook ---------- */
 export function usePlaylistStore() {
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   /* 首次挂载加载 + 注册监听 */
   useEffect(() => {
     setPlaylists(load());
+    setIsLoaded(true);
+
     const listener = () => setPlaylists(load());
     listeners.add(listener);
     return () => {
@@ -72,5 +75,5 @@ export function usePlaylistStore() {
     emit();
   }, []);
 
-  return { playlists, addPlaylist, removePlaylist, removePlaylists, updatePlaylist };
+  return { playlists, isLoaded, addPlaylist, removePlaylist, removePlaylists, updatePlaylist };
 }

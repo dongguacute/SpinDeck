@@ -89,7 +89,9 @@
     "select_all": "全选",
     "deselect_all": "取消全选",
     "delete_selected": "删除所选",
-    "delete_selected_confirm": "确定要删除所选的 {{count}} 个歌单吗？"
+    "delete_selected_confirm": "确定要删除所选的 {{count}} 个歌单吗？",
+    "fetching": "获取歌单列表中...",
+    "sync_completed": "已完成"
   },
   "playlist_card": {
     "settings_title": "歌单设置",

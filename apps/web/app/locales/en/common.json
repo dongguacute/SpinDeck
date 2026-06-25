@@ -89,7 +89,9 @@
     "select_all": "Select All",
     "deselect_all": "Deselect All",
     "delete_selected": "Delete Selected",
-    "delete_selected_confirm": "Are you sure you want to delete the selected {{count}} playlists?"
+    "delete_selected_confirm": "Are you sure you want to delete the selected {{count}} playlists?",
+    "fetching": "Fetching Playlists...",
+    "sync_completed": "Sync Completed"
   },
   "playlist_card": {
     "settings_title": "Playlist Settings",

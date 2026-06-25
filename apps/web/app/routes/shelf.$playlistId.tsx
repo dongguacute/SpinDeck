@@ -1,5 +1,5 @@
 import { useParams } from "react-router";
-import { LoaderCircle } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useThemeStore } from "../lib/theme-store";
 import PlaylistShelf from "../components/PlaylistShelf";
@@ -43,6 +43,19 @@ export default function ShelfPage() {
   const [autoPlayToken, setAutoPlayToken] = useState(0);
   const [coversLoading, setCoversLoading] = useState(true); // 默认开启，直到 PlaylistShelf 报告完成
   const playbackWrapperRef = useRef<HTMLDivElement>(null);
+
+  const [showLoadingMsg, setShowLoadingMsg] = useState(false);
+  const isSyncing = loading || coversLoading;
+
+  useEffect(() => {
+    if (isSyncing) {
+      const timer = setTimeout(() => setShowLoadingMsg(true), 100);
+      return () => clearTimeout(timer);
+    } else {
+      const timer = setTimeout(() => setShowLoadingMsg(false), 1200);
+      return () => clearTimeout(timer);
+    }
+  }, [isSyncing]);
 
   // 滚动位置持久化
   const initialScrollX = useMemo(() => {
@@ -198,20 +211,27 @@ export default function ShelfPage() {
       />
 
       {/* 加载中 */}
-      {(loading || coversLoading) && (
+      {isSyncing && (
         <div className="absolute inset-0 z-20 flex items-center justify-center" style={{ background: "var(--bg-primary)" }}>
-          <div className="flex flex-col items-center gap-4 p-8 rounded-3xl border"
-            style={{
-              backgroundColor: "var(--surface-color)",
-              borderColor: "var(--border-color)",
-              boxShadow: "var(--shadow-card)",
-            }}
-          >
-            <LoaderCircle className="w-8 h-8 animate-spin" style={{ color: "var(--text-secondary)" }} />
-            <span className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>{t('shelf.loading')}</span>
-          </div>
+          <Loader2 className="w-10 h-10 animate-spin" style={{ color: "var(--text-muted)" }} />
         </div>
       )}
+
+      {/* 加载提示文字 */}
+      <div 
+        className={`fixed bottom-24 left-1/2 -translate-x-1/2 z-30 transition-all duration-700 ease-in-out ${
+          showLoadingMsg ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8 pointer-events-none"
+        }`}
+      >
+        <div className="text-[10px] uppercase tracking-[0.2em] font-medium"
+          style={{ 
+            color: "var(--text-muted)",
+            textShadow: "0 0 20px rgba(0,0,0,0.1)"
+          }}
+        >
+          {isSyncing ? t('shelf.loading') : t('playlists.sync_completed')}
+        </div>
+      </div>
 
       {/* 错误 */}
       {error && (
