@@ -67,9 +67,9 @@ export function useSwipeNavigation(
   }, [inPlayback, playbackWrapperRef, playNextSong, playPrevSong]);
 
   return {
-    handlePointerDown,
-    handlePointerMove,
-    handlePointerUp,
-    handlePointerCancel: handlePointerUp,
+    onPointerDown: handlePointerDown,
+    onPointerMove: handlePointerMove,
+    onPointerUp: handlePointerUp,
+    onPointerCancel: handlePointerUp,
   };
 }

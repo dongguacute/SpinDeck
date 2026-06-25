@@ -8,10 +8,13 @@ export function usePlaylistFetch(playlistId: string | undefined) {
   const playlist = playlists.find((p) => p.id === playlistId);
 
   const fetcher = useFetcher<{
-    name?: string;
-    cover?: string;
-    songCount?: number;
-    songs?: SongInfo[];
+    results?: Array<{
+      name?: string;
+      cover?: string;
+      songCount?: number;
+      songs?: SongInfo[];
+      error?: string;
+    }>;
     error?: string;
   }>();
 
@@ -29,8 +32,9 @@ export function usePlaylistFetch(playlistId: string | undefined) {
 
   // Sync with store
   useEffect(() => {
-    if (fetcher.data && !fetcher.data.error && playlist) {
-      const { name, cover, songCount } = fetcher.data;
+    const result = fetcher.data?.results?.[0];
+    if (result && !result.error && playlist) {
+      const { name, cover, songCount } = result;
       const hasChanged =
         (name && name !== playlist.name) ||
         (cover && cover !== playlist.coverUrl) ||
@@ -69,11 +73,13 @@ export function usePlaylistFetch(playlistId: string | undefined) {
     };
   }, [playlist?.refreshInterval, playlist?.importUrl, playlist?.platform, fetcher]);
 
+  const result = fetcher.data?.results?.[0];
+
   return {
     playlist,
     loading: fetcher.state !== "idle",
-    error: fetcher.data?.error,
-    songs: fetcher.data?.songs || [],
+    error: fetcher.data?.error || result?.error,
+    songs: result?.songs || [],
     retry: () => {
       if (playlist?.importUrl && playlist?.platform) {
         fetcher.submit(
