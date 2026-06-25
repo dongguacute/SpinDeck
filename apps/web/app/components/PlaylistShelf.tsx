@@ -287,6 +287,10 @@ interface Props {
   lockDeselect?: boolean;
   /** 所有封面加载完成的回调 */
   onAllLoaded?: () => void;
+  /** 初始滚动位置 */
+  initialScrollX?: number;
+  /** 滚动位置变化回调 */
+  onScrollXChange?: (x: number) => void;
 }
 
 export default function PlaylistShelf({
@@ -299,6 +303,8 @@ export default function PlaylistShelf({
   coverOverlay = false,
   lockDeselect = false,
   onAllLoaded,
+  initialScrollX = 0,
+  onScrollXChange,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<SceneState | null>(null);
@@ -310,6 +316,7 @@ export default function PlaylistShelf({
   const onSongSelectRef = useRef(onSongSelect);
   const onSelectionAnimationCompleteRef = useRef(onSelectionAnimationComplete);
   const onAllLoadedRef = useRef(onAllLoaded);
+  const onScrollXChangeRef = useRef(onScrollXChange);
   const animatingRef = useRef(false);
   const prevCoverOverlayRef = useRef(coverOverlay);
   const coverPivotWorldRef = useRef<THREE.Vector3 | null>(null);
@@ -347,6 +354,10 @@ export default function PlaylistShelf({
   }, [onAllLoaded]);
 
   useEffect(() => {
+    onScrollXChangeRef.current = onScrollXChange;
+  }, [onScrollXChange]);
+
+  useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
@@ -378,7 +389,9 @@ export default function PlaylistShelf({
     container.appendChild(renderer.domElement);
 
     const mainGroup = new THREE.Group();
-    mainGroup.position.set(0, 0.0, 0);
+    const m = Math.max(0, totalW / 2 + 2);
+    const initialX = THREE.MathUtils.clamp(initialScrollX, -m, m);
+    mainGroup.position.set(initialX, 0.0, 0);
     mainGroup.scale.set(1.0, 1.0, 1.0);
     mainGroup.visible = false; // 初始隐藏，等所有封面加载完再显示
     scene.add(mainGroup);
@@ -549,6 +562,9 @@ export default function PlaylistShelf({
       gsap.to(mainGroup.position, {
         x: THREE.MathUtils.clamp(mainGroup.position.x + vel * 15, -m, m),
         duration: 1.0, ease: "power3.out",
+        onUpdate: () => {
+          onScrollXChangeRef.current?.(mainGroup.position.x);
+        }
       });
     };
     window.addEventListener("pointerup", onUp);
@@ -561,6 +577,7 @@ export default function PlaylistShelf({
       vel = nx - lastX; lastX = nx;
       if (Math.abs(nx - groupStart) > 0.3) wasDragged = true;
       mainGroup.position.x = nx;
+      onScrollXChangeRef.current?.(nx);
     };
     window.addEventListener("pointermove", onMove);
 
@@ -722,7 +739,7 @@ export default function PlaylistShelf({
       sceneRef.current = null;
       prevIndexRef.current = null;
     };
-  }, [songs]);
+  }, [songs, initialScrollX]);
 
   // --- 响应选中状态变化，执行 3D 动画 ---
   const prevIndexRef = useRef<number | null>(null);

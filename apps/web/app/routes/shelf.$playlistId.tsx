@@ -44,6 +44,18 @@ export default function ShelfPage() {
   const [coversLoading, setCoversLoading] = useState(true); // 默认开启，直到 PlaylistShelf 报告完成
   const playbackWrapperRef = useRef<HTMLDivElement>(null);
 
+  // 滚动位置持久化
+  const initialScrollX = useMemo(() => {
+    if (typeof window === "undefined" || !playlistId) return 0;
+    const saved = localStorage.getItem(`spindeck_shelf_scroll_${playlistId}`);
+    return saved ? parseFloat(saved) : 0;
+  }, [playlistId]);
+
+  const handleScrollXChange = useCallback((x: number) => {
+    if (!playlistId) return;
+    localStorage.setItem(`spindeck_shelf_scroll_${playlistId}`, x.toString());
+  }, [playlistId]);
+
   const inPlayback = selectedIndex !== null;
 
   // 当 playlistId 改变时，确保重新进入加载状态
@@ -294,6 +306,8 @@ export default function ShelfPage() {
           selectedIndex={selectedIndex}
           coverOverlay={coverOverlay}
           lockDeselect={inPlayback}
+          initialScrollX={initialScrollX}
+          onScrollXChange={handleScrollXChange}
         />
       </div>
 
