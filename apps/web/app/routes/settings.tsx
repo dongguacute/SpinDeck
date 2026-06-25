@@ -1,6 +1,6 @@
 import { useThemeStore } from "../lib/theme-store";
-import { useState } from "react";
-import { ArrowLeft, Monitor, Check, Sun, Moon, ExternalLink, ShieldAlert, X } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { ArrowLeft, Monitor, Check, Sun, Moon, ExternalLink, ShieldAlert, X, Languages, ChevronDown } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 const GithubIcon = () => (
@@ -92,10 +92,22 @@ function getSystemInfo(t: any) {
 }
 
 export default function Settings() {
-  const { t } = useTranslation('common');
+  const { t, i18n } = useTranslation('common');
   const { theme, setTheme, mode, setMode, resolvedMode } = useThemeStore();
   const systemInfo = getSystemInfo(t);
   const [confirmLink, setConfirmLink] = useState<{ url: string; title: string } | null>(null);
+  const [isLangOpen, setIsLangOpen] = useState(false);
+  const langRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (langRef.current && !langRef.current.contains(event.target as Node)) {
+        setIsLangOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleLinkClick = (e: React.MouseEvent, url: string, title: string) => {
     e.preventDefault();
@@ -190,6 +202,74 @@ export default function Settings() {
                 </button>
               );
             })}
+          </div>
+        </section>
+
+        {/* 语言选择设置 */}
+        <section className="mt-8">
+          <h2
+            className="text-xs font-semibold uppercase tracking-wider mb-4"
+            style={{ color: "var(--text-muted)" }}
+          >
+            {t('settings.language.title')}
+          </h2>
+          <div className="relative" ref={langRef}>
+            <button
+              onClick={() => setIsLangOpen(!isLangOpen)}
+              className="w-full flex items-center justify-between px-5 py-4 rounded-2xl border transition-all duration-300 cursor-pointer group"
+              style={{
+                background: "var(--bg-secondary)",
+                borderColor: "var(--border-color)",
+                color: "var(--text-primary)",
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <Languages className="w-5 h-5" style={{ color: "var(--text-muted)" }} />
+                <span className="text-sm font-medium">
+                  {i18n.language === 'zh-Hans' ? t('settings.language.zh-Hans') : t('settings.language.en')}
+                </span>
+              </div>
+              <ChevronDown 
+                className={`w-4 h-4 transition-transform duration-300 ${isLangOpen ? 'rotate-180' : ''}`} 
+                style={{ color: "var(--text-muted)" }} 
+              />
+            </button>
+
+            {isLangOpen && (
+              <div
+                className="absolute top-full left-0 right-0 mt-2 z-50 rounded-2xl border overflow-hidden shadow-2xl animate-in fade-in slide-in-from-top-2 duration-200"
+                style={{
+                  background: "var(--bg-tertiary)",
+                  borderColor: "var(--border-color)",
+                  boxShadow: "var(--shadow-card)",
+                }}
+              >
+                {[
+                  { id: 'zh-Hans', name: t('settings.language.zh-Hans') },
+                  { id: 'en', name: t('settings.language.en') },
+                ].map((item, index, array) => {
+                  const isActive = i18n.language === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        i18n.changeLanguage(item.id);
+                        setIsLangOpen(false);
+                      }}
+                      className="w-full flex items-center justify-between px-5 py-4 hover:bg-(--surface-hover) transition-colors duration-200 cursor-pointer text-left"
+                      style={{
+                        borderBottom: index < array.length - 1 ? "1px solid var(--border-color)" : "none",
+                      }}
+                    >
+                      <span className="text-sm" style={{ color: isActive ? "var(--text-primary)" : "var(--text-secondary)" }}>
+                        {item.name}
+                      </span>
+                      {isActive && <Check className="w-4 h-4" style={{ color: "var(--text-primary)" }} />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </section>
 

@@ -1,0 +1,131 @@
+{
+  "settings": {
+    "title": "Settings",
+    "appearance": {
+      "title": "Appearance",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
+    "language": {
+      "title": "Language",
+      "zh-Hans": "简体中文",
+      "en": "English"
+    },
+    "theme": {
+      "title": "Theme Style"
+    },
+    "about": {
+      "title": "About",
+      "description": "SpinDeck — Music Playlist Management Tool",
+      "version": "Version {{version}}",
+      "github": "GitHub Repository",
+      "source_code": "Source Code",
+      "author_douyin": "Author's Douyin",
+      "follow_author": "Follow Author"
+    },
+    "disclaimer": {
+      "title": "Disclaimer",
+      "personal_use": "For Personal Use Only",
+      "content_1": "This project is for personal learning and technical exchange only, and shall not be used for any commercial purposes.",
+      "content_2": "All media content and data are provided by third-party services. This project does not host or store any copyrighted music files."
+    },
+    "device_info": {
+      "title": "Device Info",
+      "os": "OS",
+      "browser": "Browser",
+      "engine": "Engine",
+      "unknown": "Unknown"
+    },
+    "external_link": {
+      "title": "External Link Confirmation",
+      "message": "You are about to leave SpinDeck and go to:",
+      "trust_warning": "Please make sure you trust this link.",
+      "cancel": "Cancel",
+      "confirm": "Confirm"
+    }
+  },
+  "shelf": {
+    "loading": "Loading playlist...",
+    "error_manual": "This playlist was created manually and has no song data",
+    "songs_count": "{{count}} songs",
+    "songs_count_with_text": "{{count}} songs",
+    "empty": "Empty playlist",
+    "refreshing": "Refreshing",
+    "auto_refreshing": "Auto-refreshing",
+    "back_to_shelf": "Back to Shelf",
+    "exit_playback": "Exit Playback",
+    "exit_playback_title": "Exit playback and stop music",
+    "prelaunch_app": "Pre-launch App",
+    "prelaunch_app_title": "Launch {{platform}}",
+    "playlist_detail": "Playlist Details",
+    "visual_settings": "Visual Settings",
+    "disc_style": "Disc Style",
+    "custom_background": "Custom Background",
+    "upload_background": "Upload Background",
+    "clear_background": "Clear Background",
+    "background_blur": "Background Blur",
+    "reset_visual": "Reset All Visual Configs",
+    "reset_visual_confirm": "Are you sure you want to reset all visual configurations?",
+    "playlist_info": "Playlist Info",
+    "playlist_name": "Playlist Name",
+    "music_platform": "Music Platform",
+    "original_link": "Original Link",
+    "songs_amount": "Songs Amount",
+    "create_time": "Create Time",
+    "prev_song": "Previous Song",
+    "next_song": "Next Song",
+    "adjust_visual": "Adjust Visual Style"
+  },
+  "playlists": {
+    "empty_title": "No playlists yet",
+    "empty_description": "Create your first playlist to start organizing your favorite music",
+    "create_first": "Create First Playlist",
+    "create_playlist": "Create Playlist"
+  },
+  "playlist_card": {
+    "settings_title": "Playlist Settings",
+    "refresh_off": "Off",
+    "refresh_minutes": "{{count}} min",
+    "refresh_hour": "1 hour",
+    "custom": "Custom",
+    "input_refresh_interval": "Enter refresh interval (minutes)",
+    "refresh_range": "Range: 1 - 1440 minutes (24 hours)",
+    "no_refresh_options": "No refresh options for manually created playlists",
+    "delete_playlist": "Delete Playlist",
+    "refresh_interval_label": "Auto Refresh Interval"
+  },
+  "create_modal": {
+    "title": "Create Playlist",
+    "manual_mode": "Manual",
+    "import_mode": "Link Import",
+    "playlist_name": "Playlist Name",
+    "playlist_name_placeholder": "Enter playlist name...",
+    "music_platform": "Music Platform",
+    "cover_url": "Cover URL",
+    "optional": "(Optional)",
+    "cover_url_placeholder": "https://...",
+    "songs_count": "Songs Count",
+    "create_btn": "Create Playlist",
+    "playlist_link": "Playlist Link",
+    "playlist_link_placeholder": "Paste playlist share link...",
+    "get_info_btn": "Get Info",
+    "getting_info": "Getting info...",
+    "import_success": "Success",
+    "unnamed_playlist": "Unnamed Playlist",
+    "add_to_shelf": "Add to Shelf",
+    "import_from_platform": "Playlist from {{platform}}"
+  },
+  "vinyl": {
+    "tonearm_title": "Drag tonearm to record, release to play",
+    "pause": "Pause",
+    "play": "Play"
+  },
+  "common": {
+    "back": "Back",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "loading": "Loading...",
+    "retry": "Retry"
+  }
+}
