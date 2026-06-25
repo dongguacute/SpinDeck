@@ -2,6 +2,7 @@ import { useThemeStore } from "../lib/theme-store";
 import { useState, useRef, useEffect } from "react";
 import { ArrowLeft, Monitor, Check, Sun, Moon, ExternalLink, ShieldAlert, X, Languages, ChevronDown } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 
 const GithubIcon = () => (
   <svg
@@ -43,10 +44,10 @@ const YoutubeIcon = () => (
   </svg>
 );
 import { Link } from "react-router";
-import { THEME_CONFIGS, THEMES, type AppearanceMode, type ThemeType } from "@spindeck/ui";
+import { THEME_CONFIGS, type AppearanceMode, type ThemeType } from "@spindeck/ui";
 
 // 获取系统信息的辅助函数
-function getSystemInfo(t: any) {
+function getSystemInfo(t: TFunction) {
   const unknown = t('settings.device_info.unknown');
   if (typeof navigator === "undefined") return { os: unknown, osVersion: "", browser: unknown, browserVersion: "" };
   const ua = navigator.userAgent;

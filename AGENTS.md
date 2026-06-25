@@ -40,6 +40,7 @@ This project is a monorepo managed with `pnpm` and `turborepo`. To ensure consis
 - Follow the existing coding style in the repository.
 - Use the shared ESLint configurations provided in `packages/eslint-config`.
 - Prefer using existing components from `packages/vinyl-ui` or `packages/ui` before creating new ones.
+- **Mandatory Linting**: After completing any task (including all sub-steps), you MUST run `pnpm lint` (or `pnpm lint --filter <package>`) to check for and fix any introduced errors.
 
 ## Internationalization (i18n)
 

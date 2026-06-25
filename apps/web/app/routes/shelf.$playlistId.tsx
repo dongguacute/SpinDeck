@@ -25,7 +25,7 @@ import { SettingsModal } from "../components/shelf/SettingsModal";
 export default function ShelfPage() {
   const { t } = useTranslation('common');
   const { playlistId } = useParams<{ playlistId: string }>();
-  const { theme, resolvedMode, settings, updateSettings, resetSettings } = useThemeStore();
+  const { resolvedMode, settings, updateSettings, resetSettings } = useThemeStore();
   
   // Data fetching hook
   const { playlist, loading, error, songs, retry } = usePlaylistFetch(playlistId);

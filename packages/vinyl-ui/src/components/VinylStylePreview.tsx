@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { mixColors, deriveVinylLabelColor } from "../lib/colors";
+import { deriveVinylLabelColor } from "../lib/colors";
 
 interface Props {
   styleName: string;

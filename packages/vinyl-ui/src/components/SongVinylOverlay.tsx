@@ -9,7 +9,7 @@ import {
   applyVinylLayoutVars,
   computeVinylLayout,
 } from "../lib/vinyl-layout";
-import { deriveVinylGlowColor, deriveVinylLabelColor, getContrastColor, hexToRgba, mixColors } from "../lib/colors";
+import { deriveVinylGlowColor, deriveVinylLabelColor, getContrastColor, hexToRgba } from "../lib/colors";
 import {
   canResumeSong,
   getPlaybackStatus,

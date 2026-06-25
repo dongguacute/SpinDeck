@@ -1,10 +1,10 @@
 import { Link } from "react-router";
 import { Trash2, Disc3, Settings2, X, Clock } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import type { Playlist } from "../lib/types";
 import { PLATFORM_CONFIG } from "../lib/types";
-import { useThemeStore } from "../lib/theme-store";
 import QQMusicIcon from "../assets/icons/QQMusicIcon.svg?react";
 
 interface Props {
@@ -13,13 +13,7 @@ interface Props {
   onUpdateRefresh?: (id: string, interval: number) => void;
 }
 
-function px(url: string) {
-  if (!url) return "";
-  if (url.includes("127.0.0.1") || url.includes("localhost")) return url;
-  return `https://images.weserv.nl/?url=${encodeURIComponent(url.replace(/^https?:\/\//, ""))}`;
-}
-
-const REFRESH_OPTIONS = (t: any) => [
+const REFRESH_OPTIONS = (t: TFunction) => [
   { label: t('playlist_card.refresh_off'), value: 0 },
   { label: t('playlist_card.refresh_minutes', { count: 5 }), value: 5 * 60 * 1000 },
   { label: t('playlist_card.refresh_minutes', { count: 15 }), value: 15 * 60 * 1000 },
@@ -29,7 +23,6 @@ const REFRESH_OPTIONS = (t: any) => [
 
 export default function PlaylistCard({ playlist, onDelete, onUpdateRefresh }: Props) {
   const { t } = useTranslation('common');
-  const { theme } = useThemeStore();
   const cfg = PLATFORM_CONFIG[playlist.platform];
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showCustomInput, setShowCustomInput] = useState(false);
@@ -37,41 +30,12 @@ export default function PlaylistCard({ playlist, onDelete, onUpdateRefresh }: Pr
   const [dragY, setDragY] = useState(0);
   const [isClosing, setIsClosing] = useState(false);
   const [isOpening, setIsOpening] = useState(false);
-  const [isDarkCover, setIsDarkCover] = useState(theme === "dark");
 
   const hasRefresh = (playlist.refreshInterval ?? 0) > 0;
   // 检查当前是否使用了自定义时长（不在预设选项中）
   const currentInterval = playlist.refreshInterval ?? 0;
   const refreshOptions = REFRESH_OPTIONS(t);
   const isCustomInterval = !refreshOptions.some((opt) => opt.value === currentInterval) && currentInterval > 0;
-
-  useEffect(() => {
-    if (!playlist.coverUrl) {
-      setIsDarkCover(theme === "dark");
-      return;
-    }
-
-    let isMounted = true;
-    const detectBrightness = async () => {
-      try {
-        const { pickEdgeColors } = await import("@spindeck/picker");
-        const colors = await pickEdgeColors({ content: px(playlist.coverUrl) });
-        if (!isMounted) return;
-
-        const { r, g, b } = colors.top;
-        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-        // 阈值 170：只有比较亮的封面才认为是 light
-        setIsDarkCover(brightness < 170);
-      } catch {
-        if (isMounted) setIsDarkCover(theme === "dark");
-      }
-    };
-
-    detectBrightness();
-    return () => {
-      isMounted = false;
-    };
-  }, [playlist.coverUrl, theme]);
 
   const openModal = () => {
     setShowSettingsModal(true);
