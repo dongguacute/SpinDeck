@@ -44,17 +44,20 @@ This project is a monorepo managed with `pnpm` and `turborepo`. To ensure consis
 
 ## Internationalization (i18n)
 
+- **CRITICAL: Zero Hardcoding Policy**: You MUST NOT hardcode any user-facing strings (Chinese, English, or any other language) directly in the source code. This is a top priority.
 - **Framework**: Use `i18next` and `react-i18next` for internationalization.
 - **Translation Files**:
   - All translation keys MUST be stored in `apps/web/app/locales/{lang}/common.json`.
   - Use hierarchical keys (e.g., `settings.appearance.title`) to keep the files organized.
+  - **Mandatory Sync**: When adding a new translation key, you MUST add it to ALL supported language files (e.g., both `en/common.json` and `zh-Hans/common.json`) to maintain consistency.
 - **Usage in Components**:
   - Use the `useTranslation` hook from `react-i18next`.
   - Example: `const { t } = useTranslation('common');` and then `{t('key.name')}`.
+  - **Check Before Coding**: Before implementing any UI change, check the existing translation keys to avoid duplicates.
 - **Shared Packages**:
   - Shared UI packages (like `packages/vinyl-ui`) should NOT have a direct dependency on `i18next`.
   - Pass translated strings as props from the application layer to components in shared packages.
-- **Hardcoded Strings**: Avoid hardcoding any user-facing Chinese or English strings in the source code. Always use translation keys.
+- **Verification**: After making UI changes, verify that no hardcoded strings remain and that all new keys are correctly defined in the locale files.
 
 ## Git Commit Standards
 
