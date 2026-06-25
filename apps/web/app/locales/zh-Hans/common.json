@@ -128,5 +128,10 @@
     "cancel": "取消",
     "loading": "正在加载...",
     "retry": "重试"
+  },
+  "not_found": {
+    "title": "404 - 页面未找到",
+    "description": "哎呀！您寻找的页面已经转飞了。",
+    "back_home": "返回首页"
   }
 }

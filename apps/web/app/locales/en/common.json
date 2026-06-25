@@ -128,5 +128,10 @@
     "cancel": "Cancel",
     "loading": "Loading...",
     "retry": "Retry"
+  },
+  "not_found": {
+    "title": "404 - Page Not Found",
+    "description": "Oops! The page you are looking for has spun away.",
+    "back_home": "Back to Home"
   }
 }
