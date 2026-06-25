@@ -6,6 +6,18 @@
   /* 材质族不应包含任何布局相关的 CSS */
 }
 
+/* 材质交互增强 (木质立体按钮行为) */
+.sd-theme-cafe button,
+.sd-theme-cafe [role="button"] {
+  transition: transform var(--sd-transition-fast), box-shadow var(--sd-transition-fast), background-color var(--sd-transition-fast);
+}
+
+.sd-theme-cafe button:active,
+.sd-theme-cafe [role="button"]:active {
+  transform: translateY(2px) scale(0.98) !important;
+  box-shadow: var(--shadow-pressed) !important;
+}
+
 /* --- 浅色模式 (奶油白) --- */
 [data-theme="light"] .sd-theme-cafe,
 .sd-theme-cafe[data-theme="light"] {
@@ -14,33 +26,33 @@
   --bg-secondary: #ffffff;
   --bg-tertiary: #ffffff;
   
-  /* 表面 */
-  --surface-color: #ffffff;
-  --surface-hover: #fdfaf2;
+  /* 表面 (木质质感) */
+  --surface-color: #dcbfa6;
+  --surface-hover: #cfb095;
 
   /* 文字 */
   --text-primary: #4a3f35;
-  --text-secondary: #8c7e6d;
-  --text-muted: #bdae9d;
+  --text-secondary: #6b5a4d;
+  --text-muted: #a69382;
 
   /* 边界 */
-  --border-color: #ebe3d5;
-  --border-highlight: #ffffff;
+  --border-color: #c4a484;
+  --border-highlight: rgba(255, 255, 255, 0.4);
 
-  /* 阴影 */
+  /* 阴影 (木质立体 3D 效果) */
   --shadow-raised: 
-    -4px -4px 12px rgba(255, 255, 255, 1),
-    4px 4px 12px rgba(180, 160, 120, 0.15);
+    0 4px 0 #b3967a,
+    0 8px 15px rgba(139, 69, 19, 0.15);
   --shadow-pressed: 
-    inset -2px -2px 6px rgba(255, 255, 255, 0.8),
-    inset 2px 2px 6px rgba(180, 160, 120, 0.12);
+    0 2px 0 #b3967a,
+    inset 0 2px 4px rgba(0, 0, 0, 0.1);
   --shadow-card:
-    0 1px 0 #ffffff inset,
-    0 12px 24px rgba(180, 160, 120, 0.1),
-    0 4px 8px rgba(180, 160, 120, 0.06);
+    0 1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 4px 0 #b3967a,
+    0 12px 24px rgba(139, 69, 19, 0.1);
 }
 
-/* --- 深色模式 (咖啡店) --- */
+/* --- 深色模式 (胡桃木/咖啡店) --- */
 [data-theme="dark"] .sd-theme-cafe,
 .sd-theme-cafe[data-theme="dark"] {
   /* 背景 */
@@ -48,9 +60,9 @@
   --bg-secondary: #231f1c;
   --bg-tertiary: #2d2824;
   
-  /* 表面 */
-  --surface-color: #231f1c;
-  --surface-hover: #2d2824;
+  /* 表面 (深色木质) */
+  --surface-color: #5d4037;
+  --surface-hover: #4e342e;
 
   /* 文字 */
   --text-primary: #e8e2d9;
@@ -58,18 +70,18 @@
   --text-muted: #73675a;
 
   /* 边界 */
-  --border-color: #0f0d0c;
-  --border-highlight: rgba(232, 226, 217, 0.05);
+  --border-color: #3e2723;
+  --border-highlight: rgba(232, 226, 217, 0.1);
   
-  /* 阴影 */
+  /* 阴影 (木质立体 3D 效果) */
   --shadow-raised: 
-    -4px -4px 10px rgba(255, 255, 255, 0.01),
-    4px 4px 12px rgba(0, 0, 0, 0.6);
+    0 4px 0 #2a1f17,
+    0 8px 15px rgba(0, 0, 0, 0.5);
   --shadow-pressed: 
-    inset -2px -2px 6px rgba(255, 255, 255, 0.005),
-    inset 2px 2px 8px rgba(0, 0, 0, 0.7);
+    0 2px 0 #2a1f17,
+    inset 0 2px 4px rgba(0, 0, 0, 0.4);
   --shadow-card:
     0 1px 1px rgba(232, 226, 217, 0.05) inset,
-    0 10px 20px rgba(0, 0, 0, 0.5),
-    0 6px 6px rgba(0, 0, 0, 0.4);
+    0 4px 0 #2a1f17,
+    0 10px 20px rgba(0, 0, 0, 0.5);
 }
