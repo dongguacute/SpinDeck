@@ -300,11 +300,11 @@ export function toPlaybackPastel(accentHex: string, theme: "dark" | "light" = "d
   const base = normalizeHex(accentHex);
   const { h, s } = rgbToHsl(hexToRgb(base));
   const vivid = compressVividness(s);
-  const targetL = theme === "light" ? 0.84 : 0.88;
+  const targetL = theme === "light" ? 0.94 : 0.88;
   const targetS = clamp(
-    Math.max(vivid * (theme === "light" ? 0.62 : 0.55), theme === "light" ? 0.3 : 0.24),
-    theme === "light" ? 0.3 : 0.24,
-    theme === "light" ? 0.58 : 0.55,
+    Math.max(vivid * (theme === "light" ? 0.45 : 0.55), theme === "light" ? 0.12 : 0.24),
+    theme === "light" ? 0.08 : 0.24,
+    theme === "light" ? 0.42 : 0.55,
   );
   return hslToHex(adjustHueForPastel(h), targetS, targetL);
 }
@@ -390,12 +390,12 @@ export function derivePlaybackPalette(
     pale200,
     pale300,
     surface: "#ffffff",
-    surfaceHover: pale100,
-    border: pale300,
-    borderHover: mixColors(pale300, "#000", 0.1),
-    textPrimary: mixColors(pale300, "#1a1a1a", 0.78),
-    textSecondary: mixColors(pale300, "#3a3a3a", 0.62),
-    textMuted: mixColors(pale200, "#6a6a6a", 0.55),
+    surfaceHover: pale50,
+    border: mixColors(pale100, "#ebe3d5", 0.5),
+    borderHover: mixColors(pale200, "#d6ccbc", 0.5),
+    textPrimary: "#4a3f35",
+    textSecondary: "#8c7e6d",
+    textMuted: "#bdae9d",
   };
 }
 
