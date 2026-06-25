@@ -37,3 +37,23 @@ This project is a monorepo managed with `pnpm` and `turborepo`. To ensure consis
 - Follow the existing coding style in the repository.
 - Use the shared ESLint configurations provided in `packages/eslint-config`.
 - Prefer using existing components from `packages/vinyl-ui` or `packages/ui` before creating new ones.
+
+## Git Commit Standards
+
+All AI-generated commits MUST follow the [Conventional Commits](https://www.conventionalcommits.org/) specification.
+
+- **Format**: `<type>(<scope>): <description>`
+- **Types**:
+  - `feat`: A new feature
+  - `fix`: A bug fix
+  - `docs`: Documentation only changes
+  - `style`: Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)
+  - `refactor`: A code change that neither fixes a bug nor adds a feature
+  - `perf`: A code change that improves performance
+  - `test`: Adding missing tests or correcting existing tests
+  - `build`: Changes that affect the build system or external dependencies
+  - `ci`: Changes to CI configuration files and scripts
+  - `chore`: Other changes that don't modify src or test files
+  - `revert`: Reverts a previous commit
+- **Scope**: The scope should be the name of the package or app affected (e.g., `web`, `core`, `ui`, `player`, etc.).
+- **Description**: Use the imperative, present tense: "change" not "changed" nor "changes".
