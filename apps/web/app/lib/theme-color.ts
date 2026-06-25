@@ -282,8 +282,20 @@ export function derivePlaybackGlassBackground(
   const pastel = toPlaybackPastel(base, theme);
   const pale100 = derivePaleTint(base, 100);
   const pale200 = derivePaleTint(base, 200);
-  const frost = theme === "light" ? 0.68 : 0.58;
-  const frostSoft = theme === "light" ? 0.76 : 0.66;
+
+  if (theme === "dark") {
+    // 深色模式：减弱顶部高光，增加深色层次
+    const frost = 0.08;
+    return [
+      `radial-gradient(ellipse 130% 90% at 50% -12%, ${hexToRgba("#ffffff", frost)} 0%, transparent 62%)`,
+      `radial-gradient(ellipse 85% 65% at 88% 105%, ${hexToRgba(base, 0.12)} 0%, transparent 55%)`,
+      `radial-gradient(ellipse 75% 58% at 12% 82%, ${hexToRgba(base, 0.08)} 0%, transparent 50%)`,
+      `linear-gradient(165deg, ${pastel} 0%, ${mixHex(pastel, "#000", 0.15)} 100%)`,
+    ].join(", ");
+  }
+
+  const frost = 0.68;
+  const frostSoft = 0.76;
 
   return [
     `radial-gradient(ellipse 130% 90% at 50% -12%, ${hexToRgba("#ffffff", frost)} 0%, transparent 62%)`,
@@ -294,17 +306,26 @@ export function derivePlaybackGlassBackground(
 }
 
 /**
- * 封面主色 → 播放页背景色（明显但柔和的 pastel，非近白）。
+ * 封面主色 → 播放页背景色。
+ * 浅色模式：极淡的 pastel 色。
+ * 深色模式：深沉的背景色，保留微弱色相。
  */
 export function toPlaybackPastel(accentHex: string, theme: "dark" | "light" = "dark"): string {
   const base = normalizeHex(accentHex);
   const { h, s } = rgbToHsl(hexToRgb(base));
   const vivid = compressVividness(s);
-  const targetL = theme === "light" ? 0.94 : 0.88;
+
+  if (theme === "dark") {
+    const targetL = 0.12;
+    const targetS = clamp(vivid * 0.35 + 0.1, 0.12, 0.35);
+    return hslToHex(adjustHueForPastel(h), targetS, targetL);
+  }
+
+  const targetL = 0.94;
   const targetS = clamp(
-    Math.max(vivid * (theme === "light" ? 0.45 : 0.55), theme === "light" ? 0.12 : 0.24),
-    theme === "light" ? 0.08 : 0.24,
-    theme === "light" ? 0.42 : 0.55,
+    Math.max(vivid * 0.45, 0.12),
+    0.08,
+    0.42,
   );
   return hslToHex(adjustHueForPastel(h), targetS, targetL);
 }
@@ -368,7 +389,7 @@ export function deriveThemePalette(baseHex: string): ThemePalette {
 }
 
 /**
- * 播放页浅色氛围色板（参考：封面主色 → 极淡纯色背景 + 深色可读文字）。
+ * 播放页氛围色板（参考：封面主色 → 极淡纯色背景 + 适配主题的文字/表面）。
  */
 export function derivePlaybackPalette(
   accentHex: string,
@@ -380,6 +401,27 @@ export function derivePlaybackPalette(
   const pale200 = derivePaleTint(base, 200);
   const pale300 = derivePaleTint(base, 300);
   const glassBackground = derivePlaybackGlassBackground(base, theme);
+
+  if (theme === "dark") {
+    return {
+      base,
+      backdropTop: pale50,
+      backdropMid: pale50,
+      backdropBottom: pale50,
+      backdropGradient: glassBackground,
+      pale50,
+      pale100,
+      pale200,
+      pale300,
+      surface: "#2d2824", // 对应 Cafe Dark 的 bg-tertiary
+      surfaceHover: "#3e3732",
+      border: "#3e2723", // 对应 Cafe Dark 的 border-color
+      borderHover: "#4e342e",
+      textPrimary: "#e8e2d9", // 对应 Cafe Dark 的 text-primary
+      textSecondary: "#b5a48b",
+      textMuted: "#73675a",
+    };
+  }
 
   return {
     base,
