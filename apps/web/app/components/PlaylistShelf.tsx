@@ -670,6 +670,35 @@ export default function PlaylistShelf({
         if (done === songs.length) {
           console.log(`[Shelf] 所有封面加载完成`);
           mainGroup.visible = true; // 显示所有书
+
+          // 载入时的弹出动画
+          if (selectedIndexRef.current === null || selectedIndexRef.current === undefined) {
+            groups.forEach((g, i) => {
+              const originalY = g.position.y;
+              // 初始状态：微调偏移和缩放，保持丝滑感
+              g.position.y = originalY - 0.3;
+              g.scale.set(0.95, 0.95, 0.95);
+              // 初始隐藏，配合动画一本本显现
+              g.visible = false;
+
+              gsap.to(g.position, {
+                y: originalY,
+                duration: 0.3,
+                delay: i * 0.035, // 节奏更紧凑
+                ease: "back.out(1.1)", // 降低回弹强度，让动作更圆润丝滑
+                onStart: () => { g.visible = true; }
+              });
+              gsap.to(g.scale, {
+                x: 1,
+                y: 1,
+                z: 1,
+                duration: 0.3,
+                delay: i * 0.035,
+                ease: "back.out(1.1)",
+              });
+            });
+          }
+
           onAllLoadedRef.current?.();
         }
       }
