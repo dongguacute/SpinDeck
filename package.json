@@ -1,7 +1,27 @@
 {
   "name": "spindeck",
-  "private": true,
   "version": "0.1.0",
+  "description": "Cross-platform vinyl visualization player that syncs & controls third-party music apps with playlist import support",
+  "author": "Cherry Fu <https://github.com/dongguacute>",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dongguacute/SpinDeck.git"
+  },
+  "homepage": "https://github.com/dongguacute/SpinDeck#readme",
+  "bugs": {
+    "url": "https://github.com/dongguacute/SpinDeck/issues"
+  },
+  "keywords": [
+    "vinyl",
+    "music-player",
+    "visualization",
+    "react",
+    "threejs",
+    "gsap",
+    "cross-platform"
+  ],
+  "private": true,
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",

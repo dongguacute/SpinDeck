@@ -1,5 +1,18 @@
 {
   "name": "@spindeck/web",
+  "version": "0.1.0",
+  "description": "SpinDeck web application",
+  "author": "Cherry Fu <https://github.com/dongguacute>",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dongguacute/SpinDeck.git",
+    "directory": "apps/web"
+  },
+  "homepage": "https://github.com/dongguacute/SpinDeck/tree/main/apps/web#readme",
+  "bugs": {
+    "url": "https://github.com/dongguacute/SpinDeck/issues"
+  },
   "private": true,
   "type": "module",
   "scripts": {

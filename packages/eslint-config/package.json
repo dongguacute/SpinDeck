@@ -1,6 +1,18 @@
 {
   "name": "@spindeck/eslint-config",
   "version": "0.0.0",
+  "description": "Shared ESLint configuration for SpinDeck",
+  "author": "Cherry Fu <https://github.com/dongguacute>",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dongguacute/SpinDeck.git",
+    "directory": "packages/eslint-config"
+  },
+  "homepage": "https://github.com/dongguacute/SpinDeck/tree/main/packages/eslint-config#readme",
+  "bugs": {
+    "url": "https://github.com/dongguacute/SpinDeck/issues"
+  },
   "private": true,
   "type": "module",
   "files": [

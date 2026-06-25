@@ -1,6 +1,18 @@
 {
   "name": "@spindeck/player",
   "version": "0.0.1",
+  "description": "Music player integration logic for SpinDeck",
+  "author": "Cherry Fu <https://github.com/dongguacute>",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dongguacute/SpinDeck.git",
+    "directory": "packages/player"
+  },
+  "homepage": "https://github.com/dongguacute/SpinDeck/tree/main/packages/player#readme",
+  "bugs": {
+    "url": "https://github.com/dongguacute/SpinDeck/issues"
+  },
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
