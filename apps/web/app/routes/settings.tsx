@@ -27,6 +27,21 @@ const DouyinIcon = () => (
     <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .8.11V9.4a6.33 6.33 0 0 0-1-.08A6.34 6.34 0 0 0 3 15.66a6.34 6.34 0 0 0 10.86 4.51A6.25 6.25 0 0 0 15.82 16V8.5a8.29 8.29 0 0 0 5.18 1.81V6.82a4.79 4.79 0 0 1-1.41-.13z" />
   </svg>
 );
+
+const YoutubeIcon = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="w-5 h-5"
+  >
+    <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z" />
+    <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" />
+  </svg>
+);
 import { Link } from "react-router";
 import { THEME_CONFIGS, THEMES, type AppearanceMode, type ThemeType } from "@spindeck/ui";
 
@@ -391,11 +406,33 @@ export default function Settings() {
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-between px-5 py-4 hover:bg-(--bg-tertiary) transition-colors duration-200 group cursor-pointer"
+              style={{ borderBottom: "1px solid var(--border-color)" }}
             >
               <div className="flex items-center gap-3" style={{ color: "var(--text-secondary)" }}>
                 <DouyinIcon />
                 <span className="text-sm" style={{ color: "var(--text-primary)" }}>
                   {t('settings.about.author_douyin')}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+                  {t('settings.about.follow_author')}
+                </span>
+                <ArrowLeft className="w-4 h-4 rotate-180 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" style={{ color: "var(--text-muted)" }} />
+              </div>
+            </a>
+
+            <a
+              href="https://www.youtube.com/@dongguacute"
+              onClick={(e) => handleLinkClick(e, "https://www.youtube.com/@dongguacute", t('settings.about.author_youtube'))}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between px-5 py-4 hover:bg-(--bg-tertiary) transition-colors duration-200 group cursor-pointer"
+            >
+              <div className="flex items-center gap-3" style={{ color: "var(--text-secondary)" }}>
+                <YoutubeIcon />
+                <span className="text-sm" style={{ color: "var(--text-primary)" }}>
+                  {t('settings.about.author_youtube')}
                 </span>
               </div>
               <div className="flex items-center gap-1">
