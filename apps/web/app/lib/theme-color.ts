@@ -319,9 +319,11 @@ export function deriveBackdropShade(
 ): string {
   const { h, s } = rgbToHsl(hexToRgb(normalizeHex(baseHex)));
   const vivid = compressVividness(s);
-  const richSat = clamp(vivid * satBoost * 0.85 + 0.28, 0.36, 0.72);
-  const richHue = h + (lightness < 0.14 ? 0.006 : 0);
-  return hslToHex(richHue, richSat, clamp(lightness, 0, 1));
+  // 咖啡馆风格：稍微降低饱和度上限，并向暖色偏移
+  const richSat = clamp(vivid * satBoost * 0.75 + 0.2, 0.25, 0.6);
+  // 稍微向橙红方向偏移 (0.05 - 0.1 范围是暖色)
+  const warmHue = h * 0.8 + 0.02; 
+  return hslToHex(warmHue, richSat, clamp(lightness, 0, 1));
 }
 
 /**
@@ -359,9 +361,9 @@ export function deriveThemePalette(baseHex: string): ThemePalette {
     surfaceHover: pale100,
     border: mixColors(pale200, pale300, 0.35),
     borderHover: pale200,
-    textPrimary: softenWithWhite(pale50, 0.18),
-    textSecondary: mixColors(pale50, pale100, 0.38),
-    textMuted: mixColors(pale100, pale200, 0.55),
+    textPrimary: mixColors(softenWithWhite(pale50, 0.18), "#e8e2d9", 0.5),
+    textSecondary: mixColors(mixColors(pale50, pale100, 0.38), "#b5a48b", 0.5),
+    textMuted: mixColors(mixColors(pale100, pale200, 0.55), "#73675a", 0.5),
   };
 }
 

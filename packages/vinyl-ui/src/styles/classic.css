@@ -95,10 +95,10 @@
 }
 
 .sd-vinyl-style-classic .sd-vinyl-arm {
-  --tonearm-base: #121212;
-  --tonearm-arm: #ece8df;
-  --tonearm-arm-shadow: #b5b0a6;
-  --tonearm-headshell: #121212;
+  --tonearm-base: #0f0d0c;
+  --tonearm-arm: #d9d2c7;
+  --tonearm-arm-shadow: #a69d8f;
+  --tonearm-headshell: #0f0d0c;
   filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.28));
 }
 
@@ -122,10 +122,10 @@
 }
 
 [data-theme="light"] .sd-vinyl-style-classic .sd-vinyl-arm {
-  --tonearm-base: #0a0a0a;
+  --tonearm-base: #3d3429;
   --tonearm-arm: #e2ddd2;
   --tonearm-arm-shadow: #a8a399;
-  --tonearm-headshell: #080808;
+  --tonearm-headshell: #2d2824;
   filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.2));
 }
 

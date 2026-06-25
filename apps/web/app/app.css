@@ -5,28 +5,28 @@
 
 :root,
 [data-theme="dark"] {
-  --bg-primary: #121212;
-  --bg-secondary: #1a1a1a;
-  --bg-tertiary: #242424;
-  --text-primary: #e0e0e0;
-  --text-secondary: #a0a0a0;
-  --text-muted: #666666;
-  --border-color: #000000;
-  --border-highlight: rgba(255, 255, 255, 0.05);
-  --surface-color: #1e1e1e;
-  --surface-hover: #252525;
+  --bg-primary: #1a1614;
+  --bg-secondary: #231f1c;
+  --bg-tertiary: #2d2824;
+  --text-primary: #e8e2d9;
+  --text-secondary: #b5a48b;
+  --text-muted: #73675a;
+  --border-color: #0f0d0c;
+  --border-highlight: rgba(232, 226, 217, 0.05);
+  --surface-color: #231f1c;
+  --surface-hover: #2d2824;
   
-  /* 拟物化阴影 */
+  /* 拟物化阴影 - 咖啡馆深烘质感 */
   --shadow-raised: 
-    -4px -4px 10px rgba(255, 255, 255, 0.02),
-    4px 4px 12px rgba(0, 0, 0, 0.5);
+    -4px -4px 10px rgba(255, 255, 255, 0.01),
+    4px 4px 12px rgba(0, 0, 0, 0.6);
   --shadow-pressed: 
-    inset -2px -2px 6px rgba(255, 255, 255, 0.01),
-    inset 2px 2px 8px rgba(0, 0, 0, 0.6);
+    inset -2px -2px 6px rgba(255, 255, 255, 0.005),
+    inset 2px 2px 8px rgba(0, 0, 0, 0.7);
   --shadow-card:
-    0 1px 1px rgba(255, 255, 255, 0.05) inset,
-    0 10px 20px rgba(0, 0, 0, 0.4),
-    0 6px 6px rgba(0, 0, 0, 0.3);
+    0 1px 1px rgba(232, 226, 217, 0.05) inset,
+    0 10px 20px rgba(0, 0, 0, 0.5),
+    0 6px 6px rgba(0, 0, 0, 0.4);
 }
 
 [data-theme="light"] {

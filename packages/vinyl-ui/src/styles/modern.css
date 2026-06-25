@@ -70,9 +70,9 @@
 }
 
 .sd-vinyl-style-modern .sd-vinyl-arm {
-  --tonearm-base: #000000;
-  --tonearm-arm: #333333;
-  --tonearm-arm-shadow: #000000;
-  --tonearm-headshell: #000000;
+  --tonearm-base: #0f0d0c;
+  --tonearm-arm: #3d3429;
+  --tonearm-arm-shadow: #0f0d0c;
+  --tonearm-headshell: #0f0d0c;
   filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
 }
