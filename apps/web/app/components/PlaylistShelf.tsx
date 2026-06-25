@@ -285,6 +285,8 @@ interface Props {
   coverOverlay?: boolean;
   /** 播放中：禁止点击空白或再次点击当前书来退出 */
   lockDeselect?: boolean;
+  /** 所有封面加载完成的回调 */
+  onAllLoaded?: () => void;
 }
 
 export default function PlaylistShelf({
@@ -296,6 +298,7 @@ export default function PlaylistShelf({
   selectedIndex,
   coverOverlay = false,
   lockDeselect = false,
+  onAllLoaded,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<SceneState | null>(null);
@@ -306,6 +309,7 @@ export default function PlaylistShelf({
   const onBookThemeColorRef = useRef(onBookThemeColor);
   const onSongSelectRef = useRef(onSongSelect);
   const onSelectionAnimationCompleteRef = useRef(onSelectionAnimationComplete);
+  const onAllLoadedRef = useRef(onAllLoaded);
   const animatingRef = useRef(false);
   const prevCoverOverlayRef = useRef(coverOverlay);
   const coverPivotWorldRef = useRef<THREE.Vector3 | null>(null);
@@ -339,8 +343,17 @@ export default function PlaylistShelf({
   }, [selectedIndex]);
 
   useEffect(() => {
+    onAllLoadedRef.current = onAllLoaded;
+  }, [onAllLoaded]);
+
+  useEffect(() => {
     const container = containerRef.current;
-    if (!container || !songs.length) return;
+    if (!container) return;
+
+    if (!songs.length) {
+      onAllLoadedRef.current?.();
+      return;
+    }
 
     console.log(`[Shelf] 开始构建 ${songs.length} 本书`);
 
@@ -367,6 +380,7 @@ export default function PlaylistShelf({
     const mainGroup = new THREE.Group();
     mainGroup.position.set(0, 0.0, 0);
     mainGroup.scale.set(1.0, 1.0, 1.0);
+    mainGroup.visible = false; // 初始隐藏，等所有封面加载完再显示
     scene.add(mainGroup);
 
     // 背景由页面层 playbackAmbientColor 负责，canvas 保持透明以便遮盖态下光碟可见
@@ -380,7 +394,7 @@ export default function PlaylistShelf({
     const originalPositions: { x: number; y: number; z: number }[] = [];
     for (let i = 0; i < count; i++) {
       const song = songs[i];
-      const color = COLORS[i % COLORS.length];
+      const color = "#222"; // 初始使用中性深色，避免彩色块闪烁
       const group = new THREE.Group();
       const posX = -totalW / 2 + i * (SPINE_THICK + GAP) + SPINE_THICK / 2;
       group.position.set(posX, 0, 0);
@@ -653,6 +667,11 @@ export default function PlaylistShelf({
         await loadOne(i);
         done++;
         console.log(`[Shelf] 进度 ${done}/${songs.length}`);
+        if (done === songs.length) {
+          console.log(`[Shelf] 所有封面加载完成`);
+          mainGroup.visible = true; // 显示所有书
+          onAllLoadedRef.current?.();
+        }
       }
     };
     for (let n = 0; n < Math.min(CONC, songs.length); n++) worker();
@@ -971,7 +990,7 @@ export default function PlaylistShelf({
   return (
     <div
       ref={containerRef}
-      className={`absolute inset-0 ${coverOverlay ? "z-[3]" : "z-[1]"}`}
+      className={`absolute inset-0 ${coverOverlay ? "z-3" : "z-1"}`}
     />
   );
 }

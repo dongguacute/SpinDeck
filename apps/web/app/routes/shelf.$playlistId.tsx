@@ -41,9 +41,29 @@ export default function ShelfPage() {
   const [pageSessionId, setPageSessionId] = useState("");
   const [autoPlayNext, setAutoPlayNext] = useState(false);
   const [autoPlayToken, setAutoPlayToken] = useState(0);
+  const [coversLoading, setCoversLoading] = useState(true); // 默认开启，直到 PlaylistShelf 报告完成
   const playbackWrapperRef = useRef<HTMLDivElement>(null);
 
   const inPlayback = selectedIndex !== null;
+
+  // 当 playlistId 改变时，确保重新进入加载状态
+  useEffect(() => {
+    setCoversLoading(true);
+  }, [playlistId]);
+
+  // 当 loading 状态改变时同步 coversLoading
+  useEffect(() => {
+    if (loading) {
+      setCoversLoading(true);
+    }
+  }, [loading]);
+
+  // 如果发生错误，也要关闭 coversLoading 以便显示错误信息
+  useEffect(() => {
+    if (error) {
+      setCoversLoading(false);
+    }
+  }, [error]);
 
   // Theme and color hook
   const { 
@@ -166,7 +186,7 @@ export default function ShelfPage() {
       />
 
       {/* 加载中 */}
-      {loading && (
+      {(loading || coversLoading) && (
         <div className="absolute inset-0 z-20 flex items-center justify-center" style={{ background: "var(--bg-primary)" }}>
           <div className="flex flex-col items-center gap-4 p-8 rounded-3xl border"
             style={{
@@ -270,6 +290,7 @@ export default function ShelfPage() {
           onSelectionAnimationComplete={handleBookAnimationComplete}
           onCoverToggle={() => setCoverOverlay((v) => !v)}
           onBookThemeColor={setBookThemeColor}
+          onAllLoaded={() => setCoversLoading(false)}
           selectedIndex={selectedIndex}
           coverOverlay={coverOverlay}
           lockDeselect={inPlayback}
