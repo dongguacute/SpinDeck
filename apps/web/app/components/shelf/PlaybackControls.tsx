@@ -37,7 +37,7 @@ export function PlaybackControls({
       >
         <button
           onClick={playPrevSong}
-          className="px-10 py-2 rounded-full transition-all hover:scale-110 active:scale-95 border border-transparent hover:border-current"
+          className="px-10 py-2 rounded-full transition-all duration-300 hover:scale-105 active:scale-95 border border-transparent hover:border-current/20 hover:bg-current/10 hover:shadow-sm"
           style={{ color: chrome.textSecondary }}
           title={t('shelf.prev_song')}
         >
@@ -46,7 +46,7 @@ export function PlaybackControls({
 
         <button
           onClick={playNextSong}
-          className="px-10 py-2 rounded-full transition-all hover:scale-110 active:scale-95 border border-transparent hover:border-current"
+          className="px-10 py-2 rounded-full transition-all duration-300 hover:scale-105 active:scale-95 border border-transparent hover:border-current/20 hover:bg-current/10 hover:shadow-sm"
           style={{ color: chrome.textSecondary }}
           title={t('shelf.next_song')}
         >
@@ -57,7 +57,7 @@ export function PlaybackControls({
       <div className="absolute bottom-6 md:bottom-10 left-6 md:left-10 z-70">
         <button
           onClick={() => setShowSettings(true)}
-          className="p-2.5 md:p-3.5 rounded-full border backdrop-blur-md transition-all hover:scale-110 active:scale-95 cursor-pointer"
+          className="p-2.5 md:p-3.5 rounded-full border backdrop-blur-md transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer hover:shadow-lg"
           style={{
             backgroundColor: chrome.surface,
             borderColor: chrome.border,
