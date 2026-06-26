@@ -6,6 +6,7 @@ import type { TFunction } from "i18next";
 import type { Playlist } from "../lib/types";
 import { PLATFORM_CONFIG } from "../lib/types";
 import QQMusicIcon from "../assets/icons/QQMusicIcon.svg?react";
+import NetEaseMusicIcon from "../assets/icons/NetEaseMusicIcon.svg?react";
 
 interface Props {
   playlist: Playlist;
@@ -167,9 +168,12 @@ export default function PlaylistCard({
               />
             </button>
           )}
-          {/* QQ 音乐图标 - 仅 QQ 平台显示在右下角 */}
+          {/* 平台图标 - 仅特定平台显示在右下角 */}
           {playlist.platform === "QQMusic" && (
             <QQMusicIcon className="absolute bottom-2.5 right-2.5 w-10 h-10 drop-shadow-lg pointer-events-none" />
+          )}
+          {playlist.platform === "NetEaseMusic" && (
+            <NetEaseMusicIcon className="absolute bottom-2.5 right-2.5 w-10 h-10 drop-shadow-lg pointer-events-none" />
           )}
         </div>
 

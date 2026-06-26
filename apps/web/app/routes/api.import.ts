@@ -1,5 +1,5 @@
 import type { Route } from "./+types/api.import";
-import { getQQMusicPlaylistSongs } from "@spindeck/core";
+import { getQQMusicPlaylistSongs, getNeteaseMusicPlaylistSongs } from "@spindeck/core";
 import type { PlatformType, SongInfo } from "../lib/types";
 
 export async function action({ request }: Route.ActionArgs) {
@@ -40,6 +40,25 @@ export async function action({ request }: Route.ActionArgs) {
           return {
             url: u,
             name: result.name || "QQ音乐歌单",
+            cover: result.cover || "",
+            songCount: songs.length,
+            songs,
+          };
+        }
+        if (platform === "NetEaseMusic") {
+          const result = await getNeteaseMusicPlaylistSongs(u);
+          const songs: SongInfo[] = result.songs.map((s) => ({
+            name: s.name,
+            artist: s.artist,
+            cover: s.cover || "",
+            album: s.album || "",
+            platformSongId: s.platformSongId || "",
+            platformNumericId: s.platformNumericId,
+            platformSongType: s.platformSongType,
+          }));
+          return {
+            url: u,
+            name: result.name || "网易云音乐歌单",
             cover: result.cover || "",
             songCount: songs.length,
             songs,

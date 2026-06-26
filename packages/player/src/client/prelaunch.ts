@@ -15,7 +15,7 @@ const LAUNCH_CONFIG: Record<PlatformType, LaunchConfig> = {
     appName: "QQ音乐",
   },
   NetEaseMusic: {
-    scheme: "neteasecloudmusic://",
+    scheme: "orpheus://",
     webFallback: "https://music.163.com",
     appName: "网易云音乐",
   },

@@ -36,7 +36,10 @@ let lastPlayAt = 0;
 let lastPlayKey = "";
 
 function usesMacServer(platform: PlatformType): boolean {
-  return getDeviceOS() === "macos" && platform === "QQMusic";
+  return (
+    getDeviceOS() === "macos" &&
+    (platform === "QQMusic" || platform === "NetEaseMusic")
+  );
 }
 
 export interface BeginShelfSessionOptions {

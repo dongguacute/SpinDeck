@@ -24,9 +24,9 @@ export async function action({ request }: Route.ActionArgs) {
     return Response.json({ error: "缺少 platform 或 song" }, { status: 400 });
   }
 
-  if (platform === "QQMusic" && song.platformNumericId == null) {
+  if ((platform === "QQMusic" || platform === "NetEaseMusic") && song.platformNumericId == null) {
     return Response.json(
-      { error: "缺少 songid，请重新导入歌单以获取 platformNumericId" },
+      { error: `缺少 songid，请重新导入歌单以获取 ${platform} 的 platformNumericId` },
       { status: 400 },
     );
   }
