@@ -317,6 +317,7 @@ export default function PlaylistShelf({
   const onSelectionAnimationCompleteRef = useRef(onSelectionAnimationComplete);
   const onAllLoadedRef = useRef(onAllLoaded);
   const onScrollXChangeRef = useRef(onScrollXChange);
+  const scrollXRef = useRef(initialScrollX);
   const animatingRef = useRef(false);
   const prevCoverOverlayRef = useRef(coverOverlay);
   const coverPivotWorldRef = useRef<THREE.Vector3 | null>(null);
@@ -358,6 +359,10 @@ export default function PlaylistShelf({
   }, [onScrollXChange]);
 
   useEffect(() => {
+    scrollXRef.current = initialScrollX;
+  }, [initialScrollX]);
+
+  useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
@@ -390,8 +395,14 @@ export default function PlaylistShelf({
 
     const mainGroup = new THREE.Group();
     const m = Math.max(0, totalW / 2 + 2);
-    const initialX = THREE.MathUtils.clamp(initialScrollX, -m, m);
+    const initialX = THREE.MathUtils.clamp(scrollXRef.current, -m, m);
     mainGroup.position.set(initialX, 0.0, 0);
+    scrollXRef.current = initialX;
+
+    const persistScrollX = (x: number) => {
+      scrollXRef.current = x;
+      onScrollXChangeRef.current?.(x);
+    };
     mainGroup.scale.set(1.0, 1.0, 1.0);
     mainGroup.visible = false; // 初始隐藏，等所有封面加载完再显示
     scene.add(mainGroup);
@@ -559,12 +570,16 @@ export default function PlaylistShelf({
       dragging = false;
       renderer.domElement.style.cursor = "grab";
       const m = Math.max(0, totalW / 2 + 2);
+      persistScrollX(mainGroup.position.x);
       gsap.to(mainGroup.position, {
         x: THREE.MathUtils.clamp(mainGroup.position.x + vel * 15, -m, m),
         duration: 1.0, ease: "power3.out",
         onUpdate: () => {
-          onScrollXChangeRef.current?.(mainGroup.position.x);
-        }
+          persistScrollX(mainGroup.position.x);
+        },
+        onComplete: () => {
+          persistScrollX(mainGroup.position.x);
+        },
       });
     };
     window.addEventListener("pointerup", onUp);
@@ -577,7 +592,7 @@ export default function PlaylistShelf({
       vel = nx - lastX; lastX = nx;
       if (Math.abs(nx - groupStart) > 0.3) wasDragged = true;
       mainGroup.position.x = nx;
-      onScrollXChangeRef.current?.(nx);
+      persistScrollX(nx);
     };
     window.addEventListener("pointermove", onMove);
 
@@ -606,7 +621,7 @@ export default function PlaylistShelf({
       vel = nx - mainGroup.position.x;
       
       mainGroup.position.x = nx;
-      onScrollXChangeRef.current?.(nx);
+      persistScrollX(nx);
 
       // 如果滑动距离足够，标记为已拖拽，防止误触发点击
       if (Math.abs(delta) > 5) wasDragged = true;
@@ -761,6 +776,7 @@ export default function PlaylistShelf({
 
     // --- 清理 ---
     return () => {
+      persistScrollX(mainGroup.position.x);
       cancelAnimationFrame(animId);
       renderer.domElement.removeEventListener("click", handleClick);
       renderer.domElement.removeEventListener("mousemove", handleMouseMove);
@@ -777,7 +793,7 @@ export default function PlaylistShelf({
       sceneRef.current = null;
       prevIndexRef.current = null;
     };
-  }, [songs, initialScrollX]);
+  }, [songs]);
 
   // --- 响应选中状态变化，执行 3D 动画 ---
   const prevIndexRef = useRef<number | null>(null);
