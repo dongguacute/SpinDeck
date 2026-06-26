@@ -25,7 +25,7 @@ export function PlaybackControls({
   return (
     <>
       <div 
-        className="absolute bottom-6 md:bottom-10 left-1/2 -translate-x-1/2 z-60 flex items-center gap-4 md:gap-6 px-6 py-2.5 md:px-8 md:py-3 rounded-2xl border backdrop-blur-md transition-all duration-500"
+        className="absolute bottom-6 md:bottom-10 left-1/2 -translate-x-1/2 z-60 flex items-center gap-4 md:gap-6 px-6 py-2.5 md:px-8 md:py-3 rounded-full border backdrop-blur-md transition-all duration-500"
         style={{
           backgroundColor: chrome.surface,
           borderColor: chrome.border,
@@ -37,7 +37,7 @@ export function PlaybackControls({
       >
         <button
           onClick={playPrevSong}
-          className="p-2 rounded-xl transition-all hover:scale-110 active:scale-95"
+          className="px-10 py-2 rounded-full transition-all hover:scale-110 active:scale-95 border border-transparent hover:border-current"
           style={{ color: chrome.textSecondary }}
           title={t('shelf.prev_song')}
         >
@@ -46,7 +46,7 @@ export function PlaybackControls({
 
         <button
           onClick={playNextSong}
-          className="p-2 rounded-xl transition-all hover:scale-110 active:scale-95"
+          className="px-10 py-2 rounded-full transition-all hover:scale-110 active:scale-95 border border-transparent hover:border-current"
           style={{ color: chrome.textSecondary }}
           title={t('shelf.next_song')}
         >
@@ -57,7 +57,7 @@ export function PlaybackControls({
       <div className="absolute bottom-6 md:bottom-10 left-6 md:left-10 z-70">
         <button
           onClick={() => setShowSettings(true)}
-          className="p-2.5 md:p-3.5 rounded-2xl border backdrop-blur-md transition-all hover:scale-110 active:scale-95 cursor-pointer"
+          className="p-2.5 md:p-3.5 rounded-full border backdrop-blur-md transition-all hover:scale-110 active:scale-95 cursor-pointer"
           style={{
             backgroundColor: chrome.surface,
             borderColor: chrome.border,
