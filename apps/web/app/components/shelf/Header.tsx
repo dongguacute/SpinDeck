@@ -115,7 +115,7 @@ export function Header({
             e.currentTarget.style.opacity = "0.7";
             e.currentTarget.style.transform = "scale(1)";
           }}
-          title={t('shelf.prelaunch_app_title', { platform: PLATFORM_CONFIG[playlist.platform]?.label || playlist.platform })}
+          title={t('shelf.prelaunch_app_title', { platform: t(`platforms.${playlist.platform}`) })}
         >
           <Rocket className="w-3.5 h-3.5" />{t('shelf.prelaunch_app')}
         </button>

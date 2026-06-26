@@ -184,7 +184,7 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
     
     validResults.forEach(res => {
       onCreate({
-        name: res.name || t('create_modal.import_from_platform', { platform: PLATFORM_CONFIG[importPlatform].label }),
+        name: res.name || t('create_modal.import_from_platform', { platform: t(`platforms.${importPlatform}`) }),
         platform: importPlatform,
         coverUrl: res.cover || "",
         songCount: res.songCount || 0,
@@ -201,7 +201,7 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
     if (!res || res.error || res.added) return;
 
     onCreate({
-      name: res.name || t('create_modal.import_from_platform', { platform: PLATFORM_CONFIG[importPlatform].label }),
+      name: res.name || t('create_modal.import_from_platform', { platform: t(`platforms.${importPlatform}`) }),
       platform: importPlatform,
       coverUrl: res.cover || "",
       songCount: res.songCount || 0,
@@ -302,7 +302,7 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
                     {platform !== "QQMusic" && platform !== "NetEaseMusic" && (
                       <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: selectedCfg.color }} />
                     )}
-                    <span style={{ color: "var(--text-primary)" }}>{selectedCfg.label}</span>
+                    <span style={{ color: "var(--text-primary)" }}>{t(`platforms.${platform}`)}</span>
                   </span>
                   <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""}`} style={{ color: "var(--text-muted)" }} />
                 </button>
@@ -320,7 +320,7 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
                       {p !== "QQMusic" && p !== "NetEaseMusic" && (
                         <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cfg.color }} />
                       )}
-                      <span style={{ color: "var(--text-primary)" }}>{cfg.label}</span>
+                      <span style={{ color: "var(--text-primary)" }}>{t(`platforms.${p}`)}</span>
                     </button>
                   );})}
                 </div>}
@@ -388,7 +388,7 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
                     {importPlatform !== "QQMusic" && importPlatform !== "NetEaseMusic" && (
                       <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: importSelectedCfg.color }} />
                     )}
-                    <span style={{ color: "var(--text-primary)" }}>{importSelectedCfg.label}</span>
+                    <span style={{ color: "var(--text-primary)" }}>{t(`platforms.${importPlatform}`)}</span>
                   </span>
                   <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${importDropdownOpen ? "rotate-180" : ""}`} style={{ color: "var(--text-muted)" }} />
                 </button>
@@ -406,7 +406,7 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
                       {p !== "QQMusic" && p !== "NetEaseMusic" && (
                         <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cfg.color }} />
                       )}
-                      <span style={{ color: "var(--text-primary)" }}>{cfg.label}</span>
+                      <span style={{ color: "var(--text-primary)" }}>{t(`platforms.${p}`)}</span>
                     </button>
                   );})}
                 </div>}

@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import type { Playlist } from "../lib/types";
-import { PLATFORM_CONFIG } from "../lib/types";
 import QQMusicIcon from "../assets/icons/QQMusicIcon.svg?react";
 import NetEaseMusicIcon from "../assets/icons/NetEaseMusicIcon.svg?react";
 
@@ -34,7 +33,6 @@ export default function PlaylistCard({
   onSelect
 }: Props) {
   const { t } = useTranslation('common');
-  const cfg = PLATFORM_CONFIG[playlist.platform];
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [customMinutes, setCustomMinutes] = useState("");
@@ -287,7 +285,7 @@ export default function PlaylistCard({
               <div className="flex items-center gap-1.5 mt-1">
                 {playlist.platform === "QQMusic" && <QQMusicIcon className="w-3.5 h-3.5" />}
                 {playlist.platform === "NetEaseMusic" && <NetEaseMusicIcon className="w-3.5 h-3.5" />}
-                <p className="text-xs" style={{ color: "var(--text-secondary)" }}>{cfg.label} · {playlist.songCount > 0 ? t('shelf.songs_count', { count: playlist.songCount }) : t('shelf.empty')}</p>
+                <p className="text-xs" style={{ color: "var(--text-secondary)" }}>{t(`platforms.${playlist.platform}`)} · {playlist.songCount > 0 ? t('shelf.songs_count', { count: playlist.songCount }) : t('shelf.empty')}</p>
               </div>
             </div>
 

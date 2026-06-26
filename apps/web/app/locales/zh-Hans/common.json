@@ -1,4 +1,12 @@
 {
+  "platforms": {
+    "QQMusic": "QQ音乐",
+    "NetEaseMusic": "网易云音乐",
+    "KugouMusic": "酷狗音乐",
+    "AppleMusic": "Apple Music",
+    "Spotify": "Spotify",
+    "YTMusic": "YouTube Music"
+  },
   "settings": {
     "title": "设置",
     "appearance": {

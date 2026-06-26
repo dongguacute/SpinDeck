@@ -89,7 +89,7 @@ export function DetailModal({
                   style={{ backgroundColor: PLATFORM_CONFIG[playlist.platform]?.color || '#fff' }}
                 />
               )}
-              {PLATFORM_CONFIG[playlist.platform]?.label || playlist.platform}
+              {t(`platforms.${playlist.platform}`)}
             </span>
           </div>
 

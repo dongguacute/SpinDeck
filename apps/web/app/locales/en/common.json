@@ -1,4 +1,12 @@
 {
+  "platforms": {
+    "QQMusic": "QQ Music",
+    "NetEaseMusic": "NetEase Cloud Music",
+    "KugouMusic": "Kugou Music",
+    "AppleMusic": "Apple Music",
+    "Spotify": "Spotify",
+    "YTMusic": "YouTube Music"
+  },
   "settings": {
     "title": "Settings",
     "appearance": {
