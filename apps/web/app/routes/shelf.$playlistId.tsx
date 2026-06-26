@@ -208,6 +208,8 @@ export default function ShelfPage() {
         refreshInterval={playlist?.refreshInterval ?? 0}
         handleExitPlayback={handleExitPlayback}
         setShowDetail={setShowDetail}
+        onRefresh={retry}
+        loading={loading}
       />
 
       {/* 加载中 */}

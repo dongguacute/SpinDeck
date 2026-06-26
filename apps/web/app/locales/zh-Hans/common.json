@@ -60,6 +60,7 @@
     "songs_count": "{{count}} 首",
     "songs_count_with_text": "{{count}} 首歌曲",
     "empty": "空歌单",
+    "refresh_list": "刷新列表",
     "refreshing": "刷新中",
     "auto_refreshing": "自动刷新中",
     "back_to_shelf": "返回歌单",

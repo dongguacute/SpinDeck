@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { ArrowLeft, Info, LogOut, Rocket } from "lucide-react";
+import { ArrowLeft, Info, LogOut, Rocket, RefreshCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { ChromeStyle, ThemePalette } from "../../lib/theme-color";
 import { PLATFORM_CONFIG } from "../../lib/types";
@@ -22,6 +22,8 @@ interface HeaderProps {
   refreshInterval: number;
   handleExitPlayback: () => void;
   setShowDetail: (show: boolean) => void;
+  onRefresh?: () => void;
+  loading?: boolean;
 }
 
 export function Header({
@@ -37,6 +39,8 @@ export function Header({
   refreshInterval,
   handleExitPlayback,
   setShowDetail,
+  onRefresh,
+  loading = false,
 }: HeaderProps) {
   const { t } = useTranslation('common');
   if (!playlist) return null;
@@ -151,6 +155,30 @@ export function Header({
             >
               {songs.length > 0 ? t('shelf.songs_count', { count: songs.length }) : playlist.songCount > 0 ? t('shelf.songs_count', { count: playlist.songCount }) : ""}
             </span>
+
+            {playlist.importUrl && (
+              <button
+                onClick={onRefresh}
+                disabled={loading}
+                className="p-1 rounded-lg transition-all cursor-pointer disabled:cursor-not-allowed"
+                style={{ color: chrome.textMuted, opacity: showThemeBackdrop ? 0.65 : 0.25 }}
+                onMouseEnter={(e) => {
+                  if (loading) return;
+                  e.currentTarget.style.color = chrome.textSecondary;
+                  e.currentTarget.style.opacity = showThemeBackdrop ? "0.95" : "0.5";
+                  e.currentTarget.style.background = chrome.surfaceHover;
+                }}
+                onMouseLeave={(e) => {
+                  if (loading) return;
+                  e.currentTarget.style.color = chrome.textMuted;
+                  e.currentTarget.style.opacity = showThemeBackdrop ? "0.65" : "0.25";
+                  e.currentTarget.style.background = "transparent";
+                }}
+                title={t('shelf.refresh_list')}
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+              </button>
+            )}
 
             <button
               onClick={() => setShowDetail(true)}

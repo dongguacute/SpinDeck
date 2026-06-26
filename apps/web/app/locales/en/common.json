@@ -60,6 +60,7 @@
     "songs_count": "{{count}} songs",
     "songs_count_with_text": "{{count}} songs",
     "empty": "Empty playlist",
+    "refresh_list": "Refresh List",
     "refreshing": "Refreshing",
     "auto_refreshing": "Auto-refreshing",
     "back_to_shelf": "Back to Shelf",
