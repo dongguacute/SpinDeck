@@ -189,7 +189,15 @@ export default function SongVinylOverlay({
 
   useEffect(() => {
     const syncLayout = () => {
-      const layout = computeVinylLayout(window.innerWidth, window.innerHeight);
+      let w = window.innerWidth;
+      let h = window.innerHeight;
+      
+      // 适配手机端强制横屏逻辑：如果处于竖屏但应用了旋转，则交换宽高计算布局
+      if (w < 768 && h > w) {
+        [w, h] = [h, w];
+      }
+      
+      const layout = computeVinylLayout(w, h);
       if (stageRef.current) applyVinylLayoutVars(stageRef.current, layout);
       if (tonearmPortalRef?.current) applyVinylLayoutVars(tonearmPortalRef.current, layout);
     };

@@ -14,7 +14,14 @@ export function useSwipeNavigation(
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     if (!inPlayback) return;
-    swipeRef.current = { x: e.clientX, time: Date.now(), startX: e.clientX };
+    
+    // 检查是否处于强制横屏模式（手机竖屏 + 播放态）
+    const isForceLandscape = window.innerWidth < 768 && window.innerHeight > window.innerWidth;
+    
+    // 如果是强制横屏，clientX 对应元素的 Y 轴，clientY 对应元素的 X 轴（反向）
+    const startPos = isForceLandscape ? e.clientY : e.clientX;
+    
+    swipeRef.current = { x: startPos, time: Date.now(), startX: startPos };
     
     if (playbackWrapperRef.current) {
       gsap.killTweensOf(playbackWrapperRef.current);
@@ -24,24 +31,32 @@ export function useSwipeNavigation(
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     if (!swipeRef.current || !inPlayback || !playbackWrapperRef.current) return;
     
-    const deltaX = e.clientX - swipeRef.current.startX;
-    gsap.set(playbackWrapperRef.current, { x: deltaX });
+    const isForceLandscape = window.innerWidth < 768 && window.innerHeight > window.innerWidth;
+    const currentPos = isForceLandscape ? e.clientY : e.clientX;
+    
+    const delta = currentPos - swipeRef.current.startX;
+    // 强制横屏下，物理 Y 的增加对应元素 X 的增加（因为旋转了 90 度）
+    gsap.set(playbackWrapperRef.current, { x: delta });
   }, [inPlayback, playbackWrapperRef]);
 
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
     if (!swipeRef.current || !inPlayback || !playbackWrapperRef.current) return;
     
-    const deltaX = e.clientX - swipeRef.current.startX;
+    const isForceLandscape = window.innerWidth < 768 && window.innerHeight > window.innerWidth;
+    const currentPos = isForceLandscape ? e.clientY : e.clientX;
+    
+    const delta = currentPos - swipeRef.current.startX;
     const deltaTime = Date.now() - swipeRef.current.time;
-    const velocity = Math.abs(deltaX) / deltaTime;
+    const velocity = Math.abs(delta) / deltaTime;
     swipeRef.current = null;
 
-    const threshold = window.innerWidth * 0.2;
-    const isQuickSwipe = velocity > 0.5 && Math.abs(deltaX) > 30;
+    const threshold = (isForceLandscape ? window.innerHeight : window.innerWidth) * 0.2;
+    const isQuickSwipe = velocity > 0.5 && Math.abs(delta) > 30;
 
-    if (Math.abs(deltaX) > threshold || isQuickSwipe) {
-      const direction = deltaX > 0 ? "prev" : "next";
-      const targetX = direction === "prev" ? window.innerWidth : -window.innerWidth;
+    if (Math.abs(delta) > threshold || isQuickSwipe) {
+      const direction = delta > 0 ? "prev" : "next";
+      const targetOffset = isForceLandscape ? window.innerHeight : window.innerWidth;
+      const targetX = direction === "prev" ? targetOffset : -targetOffset;
       
       gsap.to(playbackWrapperRef.current, {
         x: targetX,
@@ -72,10 +87,14 @@ export function useSwipeNavigation(
   const handleWheel = useCallback((e: React.WheelEvent) => {
     if (!inPlayback || cooldownRef.current) return;
 
+    const isForceLandscape = window.innerWidth < 768 && window.innerHeight > window.innerWidth;
+
     // 关注横向滚动，或者纵向滚动（如果 deltaX 为 0）
     const dx = e.deltaX;
     const dy = e.deltaY;
-    const delta = Math.abs(dx) > Math.abs(dy) ? dx : dy;
+    
+    // 强制横屏下，物理 dy 对应逻辑 dx
+    const delta = isForceLandscape ? dy : (Math.abs(dx) > Math.abs(dy) ? dx : dy);
 
     // 忽略微小滚动
     if (Math.abs(delta) < 5) return;

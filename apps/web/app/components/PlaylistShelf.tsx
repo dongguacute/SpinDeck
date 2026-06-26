@@ -375,13 +375,17 @@ export default function PlaylistShelf({
 
     const w = container.clientWidth;
     const h = container.clientHeight;
+    const isMobilePortrait = w < 768 && h > w;
+    const isMobileLandscape = h < 500 && w > h;
+    const isMobile = isMobilePortrait || isMobileLandscape;
     const count = songs.length;
     const totalW = count * (SPINE_THICK + GAP) - GAP;
 
     // --- 场景 ---
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(38, w / h, 0.1, 100);
-    camera.position.set(0, 0, SHELF_CAM_Z);
+    // 手机端使用更小的 FOV 以获得更紧凑的视觉效果（看起来更大）
+    const camera = new THREE.PerspectiveCamera(isMobile ? 34 : 38, w / h, 0.1, 100);
+    camera.position.set(0, 0, isMobilePortrait ? SHELF_CAM_Z * 1.2 : SHELF_CAM_Z);
     const lookTarget = new THREE.Vector3(0, 0, 0);
     camera.lookAt(lookTarget);
 
@@ -393,17 +397,35 @@ export default function PlaylistShelf({
     renderer.toneMappingExposure = 1.1;
     container.appendChild(renderer.domElement);
 
-    const mainGroup = new THREE.Group();
-    const m = Math.max(0, totalW / 2 + 2);
-    const initialX = THREE.MathUtils.clamp(scrollXRef.current, -m, m);
-    mainGroup.position.set(initialX, 0.0, 0);
-    scrollXRef.current = initialX;
+    // --- 灯光 ---
+    const ambientLight = new THREE.AmbientLight(0xffffff, 2.0); // 增加环境光亮度
+    scene.add(ambientLight);
+    // 移除点光源以消除阴影和高光不均
 
-    const persistScrollX = (x: number) => {
-      scrollXRef.current = x;
-      onScrollXChangeRef.current?.(x);
+    const mainGroup = new THREE.Group();
+    
+    // 手机竖屏模式下，顺时针旋转 90 度，并缩小书籍大小
+    if (isMobile && selectedIndexRef.current === null) {
+      mainGroup.rotation.z = -Math.PI / 2;
+      mainGroup.rotation.x = 0; // 移除全局倾斜，解决越往下越小的问题
+      mainGroup.scale.set(0.8, 0.8, 0.8); // 进一步放大，提高可见度
+    }
+
+    const m = Math.max(0, totalW / 2 + 2);
+    const initialScroll = THREE.MathUtils.clamp(scrollXRef.current, -m, m);
+    
+    // 手机竖屏下，scroll 对应 Y 轴偏移
+    if (isMobile && selectedIndexRef.current === null) {
+      mainGroup.position.set(0, initialScroll * 0.8, 0); // 修正比例
+    } else {
+      mainGroup.position.set(initialScroll, 0.0, 0);
+    }
+    scrollXRef.current = initialScroll;
+
+    const persistScroll = (val: number) => {
+      scrollXRef.current = val;
+      onScrollXChangeRef.current?.(val);
     };
-    mainGroup.scale.set(1.0, 1.0, 1.0);
     mainGroup.visible = false; // 初始隐藏，等所有封面加载完再显示
     scene.add(mainGroup);
 
@@ -587,9 +609,12 @@ export default function PlaylistShelf({
       // 未选中状态，开启拖拽准备
       dragging = true;
       startX = e.clientX;
-      groupStart = mainGroup.position.x;
+      
+      // 手机竖屏下，记录 Y 轴起始位置
+      groupStart = scrollXRef.current;
+      
       vel = 0;
-      lastX = mainGroup.position.x;
+      lastX = groupStart;
       gsap.killTweensOf(mainGroup.position);
       renderer.domElement.style.cursor = "grabbing";
 
@@ -604,7 +629,14 @@ export default function PlaylistShelf({
       if (animatingRef.current) return;
 
       const dist = Math.sqrt(Math.pow(e.clientX - pressStartX, 2) + Math.pow(e.clientY - pressStartY, 2));
-      if (dist > DRAG_THRESHOLD) {
+      const cw = container.clientWidth, ch = container.clientHeight;
+      const isMobilePortrait = cw < 768 && ch > cw;
+      const isMobileLandscape = ch < 500 && cw > ch;
+      
+      // 手机端增加拖拽判定阈值，防止点击误触发拖拽
+      const threshold = (isMobilePortrait || isMobileLandscape) ? DRAG_THRESHOLD * 2 : DRAG_THRESHOLD;
+      
+      if (dist > threshold) {
         if (!wasDragged) {
           wasDragged = true;
           if (pressedIdx >= 0) {
@@ -616,13 +648,25 @@ export default function PlaylistShelf({
 
       if (!dragging || selectedIndexRef.current !== null) return;
 
-      let nx = groupStart + (e.clientX - startX) * 0.012;
+      // 手机竖屏模式下，使用 Y 轴偏移来控制滚动（修正方向：内容随手指移动）
+      let nScroll;
+      if (isMobile) {
+        nScroll = groupStart - (e.clientY - pressStartY) * 0.015 / 0.8;
+      } else {
+        nScroll = groupStart + (e.clientX - startX) * 0.012;
+      }
+      
       const m = Math.max(0, totalW / 2 + 2);
-      nx = THREE.MathUtils.clamp(nx, -m, m);
-      vel = nx - lastX;
-      lastX = nx;
-      mainGroup.position.x = nx;
-      persistScrollX(nx);
+      nScroll = THREE.MathUtils.clamp(nScroll, -m, m);
+      vel = nScroll - lastX;
+      lastX = nScroll;
+      
+      if (isMobile) {
+        mainGroup.position.y = nScroll * 0.8;
+      } else {
+        mainGroup.position.x = nScroll;
+      }
+      persistScroll(nScroll);
     };
     window.addEventListener("pointermove", onMove);
 
@@ -642,19 +686,38 @@ export default function PlaylistShelf({
       if (!dragging) return;
       dragging = false;
       renderer.domElement.style.cursor = "grab";
+      
+      const cw = container.clientWidth, ch = container.clientHeight;
+      const isMobilePortrait = cw < 768 && ch > cw;
       const m = Math.max(0, totalW / 2 + 2);
-      persistScrollX(mainGroup.position.x);
-      gsap.to(mainGroup.position, {
-        x: THREE.MathUtils.clamp(mainGroup.position.x + vel * 15, -m, m),
-        duration: 1.0,
-        ease: "power3.out",
-        onUpdate: () => {
-          persistScrollX(mainGroup.position.x);
-        },
-        onComplete: () => {
-          persistScrollX(mainGroup.position.x);
-        },
-      });
+      
+      const targetScroll = THREE.MathUtils.clamp(scrollXRef.current + vel * 15, -m, m);
+      
+      if (isMobilePortrait) {
+        gsap.to(mainGroup.position, {
+          y: targetScroll * 0.8,
+          duration: 1.0,
+          ease: "power3.out",
+          onUpdate: () => {
+            persistScroll(mainGroup.position.y / 0.8);
+          },
+          onComplete: () => {
+            persistScroll(targetScroll);
+          },
+        });
+      } else {
+        gsap.to(mainGroup.position, {
+          x: targetScroll,
+          duration: 1.0,
+          ease: "power3.out",
+          onUpdate: () => {
+            persistScroll(mainGroup.position.x);
+          },
+          onComplete: () => {
+            persistScroll(targetScroll);
+          },
+        });
+      }
     };
     window.addEventListener("pointerup", onUp);
 
@@ -665,47 +728,49 @@ export default function PlaylistShelf({
       // 阻止默认滚动，避免页面跳动或触发浏览器前进后退手势
       e.preventDefault();
 
-      // 统一处理 delta：优先使用 deltaX（触控板横向滑动），
-      // 如果 deltaX 为 0 则使用 deltaY（普通滚轮或触控板纵向滑动）
+      const cw = container.clientWidth, ch = container.clientHeight;
+      const isMobilePortrait = cw < 768 && ch > cw;
+
+      // 统一处理 delta
       const dx = e.deltaX;
       const dy = e.deltaY;
-      const delta = Math.abs(dx) > Math.abs(dy) ? dx : dy;
+      
+      // 手机竖屏模式下，deltaY 对应纵向滚动
+      const delta = isMobilePortrait ? dy : (Math.abs(dx) > Math.abs(dy) ? dx : dy);
 
-      // 灵敏度适配：Three.js 单位较小，需要适当缩放
-      // 触控板通常 delta 较小但频率高，普通滚轮 delta 较大但频率低
+      // 灵敏度适配
       const sensitivity = 0.008;
-      let nx = mainGroup.position.x - delta * sensitivity;
+      let nScroll = scrollXRef.current + delta * sensitivity;
       
       const m = Math.max(0, totalW / 2 + 2);
-      nx = THREE.MathUtils.clamp(nx, -m, m);
+      nScroll = THREE.MathUtils.clamp(nScroll, -m, m);
       
-      // 更新速度，用于弧形弯曲效果
-      vel = nx - mainGroup.position.x;
+      // 更新速度
+      vel = nScroll - scrollXRef.current;
       
-      mainGroup.position.x = nx;
-      persistScrollX(nx);
+      if (isMobilePortrait) {
+        mainGroup.position.y = nScroll * 0.8;
+      } else {
+        mainGroup.position.x = nScroll;
+      }
+      persistScroll(nScroll);
 
       // 如果滑动距离足够，标记为已拖拽，防止误触发点击
       if (Math.abs(delta) > 5) wasDragged = true;
     };
     renderer.domElement.addEventListener("wheel", onWheel, { passive: false });
 
-    // --- 渲染循环（含立体弧形效果） ---
+    // --- 渲染循环 ---
     let animId = 0;
     const animate = () => {
       animId = requestAnimationFrame(animate);
 
-      // 非选中态才应用弧形弯曲（极微弱，保持平直感）
+      // 非选中态下，保持书本正面朝向相机，不进行弧形弯曲或倾斜
       if (selectedIndexRef.current === null || selectedIndexRef.current === undefined) {
-        const curveStrength = 0.02;
         for (const group of groups) {
-          const nx = (group.position.x + mainGroup.position.x) / (totalW / 2);
-          const baseRotY = nx * curveStrength;
-          const dynamicRotY = vel * 3 * Math.sign(nx) * 0.01;
-          const targetRotY = baseRotY + dynamicRotY;
-          group.rotation.y += (targetRotY - group.rotation.y) * 0.15;
-          const targetZ = Math.abs(nx) * 0.5;
-          group.position.z += (targetZ - group.position.z) * 0.1;
+          group.rotation.y += (0 - group.rotation.y) * 0.1;
+          group.rotation.x += (0 - group.rotation.x) * 0.1;
+          group.position.z += (0 - group.position.z) * 0.1;
         }
       }
 
@@ -838,7 +903,7 @@ export default function PlaylistShelf({
 
     // --- 清理 ---
     return () => {
-      persistScrollX(mainGroup.position.x);
+      persistScroll(scrollXRef.current);
       cancelAnimationFrame(animId);
       renderer.domElement.removeEventListener("mousemove", handleMouseMove);
       renderer.domElement.removeEventListener("pointerdown", onDown);
@@ -1115,6 +1180,57 @@ export default function PlaylistShelf({
     }
 
     prevIndexRef.current = next;
+  }, [selectedIndex]);
+
+  // 手机竖屏模式下的旋转与缩放逻辑切换
+  useEffect(() => {
+    const state = sceneRef.current;
+    if (!state) return;
+
+    const cw = containerRef.current?.clientWidth ?? window.innerWidth;
+    const ch = containerRef.current?.clientHeight ?? window.innerHeight;
+    const isMobilePortrait = cw < 768 && ch > cw;
+
+    if (isMobilePortrait) {
+      const inPlayback = selectedIndex !== null;
+      
+      // 如果进入播放态，重置旋转和缩放（因为 CSS 会处理全页面旋转）
+      // 如果在选歌态，顺时针旋转 90 度实现纵向列表，并缩小书籍
+      gsap.to(state.mainGroup.rotation, {
+        z: inPlayback ? 0 : -Math.PI / 2,
+        x: 0,
+        duration: 0.6,
+        ease: "power2.inOut",
+      });
+      gsap.to(state.mainGroup.scale, {
+        x: inPlayback ? 1 : 0.8,
+        y: inPlayback ? 1 : 0.8,
+        z: inPlayback ? 1 : 0.8,
+        duration: 0.6,
+        ease: "power2.inOut",
+      });
+
+      // 切换模式时，重置位置
+      if (inPlayback) {
+        gsap.to(state.mainGroup.position, {
+          x: scrollXRef.current,
+          y: 0,
+          duration: 0.6,
+          ease: "power2.inOut",
+        });
+      } else {
+        gsap.to(state.mainGroup.position, {
+          x: 0,
+          y: scrollXRef.current * 0.8,
+          duration: 0.6,
+          ease: "power2.inOut",
+        });
+      }
+    } else {
+      state.mainGroup.rotation.z = 0;
+      state.mainGroup.scale.set(1, 1, 1);
+      state.mainGroup.position.y = 0;
+    }
   }, [selectedIndex]);
 
   // 播放中点击封面：左移 → 切换角度 → 右移遮盖

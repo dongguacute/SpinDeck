@@ -10,9 +10,10 @@
   z-index: 2;
   pointer-events: none;
   transform: translate(-50%, -50%);
-  margin-left: var(--vinyl-offset-x, clamp(8px, min(4vw, 3svh), 72px));
-  --vinyl-size: clamp(180px, min(46vw, 52svh), 480px);
-  --vinyl-offset-x: clamp(8px, min(4vw, 3svh), 72px);
+  margin-left: var(--vinyl-offset-x, 32px);
+  --vinyl-size: 480px;
+  --vinyl-offset-x: 32px;
+  --tonearm-height-ratio: 0.96;
   isolation: isolate;
 }
 
@@ -27,8 +28,9 @@
   inset: 0;
   z-index: 5;
   pointer-events: none;
-  --vinyl-size: clamp(180px, min(46vw, 52svh), 480px);
-  --vinyl-offset-x: clamp(8px, min(4vw, 3svh), 72px);
+  --vinyl-size: 480px;
+  --vinyl-offset-x: 32px;
+  --tonearm-height-ratio: 0.96;
 }
 
 .sd-vinyl-portal-stage {
@@ -36,7 +38,7 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  margin-left: var(--vinyl-offset-x, clamp(8px, min(4vw, 3svh), 72px));
+  margin-left: var(--vinyl-offset-x, 32px);
   pointer-events: none;
 }
 
@@ -149,8 +151,8 @@
   position: absolute;
   right: calc(var(--vinyl-size) * -0.18);
   top: 50%;
-  height: calc(var(--vinyl-size) * 0.88);
-  width: calc(var(--vinyl-size) * 0.88 * 40 / 140);
+  height: calc(var(--vinyl-size) * var(--tonearm-height-ratio));
+  width: calc(var(--vinyl-size) * var(--tonearm-height-ratio) * 40 / 140);
   transform: translateY(-48%);
   z-index: 10;
 }

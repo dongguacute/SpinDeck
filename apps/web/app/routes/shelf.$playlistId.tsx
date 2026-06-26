@@ -71,6 +71,14 @@ export default function ShelfPage() {
 
   const inPlayback = selectedIndex !== null;
 
+  useEffect(() => {
+    // 当进入或退出播放态时，触发 resize 以适配强制横屏逻辑
+    const timer = setTimeout(() => {
+      window.dispatchEvent(new Event("resize"));
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [inPlayback]);
+
   // 当 playlistId 改变时，确保重新进入加载状态
   useEffect(() => {
     setCoversLoading(true);
@@ -184,7 +192,7 @@ export default function ShelfPage() {
 
   return (
     <div 
-      className="relative w-screen h-screen overflow-hidden select-none touch-none" 
+      className={`relative w-screen h-screen overflow-hidden select-none touch-none ${inPlayback ? "force-landscape-active" : ""}`} 
       style={{ background: "var(--bg-primary)" }}
       {...swipeHandlers}
     >

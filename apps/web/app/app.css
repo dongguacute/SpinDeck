@@ -71,3 +71,20 @@
 [data-theme="light"] .playback-backdrop__sheen {
   opacity: 0.65;
 }
+
+/* ============================================================
+   强制横屏适配
+   ============================================================ */
+@media (max-width: 768px) and (orientation: portrait) {
+  .force-landscape-active {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    width: 100vh !important;
+    height: 100vw !important;
+    transform: rotate(90deg);
+    transform-origin: top left;
+    left: 100vw;
+    overflow: hidden;
+  }
+}

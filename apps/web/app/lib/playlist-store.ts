@@ -14,7 +14,12 @@ function load(): Playlist[] {
 }
 
 function save(list: Playlist[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  } catch (err) {
+    console.error("[PlaylistStore] Failed to save to localStorage:", err);
+    // 如果是由于空间不足，可以尝试清理旧数据或报错
+  }
 }
 
 /* ---------- 全局事件总线，让同一标签页内的组件同步 ---------- */
@@ -43,9 +48,14 @@ export function usePlaylistStore() {
   const addPlaylist = useCallback(
     (data: Omit<Playlist, "id" | "createdAt">) => {
       const current = load();
+      // 兼容性更好的 UUID 生成方式，因为 crypto.randomUUID() 需要安全上下文 (HTTPS/localhost)
+      const id = typeof crypto !== 'undefined' && crypto.randomUUID 
+        ? crypto.randomUUID() 
+        : Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        
       const playlist: Playlist = {
         ...data,
-        id: crypto.randomUUID(),
+        id,
         createdAt: Date.now(),
       };
       const next = [playlist, ...current];

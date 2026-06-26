@@ -41,10 +41,10 @@ export function SettingsModal({
   };
 
   return (
-    <div className="fixed inset-0 z-100 flex items-end justify-center sm:items-center p-4" onClick={() => setShowSettings(false)}>
+    <div className="fixed inset-0 z-100 flex items-center justify-center p-4" onClick={() => setShowSettings(false)}>
       <div className="absolute inset-0 bg-black/20 backdrop-blur-md" />
       <div 
-        className="relative w-full max-w-md rounded-t-[2.5rem] sm:rounded-[2.5rem] p-8 shadow-2xl animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 backdrop-blur-2xl"
+        className="relative w-full max-w-md max-h-[85%] flex flex-col rounded-[2.5rem] shadow-2xl animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 backdrop-blur-2xl"
         style={{ 
           backgroundColor: chrome.surface,
           borderColor: chrome.border,
@@ -53,8 +53,8 @@ export function SettingsModal({
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between mb-8">
-          <h3 className="text-xl font-bold flex items-center gap-2.5">
+        <div className="flex items-center justify-between p-6 md:p-8 pb-0 mb-4 md:mb-6">
+          <h3 className="text-lg md:text-xl font-bold flex items-center gap-2.5">
             <Settings2 className="w-5 h-5 opacity-60" /> {t('shelf.visual_settings')}
           </h3>
           <button
@@ -66,7 +66,7 @@ export function SettingsModal({
           </button>
         </div>
 
-        <div className="space-y-10">
+        <div className="flex-1 overflow-y-auto p-6 md:p-8 pt-0 space-y-8 md:space-y-10 custom-scrollbar">
           <section>
             <div className="flex items-center gap-2 mb-4">
               <Disc3 className="w-4 h-4 opacity-40" />

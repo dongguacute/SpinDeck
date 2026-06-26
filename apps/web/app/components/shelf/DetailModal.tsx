@@ -27,14 +27,14 @@ export function DetailModal({
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center p-4" onClick={() => setShowDetail(false)}>
       <div className="absolute inset-0" style={{ background: "rgba(0,0,0,0.4)" }} />
-      <div className="relative w-full max-w-sm border rounded-3xl p-6 shadow-2xl" 
+      <div className="relative w-full max-w-sm max-h-[85%] flex flex-col border rounded-3xl shadow-2xl" 
         style={{ 
           background: "var(--bg-tertiary)", 
           borderColor: "var(--border-color)",
           boxShadow: "var(--shadow-card)",
         }} 
         onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between p-6 pb-0 mb-6">
           <h3 className="text-base font-bold flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
             <Disc3 className="w-5 h-5" style={{ color: "var(--text-muted)" }} />{t('shelf.playlist_info')}
           </h3>
@@ -54,19 +54,19 @@ export function DetailModal({
           </button>
         </div>
 
-        {coverUrl && (
-          <div className="mb-6 flex justify-center">
-            <div className="p-2 rounded-2xl border" style={{ backgroundColor: "var(--surface-color)", borderColor: "var(--border-color)", boxShadow: "var(--shadow-card)" }}>
-              <img
-                src={coverUrl}
-                alt={playlist.name}
-                className="w-40 h-40 rounded-xl object-cover"
-              />
+        <div className="flex-1 overflow-y-auto p-6 pt-0 space-y-4 custom-scrollbar">
+          {coverUrl && (
+            <div className="mb-6 flex justify-center">
+              <div className="p-2 rounded-2xl border" style={{ backgroundColor: "var(--surface-color)", borderColor: "var(--border-color)", boxShadow: "var(--shadow-card)" }}>
+                <img
+                  src={coverUrl}
+                  alt={playlist.name}
+                  className="w-40 h-40 rounded-xl object-cover"
+                />
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        <div className="space-y-4">
           <div>
             <label className="text-xs font-medium block mb-1" style={{ color: "var(--text-muted)", opacity: 0.25 }}>{t('shelf.playlist_name')}</label>
             <p className="text-sm font-medium" style={{ color: "var(--text-secondary)", opacity: 0.7 }}>{playlist.name}</p>

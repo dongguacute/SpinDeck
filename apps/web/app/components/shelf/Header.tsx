@@ -51,7 +51,7 @@ export function Header({
       {!inPlayback && (
         <Link
           to="/"
-          className="absolute top-6 left-6 z-10 flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-medium transition-all cursor-pointer"
+          className="absolute top-4 left-4 md:top-6 md:left-6 z-10 flex items-center gap-1.5 px-2.5 py-1.5 md:px-3.5 md:py-2 rounded-xl border text-[10px] md:text-xs font-medium transition-all cursor-pointer"
           style={{
             backgroundColor: chrome.surface,
             borderColor: chrome.border,
@@ -69,14 +69,15 @@ export function Header({
             (e.currentTarget as HTMLAnchorElement).style.opacity = String(chromeIdleOpacity);
           }}
         >
-          <ArrowLeft className="w-3.5 h-3.5" />{t('shelf.back_to_shelf')}
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span className="hidden md:inline">{t('shelf.back_to_shelf')}</span>
         </Link>
       )}
 
       {inPlayback ? (
         <button
           onClick={handleExitPlayback}
-          className="absolute top-6 right-6 z-10 flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-medium transition-all backdrop-blur-sm cursor-pointer"
+          className="absolute top-4 left-4 md:top-6 md:right-6 md:left-auto z-10 flex items-center gap-1.5 px-2.5 py-1.5 md:px-3.5 md:py-2 rounded-xl border text-[10px] md:text-xs font-medium transition-all backdrop-blur-sm cursor-pointer"
           style={{
             backgroundColor: chrome.surface,
             borderColor: chrome.border,
@@ -97,12 +98,13 @@ export function Header({
           }}
           title={t('shelf.exit_playback_title')}
         >
-          <LogOut className="w-3.5 h-3.5" />{t('shelf.exit_playback')}
+          <LogOut className="w-3.5 h-3.5" />
+          <span className="hidden md:inline">{t('shelf.exit_playback')}</span>
         </button>
       ) : (
         <button
           onClick={() => prelaunchApp(playlist.platform)}
-          className="absolute top-6 right-6 z-10 flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-medium transition-all backdrop-blur-sm cursor-pointer"
+          className="absolute top-4 right-4 md:top-6 md:right-6 z-10 flex items-center gap-1.5 px-2.5 py-1.5 md:px-3.5 md:py-2 rounded-xl border text-[10px] md:text-xs font-medium transition-all backdrop-blur-sm cursor-pointer"
           style={{
             backgroundColor: PLATFORM_CONFIG[playlist.platform]?.bg || "var(--surface-color)",
             borderColor: "var(--border-color)",
@@ -121,32 +123,33 @@ export function Header({
           }}
           title={t('shelf.prelaunch_app_title', { platform: t(`platforms.${playlist.platform}`) })}
         >
-          <Rocket className="w-3.5 h-3.5" />{t('shelf.prelaunch_app')}
+          <Rocket className="w-3.5 h-3.5" />
+          <span className="hidden md:inline">{t('shelf.prelaunch_app')}</span>
         </button>
       )}
 
       {/* 歌单主信息（播放态隐藏） */}
       {!inPlayback && (
-        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2.5 px-4 py-2 rounded-2xl border"
+        <div className="absolute top-4 md:top-6 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 md:gap-2.5 px-3 py-1.5 md:px-4 md:py-2 rounded-2xl border"
           style={{
             backgroundColor: "var(--surface-color)",
             borderColor: "var(--border-color)",
             boxShadow: "var(--shadow-card)",
           }}
         >
-          <div className="flex items-center gap-2.5">
-            <div className="flex items-center gap-2">
-              {playlist.platform === "QQMusic" && <QQMusicIcon className="w-4 h-4" />}
-              {playlist.platform === "NetEaseMusic" && <NetEaseMusicIcon className="w-4 h-4" />}
+          <div className="flex items-center gap-1.5 md:gap-2.5">
+            <div className="flex items-center gap-1.5 md:gap-2">
+              {playlist.platform === "QQMusic" && <QQMusicIcon className="w-3.5 h-3.5 md:w-4 md:h-4" />}
+              {playlist.platform === "NetEaseMusic" && <NetEaseMusicIcon className="w-3.5 h-3.5 md:w-4 md:h-4" />}
               <span
-                className="text-sm font-medium tracking-wide max-w-[200px] truncate transition-colors duration-700"
+                className="text-xs md:text-sm font-medium tracking-wide max-w-[120px] md:max-w-[200px] truncate transition-colors duration-700"
                 style={{ color: chrome.textSecondary, opacity: showThemeBackdrop ? 0.95 : 0.7 }}
               >
                 {playlist.name}
               </span>
             </div>
             <span
-              className="text-xs px-2 py-0.5 rounded-md border transition-colors duration-700"
+              className="text-[10px] md:text-xs px-1.5 py-0.5 rounded-md border transition-colors duration-700"
               style={{
                 color: chrome.textMuted,
                 backgroundColor: chrome.surface,
@@ -176,7 +179,7 @@ export function Header({
                 }}
                 title={t('shelf.refresh_list')}
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+                <RefreshCw className={`w-3 h-3 md:w-3.5 md:h-3.5 ${loading ? "animate-spin" : ""}`} />
               </button>
             )}
 
@@ -196,19 +199,19 @@ export function Header({
               }}
               title={t('shelf.playlist_detail')}
             >
-              <Info className="w-3.5 h-3.5" />
+              <Info className="w-3 h-3 md:w-3.5 md:h-3.5" />
             </button>
 
             {refreshInterval > 0 && (
               <span
-                className={`text-[10px] flex items-center gap-1 transition-colors duration-700${showThemeBackdrop ? "" : " text-emerald-400/50"}`}
+                className={`text-[9px] md:text-[10px] flex items-center gap-1 transition-colors duration-700${showThemeBackdrop ? "" : " text-emerald-400/50"}`}
                 style={showThemeBackdrop && themePalette ? { color: themePalette.textSecondary } : undefined}
               >
                 <span
-                  className={`inline-block w-1.5 h-1.5 rounded-full${showThemeBackdrop ? "" : " bg-emerald-400/60"}`}
+                  className={`inline-block w-1 md:w-1.5 h-1 md:h-1.5 rounded-full${showThemeBackdrop ? "" : " bg-emerald-400/60"}`}
                   style={showThemeBackdrop && themePalette ? { backgroundColor: themePalette.pale200 } : undefined}
                 />
-                {t('shelf.auto_refreshing')}
+                <span className="hidden md:inline">{t('shelf.auto_refreshing')}</span>
               </span>
             )}
           </div>
