@@ -581,6 +581,38 @@ export default function PlaylistShelf({
     };
     window.addEventListener("pointermove", onMove);
 
+    // --- 触控板/滚轮支持 ---
+    const onWheel = (e: WheelEvent) => {
+      if (selectedIndexRef.current !== null) return;
+      
+      // 阻止默认滚动，避免页面跳动或触发浏览器前进后退手势
+      e.preventDefault();
+
+      // 统一处理 delta：优先使用 deltaX（触控板横向滑动），
+      // 如果 deltaX 为 0 则使用 deltaY（普通滚轮或触控板纵向滑动）
+      const dx = e.deltaX;
+      const dy = e.deltaY;
+      const delta = Math.abs(dx) > Math.abs(dy) ? dx : dy;
+
+      // 灵敏度适配：Three.js 单位较小，需要适当缩放
+      // 触控板通常 delta 较小但频率高，普通滚轮 delta 较大但频率低
+      const sensitivity = 0.008;
+      let nx = mainGroup.position.x - delta * sensitivity;
+      
+      const m = Math.max(0, totalW / 2 + 2);
+      nx = THREE.MathUtils.clamp(nx, -m, m);
+      
+      // 更新速度，用于弧形弯曲效果
+      vel = nx - mainGroup.position.x;
+      
+      mainGroup.position.x = nx;
+      onScrollXChangeRef.current?.(nx);
+
+      // 如果滑动距离足够，标记为已拖拽，防止误触发点击
+      if (Math.abs(delta) > 5) wasDragged = true;
+    };
+    renderer.domElement.addEventListener("wheel", onWheel, { passive: false });
+
     // --- 渲染循环（含立体弧形效果） ---
     let animId = 0;
     const animate = () => {
@@ -598,6 +630,11 @@ export default function PlaylistShelf({
           const targetZ = Math.abs(nx) * 0.5;
           group.position.z += (targetZ - group.position.z) * 0.1;
         }
+      }
+
+      // 衰减速度，确保停止滑动后书本恢复平直
+      if (!dragging) {
+        vel *= 0.92;
       }
 
       renderer.render(scene, camera);
@@ -728,6 +765,7 @@ export default function PlaylistShelf({
       renderer.domElement.removeEventListener("click", handleClick);
       renderer.domElement.removeEventListener("mousemove", handleMouseMove);
       renderer.domElement.removeEventListener("pointerdown", onDown);
+      renderer.domElement.removeEventListener("wheel", onWheel);
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
       window.removeEventListener("resize", onResize);

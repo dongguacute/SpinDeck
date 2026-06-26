@@ -8,6 +8,9 @@ export function useSwipeNavigation(
   playPrevSong: () => void
 ) {
   const swipeRef = useRef<{ x: number; time: number; startX: number } | null>(null);
+  const wheelAccumulator = useRef(0);
+  const cooldownRef = useRef(false);
+  const wheelTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     if (!inPlayback) return;
@@ -66,10 +69,76 @@ export function useSwipeNavigation(
     }
   }, [inPlayback, playbackWrapperRef, playNextSong, playPrevSong]);
 
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    if (!inPlayback || cooldownRef.current) return;
+
+    // 关注横向滚动，或者纵向滚动（如果 deltaX 为 0）
+    const dx = e.deltaX;
+    const dy = e.deltaY;
+    const delta = Math.abs(dx) > Math.abs(dy) ? dx : dy;
+
+    // 忽略微小滚动
+    if (Math.abs(delta) < 5) return;
+
+    wheelAccumulator.current += delta;
+
+    // 清除重置计时器
+    if (wheelTimerRef.current) clearTimeout(wheelTimerRef.current);
+    
+    // 如果停止滚动 200ms，重置累加器
+    wheelTimerRef.current = setTimeout(() => {
+      wheelAccumulator.current = 0;
+    }, 200);
+
+    // 触控板滑动的阈值
+    const threshold = 100;
+
+    if (Math.abs(wheelAccumulator.current) > threshold) {
+      const direction = wheelAccumulator.current > 0 ? "next" : "prev";
+      wheelAccumulator.current = 0;
+      cooldownRef.current = true;
+      if (wheelTimerRef.current) clearTimeout(wheelTimerRef.current);
+
+      const targetX = direction === "prev" ? window.innerWidth : -window.innerWidth;
+      
+      if (playbackWrapperRef.current) {
+        gsap.to(playbackWrapperRef.current, {
+          x: targetX,
+          opacity: 0,
+          duration: 0.3,
+          ease: "power2.in",
+          onComplete: () => {
+            if (direction === "prev") playPrevSong();
+            else playNextSong();
+            
+            if (playbackWrapperRef.current) {
+              gsap.fromTo(playbackWrapperRef.current, 
+                { x: -targetX, opacity: 0 },
+                { 
+                  x: 0, 
+                  opacity: 1, 
+                  duration: 0.5, 
+                  ease: "back.out(1.2)",
+                  onComplete: () => {
+                    // 切换完成后开启短暂冷却
+                    setTimeout(() => {
+                      cooldownRef.current = false;
+                    }, 500);
+                  }
+                }
+              );
+            }
+          }
+        });
+      }
+    }
+  }, [inPlayback, playbackWrapperRef, playNextSong, playPrevSong]);
+
   return {
     onPointerDown: handlePointerDown,
     onPointerMove: handlePointerMove,
     onPointerUp: handlePointerUp,
     onPointerCancel: handlePointerUp,
+    onWheel: handleWheel,
   };
 }
