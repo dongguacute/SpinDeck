@@ -171,8 +171,8 @@
 
 /* 动画定义 */
 @keyframes sd-vinyl-spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+  from { rotate: 0deg; }
+  to   { rotate: 360deg; }
 }
 
 @keyframes sd-vinyl-slide-in {
