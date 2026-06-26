@@ -1,6 +1,6 @@
 import { Disc3, X, ExternalLink, Music, Clock } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import type { Playlist } from "../../lib/playlist-store";
+import type { Playlist } from "../../lib/types";
 import type { SongInfo } from "@spindeck/player";
 import { PLATFORM_CONFIG } from "../../lib/types";
 import QQMusicIcon from "../../assets/icons/QQMusicIcon.svg?react";

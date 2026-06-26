@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import type { ChromeStyle, ThemePalette } from "../../lib/theme-color";
 import { PLATFORM_CONFIG } from "../../lib/types";
 import { prelaunchApp } from "@spindeck/player";
-import type { Playlist } from "../../../lib/playlist-store";
+import type { Playlist } from "../../lib/types";
 import type { SongInfo } from "@spindeck/player";
 import QQMusicIcon from "../../assets/icons/QQMusicIcon.svg?react";
 import NetEaseMusicIcon from "../../assets/icons/NetEaseMusicIcon.svg?react";
