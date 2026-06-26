@@ -41,7 +41,12 @@ export function SettingsModal({
   };
 
   return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center p-4" onClick={() => setShowSettings(false)}>
+    <div 
+      className="fixed inset-0 z-100 flex items-center justify-center p-4" 
+      onClick={() => setShowSettings(false)}
+      onPointerDown={(e) => e.stopPropagation()}
+      onWheel={(e) => e.stopPropagation()}
+    >
       <div className="absolute inset-0 bg-black/20 backdrop-blur-md" />
       <div 
         className="relative w-full max-w-md max-h-[85%] flex flex-col rounded-[2.5rem] shadow-2xl animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 backdrop-blur-2xl"

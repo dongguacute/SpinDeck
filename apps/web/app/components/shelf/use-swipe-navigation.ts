@@ -5,7 +5,8 @@ export function useSwipeNavigation(
   inPlayback: boolean,
   playbackWrapperRef: React.RefObject<HTMLDivElement | null>,
   playNextSong: () => void,
-  playPrevSong: () => void
+  playPrevSong: () => void,
+  disabled: boolean = false
 ) {
   const swipeRef = useRef<{ x: number; time: number; startX: number } | null>(null);
   const wheelAccumulator = useRef(0);
@@ -13,7 +14,7 @@ export function useSwipeNavigation(
   const wheelTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
-    if (!inPlayback) return;
+    if (!inPlayback || disabled) return;
     
     // 检查是否处于强制横屏模式（手机竖屏 + 播放态）
     const isForceLandscape = window.innerWidth < 768 && window.innerHeight > window.innerWidth;
@@ -26,10 +27,10 @@ export function useSwipeNavigation(
     if (playbackWrapperRef.current) {
       gsap.killTweensOf(playbackWrapperRef.current);
     }
-  }, [inPlayback, playbackWrapperRef]);
+  }, [inPlayback, disabled, playbackWrapperRef]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (!swipeRef.current || !inPlayback || !playbackWrapperRef.current) return;
+    if (!swipeRef.current || !inPlayback || disabled || !playbackWrapperRef.current) return;
     
     const isForceLandscape = window.innerWidth < 768 && window.innerHeight > window.innerWidth;
     const currentPos = isForceLandscape ? e.clientY : e.clientX;
@@ -37,10 +38,10 @@ export function useSwipeNavigation(
     const delta = currentPos - swipeRef.current.startX;
     // 强制横屏下，物理 Y 的增加对应元素 X 的增加（因为旋转了 90 度）
     gsap.set(playbackWrapperRef.current, { x: delta });
-  }, [inPlayback, playbackWrapperRef]);
+  }, [inPlayback, disabled, playbackWrapperRef]);
 
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
-    if (!swipeRef.current || !inPlayback || !playbackWrapperRef.current) return;
+    if (!swipeRef.current || !inPlayback || disabled || !playbackWrapperRef.current) return;
     
     const isForceLandscape = window.innerWidth < 768 && window.innerHeight > window.innerWidth;
     const currentPos = isForceLandscape ? e.clientY : e.clientX;
@@ -82,10 +83,10 @@ export function useSwipeNavigation(
         ease: "elastic.out(1, 0.75)"
       });
     }
-  }, [inPlayback, playbackWrapperRef, playNextSong, playPrevSong]);
+  }, [inPlayback, disabled, playbackWrapperRef, playNextSong, playPrevSong]);
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
-    if (!inPlayback || cooldownRef.current) return;
+    if (!inPlayback || disabled || cooldownRef.current) return;
 
     const isForceLandscape = window.innerWidth < 768 && window.innerHeight > window.innerWidth;
 
@@ -151,7 +152,7 @@ export function useSwipeNavigation(
         });
       }
     }
-  }, [inPlayback, playbackWrapperRef, playNextSong, playPrevSong]);
+  }, [inPlayback, disabled, playbackWrapperRef, playNextSong, playPrevSong]);
 
   return {
     onPointerDown: handlePointerDown,

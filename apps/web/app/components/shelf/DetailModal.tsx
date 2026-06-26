@@ -25,7 +25,12 @@ export function DetailModal({
   if (!showDetail || !playlist) return null;
 
   return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center p-4" onClick={() => setShowDetail(false)}>
+    <div 
+      className="fixed inset-0 z-100 flex items-center justify-center p-4" 
+      onClick={() => setShowDetail(false)}
+      onPointerDown={(e) => e.stopPropagation()}
+      onWheel={(e) => e.stopPropagation()}
+    >
       <div className="absolute inset-0" style={{ background: "rgba(0,0,0,0.4)" }} />
       <div className="relative w-full max-w-sm max-h-[85%] flex flex-col border rounded-3xl shadow-2xl" 
         style={{ 

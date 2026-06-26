@@ -154,7 +154,8 @@ export default function ShelfPage() {
     inPlayback,
     playbackWrapperRef,
     playNextSong,
-    playPrevSong
+    playPrevSong,
+    showSettings || showDetail
   );
 
   // Session management
