@@ -495,77 +495,150 @@ export default function PlaylistShelf({
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
-    // 防止拖拽后误触发 click
+    // 交互状态
     let wasDragged = false;
+    let pressedIdx = -1;
+    let pressStartX = 0, pressStartY = 0;
+    const DRAG_THRESHOLD = 8; // 像素阈值，超过此值判定为拖拽而非点击
 
-    const handleClick = (e: MouseEvent) => {
-      if (animatingRef.current) return;
-      if (wasDragged) { wasDragged = false; return; }
+    const getHitIndex = (clientX: number, clientY: number) => {
       const rect = renderer.domElement.getBoundingClientRect();
-      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
       raycaster.setFromCamera(mouse, camera);
       const intersects = raycaster.intersectObjects(meshes);
+      return intersects.length > 0 ? meshes.indexOf(intersects[0].object as THREE.Mesh) : -1;
+    };
+
+    const setPressedEffect = (idx: number, pressed: boolean) => {
+      if (idx < 0 || idx >= groups.length) return;
+      const group = groups[idx];
+      gsap.to(group.scale, {
+        x: pressed ? 0.94 : 1,
+        y: pressed ? 0.94 : 1,
+        z: pressed ? 0.94 : 1,
+        duration: 0.12,
+        ease: "power2.out",
+      });
+    };
+
+    const performClick = (idx: number) => {
+      if (animatingRef.current) return;
       const cur = selectedIndexRef.current;
       const locked = lockDeselectRef.current;
-      if (intersects.length > 0) {
-        const hitMesh = intersects[0].object as THREE.Mesh;
-        const idx = meshes.indexOf(hitMesh);
-        if (idx >= 0) {
-          if (cur === idx) {
-            if (locked) {
-              onCoverToggleRef.current?.();
-            } else {
-              onSongSelectRef.current?.(null, null);
-              onBookThemeColorRef.current?.(null);
-            }
+
+      if (idx >= 0) {
+        if (cur === idx) {
+          if (locked) {
+            onCoverToggleRef.current?.();
           } else {
-            const bookColor = (groups[idx].userData.color as string) || COLORS[idx % COLORS.length];
-            onSongSelectRef.current?.(songs[idx], idx);
-            onBookThemeColorRef.current?.(bookColor);
+            onSongSelectRef.current?.(null, null);
+            onBookThemeColorRef.current?.(null);
           }
+        } else {
+          const bookColor = (groups[idx].userData.color as string) || COLORS[idx % COLORS.length];
+          onSongSelectRef.current?.(songs[idx], idx);
+          onBookThemeColorRef.current?.(bookColor);
         }
       } else if (cur !== null && cur !== undefined && !locked) {
+        // 点击空白处且未锁定，则取消选中
         onSongSelectRef.current?.(null, null);
         onBookThemeColorRef.current?.(null);
       }
     };
-    renderer.domElement.addEventListener("click", handleClick);
 
     // 鼠标悬停光标
     const handleMouseMove = (e: MouseEvent) => {
       if (animatingRef.current) return;
-      const rect = renderer.domElement.getBoundingClientRect();
-      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-      raycaster.setFromCamera(mouse, camera);
-      const intersects = raycaster.intersectObjects(meshes);
+      const idx = getHitIndex(e.clientX, e.clientY);
       const cur = selectedIndexRef.current;
       if (cur !== null && cur !== undefined) {
-        const hitSelected =
-          intersects.length > 0 && meshes.indexOf(intersects[0].object as THREE.Mesh) === cur;
+        const hitSelected = idx === cur;
         renderer.domElement.style.cursor = hitSelected ? "pointer" : "default";
       } else {
-        renderer.domElement.style.cursor = intersects.length > 0 ? "pointer" : "grab";
+        renderer.domElement.style.cursor = idx >= 0 ? "pointer" : "grab";
       }
     };
     renderer.domElement.addEventListener("mousemove", handleMouseMove);
 
-    // --- 拖拽 ---
+    // --- 拖拽与点击 ---
     let dragging = false, startX = 0, groupStart = 0, vel = 0, lastX = 0;
 
     renderer.domElement.style.cursor = "grab";
+    
     const onDown = (e: PointerEvent) => {
-      if (selectedIndexRef.current !== null) return;
-      dragging = true; startX = e.clientX;
+      if (animatingRef.current) return;
+      
+      pressStartX = e.clientX;
+      pressStartY = e.clientY;
+      wasDragged = false;
+
+      const hitIdx = getHitIndex(e.clientX, e.clientY);
+      
+      // 如果已经选中了某本书，点击处理
+      if (selectedIndexRef.current !== null) {
+        if (hitIdx >= 0) {
+          pressedIdx = hitIdx;
+          setPressedEffect(pressedIdx, true);
+        }
+        return;
+      }
+
+      // 未选中状态，开启拖拽准备
+      dragging = true;
+      startX = e.clientX;
       groupStart = mainGroup.position.x;
-      vel = 0; lastX = mainGroup.position.x;
+      vel = 0;
+      lastX = mainGroup.position.x;
       gsap.killTweensOf(mainGroup.position);
       renderer.domElement.style.cursor = "grabbing";
+
+      if (hitIdx >= 0) {
+        pressedIdx = hitIdx;
+        setPressedEffect(pressedIdx, true);
+      }
     };
     renderer.domElement.addEventListener("pointerdown", onDown);
 
-    const onUp = () => {
+    const onMove = (e: PointerEvent) => {
+      if (animatingRef.current) return;
+
+      const dist = Math.sqrt(Math.pow(e.clientX - pressStartX, 2) + Math.pow(e.clientY - pressStartY, 2));
+      if (dist > DRAG_THRESHOLD) {
+        if (!wasDragged) {
+          wasDragged = true;
+          if (pressedIdx >= 0) {
+            setPressedEffect(pressedIdx, false);
+            pressedIdx = -1;
+          }
+        }
+      }
+
+      if (!dragging || selectedIndexRef.current !== null) return;
+
+      let nx = groupStart + (e.clientX - startX) * 0.012;
+      const m = Math.max(0, totalW / 2 + 2);
+      nx = THREE.MathUtils.clamp(nx, -m, m);
+      vel = nx - lastX;
+      lastX = nx;
+      mainGroup.position.x = nx;
+      persistScrollX(nx);
+    };
+    window.addEventListener("pointermove", onMove);
+
+    const onUp = (e: PointerEvent) => {
+      if (pressedIdx >= 0) {
+        setPressedEffect(pressedIdx, false);
+      }
+
+      if (!wasDragged) {
+        // 触发点击逻辑
+        const hitIdx = getHitIndex(e.clientX, e.clientY);
+        performClick(hitIdx);
+      }
+
+      pressedIdx = -1;
+
       if (!dragging) return;
       dragging = false;
       renderer.domElement.style.cursor = "grab";
@@ -573,7 +646,8 @@ export default function PlaylistShelf({
       persistScrollX(mainGroup.position.x);
       gsap.to(mainGroup.position, {
         x: THREE.MathUtils.clamp(mainGroup.position.x + vel * 15, -m, m),
-        duration: 1.0, ease: "power3.out",
+        duration: 1.0,
+        ease: "power3.out",
         onUpdate: () => {
           persistScrollX(mainGroup.position.x);
         },
@@ -583,18 +657,6 @@ export default function PlaylistShelf({
       });
     };
     window.addEventListener("pointerup", onUp);
-
-    const onMove = (e: PointerEvent) => {
-      if (!dragging || selectedIndexRef.current !== null) return;
-      let nx = groupStart + (e.clientX - startX) * 0.012;
-      const m = Math.max(0, totalW / 2 + 2);
-      nx = THREE.MathUtils.clamp(nx, -m, m);
-      vel = nx - lastX; lastX = nx;
-      if (Math.abs(nx - groupStart) > 0.3) wasDragged = true;
-      mainGroup.position.x = nx;
-      persistScrollX(nx);
-    };
-    window.addEventListener("pointermove", onMove);
 
     // --- 触控板/滚轮支持 ---
     const onWheel = (e: WheelEvent) => {
@@ -778,7 +840,6 @@ export default function PlaylistShelf({
     return () => {
       persistScrollX(mainGroup.position.x);
       cancelAnimationFrame(animId);
-      renderer.domElement.removeEventListener("click", handleClick);
       renderer.domElement.removeEventListener("mousemove", handleMouseMove);
       renderer.domElement.removeEventListener("pointerdown", onDown);
       renderer.domElement.removeEventListener("wheel", onWheel);
