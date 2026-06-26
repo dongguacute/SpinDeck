@@ -426,7 +426,7 @@ export default function PlaylistShelf({
       scrollXRef.current = val;
       onScrollXChangeRef.current?.(val);
     };
-    mainGroup.visible = false; // 初始隐藏，等所有封面加载完再显示
+    mainGroup.visible = true; // 立即显示，不再等待封面加载
     scene.add(mainGroup);
 
     // 背景由页面层 playbackAmbientColor 负责，canvas 保持透明以便遮盖态下光碟可见
@@ -462,6 +462,33 @@ export default function PlaylistShelf({
       meshes.push(mesh);
       groups.push(group);
       mainGroup.add(group);
+
+      // 立即开始载入时的弹出动画，不再等待所有封面
+      if (selectedIndexRef.current === null || selectedIndexRef.current === undefined) {
+        const originalY = 0;
+        group.position.y = originalY - 0.4;
+        group.scale.set(0.9, 0.9, 0.9);
+        group.visible = false;
+
+        // 优化延迟算法：前 20 本书保持原有节奏，后面的书逐渐加快，总时长控制在 2s 内
+        const delay = i < 20 ? i * 0.035 : 20 * 0.035 + (i - 20) * (1.3 / (count - 20));
+
+        gsap.to(group.position, {
+          y: originalY,
+          duration: 0.4,
+          delay,
+          ease: "back.out(1.2)",
+          onStart: () => { group.visible = true; }
+        });
+        gsap.to(group.scale, {
+          x: 1,
+          y: 1,
+          z: 1,
+          duration: 0.4,
+          delay,
+          ease: "back.out(1.2)",
+        });
+      }
     }
 
     // 存储场景引用
@@ -863,38 +890,16 @@ export default function PlaylistShelf({
         await loadOne(i);
         done++;
         console.log(`[Shelf] 进度 ${done}/${songs.length}`);
+        
+        // 当加载了前 5 个封面，或者全部加载完时，通知父组件关闭 Loading 遮罩
+        // 这样用户可以更早看到书架并开始交互，封面在后台继续加载
+        if (done === Math.min(5, songs.length)) {
+          onAllLoadedRef.current?.();
+        }
+        
         if (done === songs.length) {
           console.log(`[Shelf] 所有封面加载完成`);
-          mainGroup.visible = true; // 显示所有书
-
-          // 载入时的弹出动画
-          if (selectedIndexRef.current === null || selectedIndexRef.current === undefined) {
-            groups.forEach((g, i) => {
-              const originalY = g.position.y;
-              // 初始状态：微调偏移和缩放，保持丝滑感
-              g.position.y = originalY - 0.3;
-              g.scale.set(0.95, 0.95, 0.95);
-              // 初始隐藏，配合动画一本本显现
-              g.visible = false;
-
-              gsap.to(g.position, {
-                y: originalY,
-                duration: 0.3,
-                delay: i * 0.035, // 节奏更紧凑
-                ease: "back.out(1.1)", // 降低回弹强度，让动作更圆润丝滑
-                onStart: () => { g.visible = true; }
-              });
-              gsap.to(g.scale, {
-                x: 1,
-                y: 1,
-                z: 1,
-                duration: 0.3,
-                delay: i * 0.035,
-                ease: "back.out(1.1)",
-              });
-            });
-          }
-
+          // 确保最后一定调用一次，防止 songs.length < 5 的情况
           onAllLoadedRef.current?.();
         }
       }

@@ -28,7 +28,7 @@ export async function action({ request }: Route.ActionArgs) {
       try {
         if (platform === "QQMusic") {
           const result = await getQQMusicPlaylistSongs(u);
-          const songs: SongInfo[] = result.songs.map((s) => ({
+          const songs: SongInfo[] = result.songs.slice(0, 300).map((s) => ({
             name: s.name,
             artist: s.artist,
             cover: s.cover || "",
@@ -47,7 +47,7 @@ export async function action({ request }: Route.ActionArgs) {
         }
         if (platform === "NetEaseMusic") {
           const result = await getNeteaseMusicPlaylistSongs(u);
-          const songs: SongInfo[] = result.songs.map((s) => ({
+          const songs: SongInfo[] = result.songs.slice(0, 300).map((s) => ({
             name: s.name,
             artist: s.artist,
             cover: s.cover || "",
