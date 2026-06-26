@@ -282,10 +282,13 @@ export default function PlaylistCard({
               </button>
             </div>
 
-            {/* 歌单信息 */}
             <div className="mx-5 mb-5 pb-4 border-b sm:mx-6 sm:mb-6 sm:pb-5" style={{ borderColor: "var(--border-color)" }}>
               <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{playlist.name}</p>
-              <p className="text-xs mt-1" style={{ color: "var(--text-secondary)" }}>{cfg.label} · {playlist.songCount > 0 ? t('shelf.songs_count', { count: playlist.songCount }) : t('shelf.empty')}</p>
+              <div className="flex items-center gap-1.5 mt-1">
+                {playlist.platform === "QQMusic" && <QQMusicIcon className="w-3.5 h-3.5" />}
+                {playlist.platform === "NetEaseMusic" && <NetEaseMusicIcon className="w-3.5 h-3.5" />}
+                <p className="text-xs" style={{ color: "var(--text-secondary)" }}>{cfg.label} · {playlist.songCount > 0 ? t('shelf.songs_count', { count: playlist.songCount }) : t('shelf.empty')}</p>
+              </div>
             </div>
 
             {/* 自动刷新设置 */}

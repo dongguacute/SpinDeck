@@ -6,6 +6,8 @@ import { PLATFORM_CONFIG } from "../../lib/types";
 import { prelaunchApp } from "@spindeck/player";
 import type { Playlist } from "../../../lib/playlist-store";
 import type { SongInfo } from "@spindeck/player";
+import QQMusicIcon from "../../assets/icons/QQMusicIcon.svg?react";
+import NetEaseMusicIcon from "../../assets/icons/NetEaseMusicIcon.svg?react";
 
 interface HeaderProps {
   inPlayback: boolean;
@@ -129,12 +131,16 @@ export function Header({
           }}
         >
           <div className="flex items-center gap-2.5">
-            <span
-              className="text-sm font-medium tracking-wide max-w-[200px] truncate transition-colors duration-700"
-              style={{ color: chrome.textSecondary, opacity: showThemeBackdrop ? 0.95 : 0.7 }}
-            >
-              {playlist.name}
-            </span>
+            <div className="flex items-center gap-2">
+              {playlist.platform === "QQMusic" && <QQMusicIcon className="w-4 h-4" />}
+              {playlist.platform === "NetEaseMusic" && <NetEaseMusicIcon className="w-4 h-4" />}
+              <span
+                className="text-sm font-medium tracking-wide max-w-[200px] truncate transition-colors duration-700"
+                style={{ color: chrome.textSecondary, opacity: showThemeBackdrop ? 0.95 : 0.7 }}
+              >
+                {playlist.name}
+              </span>
+            </div>
             <span
               className="text-xs px-2 py-0.5 rounded-md border transition-colors duration-700"
               style={{

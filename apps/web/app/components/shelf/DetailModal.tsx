@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import type { Playlist } from "../../lib/playlist-store";
 import type { SongInfo } from "@spindeck/player";
 import { PLATFORM_CONFIG } from "../../lib/types";
+import QQMusicIcon from "../../assets/icons/QQMusicIcon.svg?react";
+import NetEaseMusicIcon from "../../assets/icons/NetEaseMusicIcon.svg?react";
 
 interface DetailModalProps {
   showDetail: boolean;
@@ -79,10 +81,14 @@ export function DetailModal({
                 backgroundColor: PLATFORM_CONFIG[playlist.platform]?.bg || 'var(--surface-color)',
               }}
             >
-              <span
-                className="w-2 h-2 rounded-full"
-                style={{ backgroundColor: PLATFORM_CONFIG[playlist.platform]?.color || '#fff' }}
-              />
+              {playlist.platform === "QQMusic" && <QQMusicIcon className="w-3.5 h-3.5" />}
+              {playlist.platform === "NetEaseMusic" && <NetEaseMusicIcon className="w-3.5 h-3.5" />}
+              {playlist.platform !== "QQMusic" && playlist.platform !== "NetEaseMusic" && (
+                <span
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: PLATFORM_CONFIG[playlist.platform]?.color || '#fff' }}
+                />
+              )}
               {PLATFORM_CONFIG[playlist.platform]?.label || playlist.platform}
             </span>
           </div>
