@@ -72,11 +72,12 @@ export default function ShelfPage() {
   const inPlayback = selectedIndex !== null;
 
   useEffect(() => {
-    // 当进入或退出播放态时，触发 resize 以适配强制横屏逻辑
-    const timer = setTimeout(() => {
+    // 当进入或退出播放态时，立即触发 resize 以适配强制横屏逻辑
+    // 使用 requestAnimationFrame 确保在 DOM 更新后触发
+    const handle = requestAnimationFrame(() => {
       window.dispatchEvent(new Event("resize"));
-    }, 100);
-    return () => clearTimeout(timer);
+    });
+    return () => cancelAnimationFrame(handle);
   }, [inPlayback]);
 
   // 当 playlistId 改变时，确保重新进入加载状态

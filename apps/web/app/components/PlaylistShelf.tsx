@@ -1189,11 +1189,12 @@ export default function PlaylistShelf({
 
     const cw = containerRef.current?.clientWidth ?? window.innerWidth;
     const ch = containerRef.current?.clientHeight ?? window.innerHeight;
-    const isMobilePortrait = cw < 768 && ch > cw;
+    
+    // 只要有一边小于 768，且处于竖屏或者强制横屏状态，就认为是移动端适配逻辑
+    const isMobileDevice = cw < 768 || ch < 768;
+    const inPlayback = selectedIndex !== null;
 
-    if (isMobilePortrait) {
-      const inPlayback = selectedIndex !== null;
-      
+    if (isMobileDevice) {
       // 如果进入播放态，重置旋转和缩放（因为 CSS 会处理全页面旋转）
       // 如果在选歌态，顺时针旋转 90 度实现纵向列表，并缩小书籍
       gsap.to(state.mainGroup.rotation, {
@@ -1227,9 +1228,26 @@ export default function PlaylistShelf({
         });
       }
     } else {
-      state.mainGroup.rotation.z = 0;
-      state.mainGroup.scale.set(1, 1, 1);
-      state.mainGroup.position.y = 0;
+      // 桌面端或大屏设备
+      gsap.to(state.mainGroup.rotation, {
+        z: 0,
+        x: 0,
+        duration: 0.6,
+        ease: "power2.inOut",
+      });
+      gsap.to(state.mainGroup.scale, {
+        x: 1,
+        y: 1,
+        z: 1,
+        duration: 0.6,
+        ease: "power2.inOut",
+      });
+      gsap.to(state.mainGroup.position, {
+        x: scrollXRef.current,
+        y: 0,
+        duration: 0.6,
+        ease: "power2.inOut",
+      });
     }
   }, [selectedIndex]);
 
