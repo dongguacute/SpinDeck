@@ -9,7 +9,8 @@ import type { Route } from "./+types/root";
 import { useEffect, useState } from "react";
 import { useThemeStore } from "./lib/theme-store";
 import { useBackgroundRefresh } from "./lib/use-background-refresh";
-import { usesTauriOverlayTitleBar } from "./lib/is-tauri";
+import { isTauri } from "./lib/is-tauri";
+import { bootstrapNativeDeviceOS } from "./lib/system-info";
 import { DesktopDragRegion } from "./components/DesktopDragRegion";
 import i18n from "./i18n";
 import spinDeckLogo from "./assets/icons/SpinDeckLogo.svg?url";
@@ -36,10 +37,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
   }, [theme]);
 
   useEffect(() => {
-    if (usesTauriOverlayTitleBar()) {
-      document.documentElement.setAttribute("data-tauri-overlay", "");
-      setShowDragRegion(true);
-    }
+    void (async () => {
+      await bootstrapNativeDeviceOS();
+      const { getDeviceOS } = await import("@spindeck/player");
+      if (isTauri() && getDeviceOS() === "macos") {
+        document.documentElement.setAttribute("data-tauri-overlay", "");
+        setShowDragRegion(true);
+      }
+    })();
   }, []);
 
   // 客户端挂载后，根据本地存储或浏览器语言切换语言

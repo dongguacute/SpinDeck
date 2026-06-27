@@ -2,7 +2,6 @@ import { useThemeStore } from "../lib/theme-store";
 import { useState, useRef, useEffect } from "react";
 import { ArrowLeft, Monitor, Check, Sun, Moon, ExternalLink, ShieldAlert, X, Languages, ChevronDown } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import type { TFunction } from "i18next";
 
 const GithubIcon = () => (
   <svg
@@ -45,75 +44,40 @@ const YoutubeIcon = () => (
 );
 import { Link } from "react-router";
 import { THEME_CONFIGS, type AppearanceMode, type ThemeType } from "@spindeck/ui";
+import { collectSystemInfo, getAppVersionLabel, type SystemInfo } from "../lib/system-info";
 
-// 获取系统信息的辅助函数
-function getSystemInfo(t: TFunction) {
-  const unknown = t('settings.device_info.unknown');
-  if (typeof navigator === "undefined") return { os: unknown, osVersion: "", browser: unknown, browserVersion: "" };
-  const ua = navigator.userAgent;
-  let os = unknown;
-  let osVersion = "";
-
-  if (ua.includes("Mac OS X")) {
-    os = "macOS";
-    const match = /Mac OS X (\d+[._]\d+(?:[._]\d+)?)/.exec(ua);
-    if (match) osVersion = match[1].replace(/_/g, ".");
-  } else if (ua.includes("Windows")) {
-    os = "Windows";
-    if (ua.includes("Windows NT 10.0")) osVersion = "10/11";
-    else if (ua.includes("Windows NT 6.3")) osVersion = "8.1";
-    else if (ua.includes("Windows NT 6.2")) osVersion = "8";
-    else if (ua.includes("Windows NT 6.1")) osVersion = "7";
-  } else if (ua.includes("Linux")) {
-    os = "Linux";
-    if (ua.includes("Android")) {
-      os = "Android";
-      const match = /Android (\d+(?:\.\d+)?)/.exec(ua);
-      if (match) osVersion = match[1];
-    }
-  } else if (ua.includes("iOS") || ua.includes("iPhone") || ua.includes("iPad")) {
-    os = "iOS";
-    const match = /OS (\d+(?:_\d+)?(?:_\d+)?)/.exec(ua);
-    if (match) osVersion = match[1].replace(/_/g, ".");
-  }
-
-  let browser = unknown;
-  let browserVersion = "";
-  if (ua.includes("Firefox") && !ua.includes("Seamonkey")) {
-    browser = "Firefox";
-    const match = /Firefox\/(\d+(?:\.\d+)?)/.exec(ua);
-    if (match) browserVersion = match[1];
-  } else if (ua.includes("Edg")) {
-    browser = "Edge";
-    const match = /Edg(?:e)?\/(\d+(?:\.\d+)?)/.exec(ua);
-    if (match) browserVersion = match[1];
-  } else if (ua.includes("Chrome") && !ua.includes("Edg")) {
-    browser = "Chromium";
-    const match = /Chrome\/(\d+(?:\.\d+)?)/.exec(ua);
-    if (match) browserVersion = match[1];
-  } else if (ua.includes("Safari") && !ua.includes("Chrome") && !ua.includes("Chromium")) {
-    browser = "Safari";
-    const match = /Version\/(\d+(?:\.\d+)?)/.exec(ua);
-    if (match) browserVersion = match[1];
-  }
-
-  // 检测内核
-  let engine = unknown;
-  if (ua.includes("AppleWebKit")) engine = "WebKit";
-  if (ua.includes("Gecko") && !ua.includes("WebKit")) engine = "Gecko";
-  if (ua.includes("Presto")) engine = "Presto";
-  if (ua.includes("Trident")) engine = "Trident";
-
-  return { os, osVersion, browser, browserVersion, engine };
-}
+const EMPTY_SYSTEM_INFO: SystemInfo = {
+  os: "",
+  osVersion: "",
+  arch: "",
+  runtime: "",
+  browser: "",
+  browserVersion: "",
+  engine: "",
+};
 
 export default function Settings() {
   const { t, i18n } = useTranslation('common');
   const { theme, setTheme, mode, setMode, resolvedMode } = useThemeStore();
-  const systemInfo = getSystemInfo(t);
+  const [systemInfo, setSystemInfo] = useState<SystemInfo>(EMPTY_SYSTEM_INFO);
+  const [appVersion, setAppVersion] = useState<string | null>(null);
   const [confirmLink, setConfirmLink] = useState<{ url: string; title: string } | null>(null);
   const [isLangOpen, setIsLangOpen] = useState(false);
   const langRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void Promise.all([collectSystemInfo(t), getAppVersionLabel()]).then(([info, version]) => {
+      if (cancelled) return;
+      setSystemInfo(info);
+      setAppVersion(version);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [t, i18n.language]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -375,7 +339,7 @@ export default function Settings() {
                 {t('settings.about.description')}
               </p>
               <p className="text-xs mt-2" style={{ color: "var(--text-muted)" }}>
-                {t('settings.about.version', { version: 'v0.1.0' })}
+                {appVersion ? t('settings.about.version', { version: appVersion }) : null}
               </p>
             </div>
             
@@ -491,6 +455,22 @@ export default function Settings() {
               borderColor: "var(--border-color)",
             }}
           >
+            {/* 运行环境 */}
+            <div
+              className="flex items-center justify-between px-5 py-4"
+              style={{ borderBottom: "1px solid var(--border-color)" }}
+            >
+              <div className="flex items-center gap-3">
+                <Monitor className="w-5 h-5" style={{ color: "var(--text-secondary)" }} />
+                <span className="text-sm" style={{ color: "var(--text-primary)" }}>
+                  {t('settings.device_info.runtime')}
+                </span>
+              </div>
+              <span className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
+                {systemInfo.runtime}
+              </span>
+            </div>
+
             {/* 操作系统 */}
             <div
               className="flex items-center justify-between px-5 py-4"
@@ -503,7 +483,9 @@ export default function Settings() {
                 </span>
               </div>
               <span className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
-                {systemInfo.os} {systemInfo.osVersion && `v${systemInfo.osVersion}`}
+                {systemInfo.os}
+                {systemInfo.osVersion && ` ${systemInfo.osVersion}`}
+                {systemInfo.arch && ` (${systemInfo.arch})`}
               </span>
             </div>
 

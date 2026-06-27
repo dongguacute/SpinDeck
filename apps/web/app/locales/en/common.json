@@ -41,9 +41,12 @@
     },
     "device_info": {
       "title": "Device Info",
+      "runtime": "Runtime",
       "os": "OS",
       "browser": "Browser",
       "engine": "Engine",
+      "desktop_app": "SpinDeck Desktop",
+      "web_app": "Web Browser",
       "unknown": "Unknown"
     },
     "external_link": {

@@ -41,9 +41,12 @@
     },
     "device_info": {
       "title": "设备信息",
+      "runtime": "运行环境",
       "os": "系统",
       "browser": "浏览器",
       "engine": "内核",
+      "desktop_app": "SpinDeck 桌面版",
+      "web_app": "Web 浏览器",
       "unknown": "未知"
     },
     "external_link": {

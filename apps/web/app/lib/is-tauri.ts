@@ -5,7 +5,8 @@ export function isTauri(): boolean {
 
 export function isMacOS(): boolean {
   if (typeof navigator === "undefined") return false;
-  return /Mac|iPhone|iPad|iPod/.test(navigator.platform);
+  const platform = navigator.userAgentData?.platform ?? navigator.platform;
+  return /Mac/i.test(platform);
 }
 
 /** macOS Tauri overlay title bar: native traffic lights + custom drag region */

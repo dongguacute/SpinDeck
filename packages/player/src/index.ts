@@ -9,7 +9,7 @@ export type {
   SystemPlaybackStatus,
 } from "./types";
 
-export { getDeviceOS } from "./device";
+export { getDeviceOS, setNativeDeviceOS } from "./device";
 export {
   beginPageSession,
   canResumeSong,

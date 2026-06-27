@@ -71,6 +71,9 @@ importers:
       '@tauri-apps/api':
         specifier: ^2.9.0
         version: 2.11.1
+      '@tauri-apps/plugin-os':
+        specifier: ^2.3.0
+        version: 2.3.2
       gsap:
         specifier: ^3.15.0
         version: 3.15.0
@@ -1117,6 +1120,9 @@ packages:
     resolution: {integrity: sha512-EElQe8z8uD7Pi5++tJ/UfEwWuK08rd3oCDYdeIbJAb6pZRrxlqmoF5gh5H5YvzmUPhS4IRCaLSsQhvWkrfK+GQ==}
     engines: {node: '>= 10'}
     hasBin: true
+
+  '@tauri-apps/plugin-os@2.3.2':
+    resolution: {integrity: sha512-n+nXWeuSeF9wcEsSPmRnBEGrRgOy6jjkSU+UVCOV8YUGKb2erhDOxis7IqRXiRVHhY8XMKks00BJ0OAdkpf6+A==}
 
   '@turbo/darwin-64@2.9.18':
     resolution: {integrity: sha512-9f27peFu16ur8c0v9nUFUEyBnbKuuFsUTjHFWfmwGfzySBXbHwzU44QhZon6Mznz0cHsIr3984NQj/bVrnGSRw==}
@@ -3960,6 +3966,10 @@ snapshots:
       '@tauri-apps/cli-win32-arm64-msvc': 2.11.3
       '@tauri-apps/cli-win32-ia32-msvc': 2.11.3
       '@tauri-apps/cli-win32-x64-msvc': 2.11.3
+
+  '@tauri-apps/plugin-os@2.3.2':
+    dependencies:
+      '@tauri-apps/api': 2.11.1
 
   '@turbo/darwin-64@2.9.18':
     optional: true
