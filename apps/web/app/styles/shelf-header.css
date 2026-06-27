@@ -1,0 +1,133 @@
+/* ============================================================
+   Shelf page header — web vs desktop overlay
+   ============================================================ */
+.shelf-header-root {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.shelf-header-bar {
+  position: relative;
+}
+
+.shelf-header-back,
+.shelf-header-action {
+  position: absolute;
+  top: 1rem;
+  pointer-events: auto;
+}
+
+.shelf-header-back {
+  left: 1rem;
+}
+
+.shelf-header-action {
+  right: 1rem;
+}
+
+.shelf-header-exit {
+  left: 1rem;
+  right: auto;
+}
+
+@media (min-width: 768px) {
+  .shelf-header-exit {
+    left: auto;
+    right: 1.5rem;
+  }
+}
+
+.shelf-header-center {
+  position: absolute;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: auto;
+  max-width: calc(100% - 12rem);
+}
+
+@media (min-width: 768px) {
+  .shelf-header-back,
+  .shelf-header-action,
+  .shelf-header-center {
+    top: 1.5rem;
+  }
+
+  .shelf-header-back {
+    left: 1.5rem;
+  }
+
+  .shelf-header-action {
+    right: 1.5rem;
+  }
+}
+
+/* 桌面 overlay：选歌顶栏即窗口顶栏 */
+html[data-tauri-overlay] .desktop-shelf-page {
+  height: var(--desktop-viewport-height);
+}
+
+html[data-tauri-overlay] .desktop-shelf-page.h-screen {
+  height: var(--desktop-viewport-height);
+}
+
+html[data-tauri-overlay]:has(.desktop-titlebar) .desktop-drag-region,
+html[data-tauri-overlay]:has(.desktop-shelf-page) .desktop-drag-region {
+  display: none;
+}
+
+html[data-tauri-overlay] .desktop-shelf-page .shelf-header-root {
+  position: fixed;
+  height: var(--desktop-titlebar-height);
+  z-index: 100;
+  pointer-events: auto;
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+
+html[data-tauri-overlay] .desktop-shelf-page .shelf-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 100%;
+  padding-inline: 1rem;
+  padding-left: var(--desktop-traffic-light-width);
+  box-sizing: border-box;
+  pointer-events: auto;
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+
+html[data-tauri-overlay] .desktop-shelf-page .shelf-header-bar:has(.shelf-header-exit) {
+  justify-content: flex-end;
+}
+
+html[data-tauri-overlay] .desktop-shelf-page .shelf-header-back,
+html[data-tauri-overlay] .desktop-shelf-page .shelf-header-action,
+html[data-tauri-overlay] .desktop-shelf-page .shelf-header-exit {
+  position: static;
+  top: auto;
+  left: auto;
+  right: auto;
+  transform: none;
+  flex-shrink: 0;
+  -webkit-app-region: no-drag;
+}
+
+html[data-tauri-overlay] .desktop-shelf-page .shelf-header-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  max-width: min(520px, calc(100% - 22rem));
+  -webkit-app-region: no-drag;
+}
+
+/* 播放层不遮挡顶栏，避免吞掉拖拽/点击 */
+html[data-tauri-overlay] .desktop-shelf-page .shelf-playback-layer {
+  z-index: 0;
+}

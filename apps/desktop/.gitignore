@@ -1,0 +1,14 @@
+# Rust / Tauri build
+src-tauri/target/
+
+# Tauri CLI generated schemas
+src-tauri/gen/
+
+# Bundled web runtime (prepare-resources.mjs output)
+src-tauri/resources/
+
+# pnpm deploy cache for desktop bundle
+.cache/
+
+# Generated from assets/app-icon.svg (pnpm desktop:icons)
+assets/app-icon.png

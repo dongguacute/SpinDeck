@@ -54,3 +54,13 @@ Thumbs.db
 *.log
 .pnpm-store/
 .husky/_/
+
+# Tauri desktop (canonical: apps/desktop/src-tauri)
+apps/desktop/src-tauri/target/
+apps/desktop/src-tauri/gen/
+apps/desktop/src-tauri/resources/
+apps/desktop/.cache/
+apps/desktop/assets/app-icon.png
+
+# Stray Tauri output at repo root
+/src-tauri

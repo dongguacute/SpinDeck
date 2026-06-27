@@ -38,7 +38,8 @@
     "react-dom": "^19.2.6",
     "react-i18next": "^17.0.8",
     "react-router": "7.16.0",
-    "three": "^0.184.0"
+    "three": "^0.184.0",
+    "@tauri-apps/api": "^2.9.0"
   },
   "devDependencies": {
     "@react-router/dev": "7.16.0",

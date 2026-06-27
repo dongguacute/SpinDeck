@@ -1,0 +1,123 @@
+/* ============================================================
+   Tauri desktop — macOS overlay title bar
+   有 .desktop-titlebar 的页面：页内顶栏即窗口顶栏（top: 0）
+   无顶栏页面：用 .desktop-page-chrome 留出拖拽区
+   ============================================================ */
+html[data-tauri-overlay] {
+  --desktop-titlebar-height: 64px;
+  --desktop-traffic-light-width: 78px;
+  --desktop-viewport-height: 100dvh;
+  --desktop-content-height: calc(var(--desktop-viewport-height) - var(--desktop-titlebar-height));
+  height: 100%;
+  overflow: hidden;
+}
+
+html[data-tauri-overlay] body {
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  box-sizing: border-box;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html[data-tauri-overlay] body::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* 无自带顶栏的页面：仅留拖拽/红绿灯区 */
+html[data-tauri-overlay] .desktop-page-chrome {
+  padding-top: var(--desktop-titlebar-height);
+  box-sizing: border-box;
+  min-height: var(--desktop-viewport-height);
+}
+
+/* 页内顶栏 = 窗口顶栏（拖拽由顶栏承担，不用透明 overlay 盖住按钮） */
+html[data-tauri-overlay] .desktop-titlebar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: var(--desktop-titlebar-height);
+  background: var(--bg-secondary) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+
+html[data-tauri-overlay]:has(.desktop-titlebar) .desktop-drag-region {
+  display: none;
+}
+
+html[data-tauri-overlay] .desktop-titlebar__inner {
+  padding-left: var(--desktop-traffic-light-width);
+  height: 100%;
+}
+
+html[data-tauri-overlay] .min-h-screen {
+  min-height: var(--desktop-viewport-height);
+}
+
+html[data-tauri-overlay] .desktop-page-chrome.min-h-screen {
+  min-height: var(--desktop-viewport-height);
+}
+
+html[data-tauri-overlay] .h-screen {
+  height: var(--desktop-content-height);
+}
+
+html[data-tauri-overlay] .desktop-page-chrome.h-screen {
+  height: var(--desktop-viewport-height);
+}
+
+html[data-tauri-overlay] .w-screen {
+  width: 100%;
+}
+
+html[data-tauri-overlay] * {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html[data-tauri-overlay] *::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.desktop-drag-region {
+  position: fixed;
+  top: 0;
+  left: var(--desktop-traffic-light-width);
+  right: 0;
+  height: var(--desktop-titlebar-height);
+  z-index: 9999;
+  background: transparent;
+  cursor: default;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+
+html[data-tauri-overlay] .desktop-titlebar a,
+html[data-tauri-overlay] .desktop-titlebar button,
+html[data-tauri-overlay] .desktop-titlebar input,
+html[data-tauri-overlay] .desktop-titlebar select,
+html[data-tauri-overlay] .desktop-titlebar textarea,
+html[data-tauri-overlay] .desktop-titlebar [role="button"] {
+  -webkit-app-region: no-drag;
+  position: relative;
+  z-index: 1;
+}
+
+html[data-tauri-overlay] a,
+html[data-tauri-overlay] button,
+html[data-tauri-overlay] input,
+html[data-tauri-overlay] select,
+html[data-tauri-overlay] textarea,
+html[data-tauri-overlay] [role="button"] {
+  -webkit-app-region: no-drag;
+}

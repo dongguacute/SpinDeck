@@ -142,15 +142,15 @@ export default function Settings() {
       className="min-h-screen transition-colors duration-300"
       style={{ background: "var(--bg-primary)" }}
     >
-      {/* 顶部导航 */}
+      {/* 顶部导航 — 桌面 overlay 下即窗口顶栏 */}
       <header
-        className="sticky top-0 z-40 border-b backdrop-blur-xl transition-all duration-300"
+        className="desktop-titlebar sticky top-0 z-40 border-b transition-all duration-300"
         style={{
-          background: "color-mix(in srgb, var(--bg-secondary), transparent 20%)",
+          background: "var(--bg-secondary)",
           borderColor: "var(--border-color)",
         }}
       >
-        <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="desktop-titlebar__inner max-w-3xl mx-auto px-4 flex items-center justify-between">
           <Link
             to="/"
             className="group flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300 hover:scale-105 active:scale-95"

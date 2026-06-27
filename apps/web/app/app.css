@@ -4,6 +4,8 @@
 @import "@spindeck/vinyl-ui/styles/base.css";
 @import "@spindeck/vinyl-ui/styles/classic.css";
 @import "@spindeck/vinyl-ui/styles/modern.css";
+@import "./styles/desktop-titlebar.css";
+@import "./styles/shelf-header.css";
 
 /* 
    应用层样式

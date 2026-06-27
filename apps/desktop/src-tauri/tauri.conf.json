@@ -1,0 +1,54 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "SpinDeck",
+  "mainBinaryName": "SpinDeck",
+  "version": "0.1.0",
+  "identifier": "com.spindeck.app",
+  "build": {
+    "beforeDevCommand": "pnpm --filter @spindeck/web dev",
+    "devUrl": "http://localhost:5173",
+    "beforeBuildCommand": "pnpm --filter @spindeck/web build && node ./scripts/prepare-resources.mjs",
+    "frontendDist": "../web/build/client"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "SpinDeck",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 960,
+        "minHeight": 640,
+        "backgroundColor": "#fdfaf2",
+        "acceptFirstMouse": true,
+        "dragDropEnabled": false,
+        "hiddenTitle": true,
+        "titleBarStyle": "Overlay",
+        "trafficLightPosition": { "x": 16, "y": 28 }
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "resources": {
+      "resources/web-runtime/": "web-runtime/",
+      "resources/scripts/": "scripts/"
+    },
+    "macOS": {
+      "minimumSystemVersion": "10.15",
+      "bundleName": "SpinDeck",
+      "infoPlist": "Info.plist"
+    }
+  }
+}

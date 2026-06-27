@@ -70,7 +70,10 @@ export default function Playlists() {
   };
 
   return (
-    <div className="min-h-screen transition-colors duration-300" style={{ background: "var(--bg-primary)" }}>
+    <div
+      className="min-h-screen desktop-page-chrome transition-colors duration-300"
+      style={{ background: "var(--bg-primary)" }}
+    >
       {/* 主体内容 */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-32">
         {isLoading ? (

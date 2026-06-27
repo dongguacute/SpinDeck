@@ -6,7 +6,7 @@ export default function NotFound() {
   const { t } = useTranslation('common');
 
   return (
-    <div className="min-h-screen flex items-center justify-center transition-colors duration-300" style={{ background: "var(--bg-primary)" }}>
+    <div className="min-h-screen desktop-page-chrome flex items-center justify-center transition-colors duration-300" style={{ background: "var(--bg-primary)" }}>
       <main className="max-w-md w-full px-6 py-12 text-center">
         <div className="relative inline-block mb-8">
           <div className="w-32 h-32 rounded-full border-4 flex items-center justify-center animate-spin-slow transition-colors duration-200"

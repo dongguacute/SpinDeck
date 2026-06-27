@@ -194,7 +194,7 @@ export default function ShelfPage() {
 
   return (
     <div 
-      className={`relative w-screen h-screen overflow-hidden select-none touch-none ${inPlayback ? "force-landscape-active" : ""}`} 
+      className={`relative w-screen h-screen desktop-shelf-page overflow-hidden select-none touch-none ${inPlayback ? "force-landscape-active" : ""}`} 
       style={{ background: "var(--bg-primary)" }}
       {...swipeHandlers}
     >
@@ -308,7 +308,7 @@ export default function ShelfPage() {
       />
 
       {/* 播放核心区域（含动画容器） */}
-      <div ref={playbackWrapperRef} className="absolute inset-0 w-full h-full">
+      <div ref={playbackWrapperRef} className="shelf-playback-layer absolute inset-0 w-full h-full">
         {selectedSong && playlist && (
           <SongVinylOverlay
             song={selectedSong}

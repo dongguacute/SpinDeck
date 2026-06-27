@@ -27,6 +27,12 @@ This project is a monorepo managed with `pnpm` and `turborepo`. To ensure consis
   - **Asset Management**: Do NOT put any files that need modification (like images, icons, or translation files) in the `public` folder.
   - **i18n**: Translation files MUST be placed in `apps/web/app/locales`.
   - **Assets**: Images and other static assets that are part of the source code should be placed in `apps/web/app/assets`.
+  - **App icon source**: `apps/web/app/assets/icons/SpinDeckLogo.svg` is the canonical logo for web favicon and desktop (Tauri) icons.
+- `apps/desktop`: Tauri 2 desktop shell for macOS / Windows / Linux. The Tauri project lives at `apps/desktop/src-tauri` only — do NOT create a root-level `src-tauri` directory.
+  - **Dev**: `pnpm --filter @spindeck/desktop dev` (loads `@spindeck/web` via `http://localhost:5173`; the web dev server must be running or started by Tauri’s `beforeDevCommand`).
+  - **Build**: `pnpm --filter @spindeck/desktop build` (builds web, bundles runtime resources, then runs `tauri build`).
+  - **Icons**: Desktop icons reuse `SpinDeckLogo.svg` with transparent padding (`CONTENT_RATIO` in `apps/desktop/scripts/generate-icons.mjs`, default `0.78`). Run `pnpm desktop:icons` after logo or ratio changes.
+  - **Generated output**: `apps/desktop/src-tauri/resources/` and `apps/desktop/.cache/` are build artifacts — do not commit.
 - `packages/`: Shared libraries and components.
   - `packages/core`: Core logic and utilities. See [README.md](packages/core/README.md)
   - `packages/player`: Music player integration logic. See [README.md](packages/player/README.md)

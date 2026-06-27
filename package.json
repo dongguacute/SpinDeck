@@ -24,7 +24,11 @@
   "private": true,
   "scripts": {
     "build": "turbo run build",
+    "build:desktop": "pnpm --filter @spindeck/desktop build",
     "dev": "turbo run dev",
+    "dev:desktop": "pnpm --filter @spindeck/desktop dev",
+    "desktop:icons": "pnpm --filter @spindeck/desktop generate:icons",
+    "desktop:prepare": "pnpm --filter @spindeck/desktop prepare:resources",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",

@@ -80,11 +80,12 @@ Development status varies by platform. Only **QQ Music** is fully supported end 
 
 ## Runtime
 
-SpinDeck is a **web app** — use it in any modern browser. No separate desktop or mobile client is required.
+SpinDeck can run in a **browser** or as a **Tauri desktop app** (recommended on macOS for full playback control).
 
 | Environment | Notes |
 |-------------|-------|
-| Browser | Any modern browser (Chrome, Safari, Firefox, Edge, etc.) |
+| Browser | Any modern browser (Chrome, Safari, Firefox, Edge, etc.) — requires a local Node server for API routes (`pnpm --filter @spindeck/web dev` or `start`) |
+| **Desktop (Tauri)** | macOS / Windows / Linux native window; bundles the web UI and starts an embedded local server in release builds |
 | Desktop (macOS / Windows) | Full experience for QQ Music; NetEase playback control also available here |
 | Mobile (iOS / Android) | QQ Music playback via deep links; NetEase playback control not supported |
 
@@ -97,7 +98,7 @@ SpinDeck is a **web app** — use it in any modern browser. No separate desktop 
 - [Node.js](https://nodejs.org/) ≥ 18
 - [pnpm](https://pnpm.io/) 9.x
 
-### Local Development
+### Local Development (Web)
 
 ```bash
 # Clone the repository
@@ -113,7 +114,36 @@ pnpm dev
 
 Open the local URL printed in your terminal.
 
-### Build & Production
+### Desktop App (Tauri)
+
+Additional requirements for building the desktop shell:
+
+- [Rust](https://rustup.rs/) (stable)
+- Platform toolchain (e.g. Xcode Command Line Tools on macOS)
+
+**Development** — Tauri loads the web dev server:
+
+```bash
+pnpm --filter @spindeck/desktop dev
+```
+
+This runs `@spindeck/web` dev and opens the SpinDeck window. App icon matches `apps/web/app/assets/icons/SpinDeckLogo.svg`.
+
+**Production build** — packages the web build and embedded Node runtime:
+
+```bash
+pnpm --filter @spindeck/desktop build
+```
+
+Output: `apps/desktop/src-tauri/target/release/bundle/` (`.app` on macOS, `.msi` / `.exe` on Windows, etc.).
+
+Release builds currently require **Node.js** on the user’s machine to run the embedded server. Regenerate desktop icons after logo changes (edit `apps/desktop/assets/app-icon.svg`, which includes macOS safe-area padding):
+
+```bash
+pnpm desktop:icons
+```
+
+### Build & Production (Web only)
 
 ```bash
 pnpm build
@@ -137,6 +167,7 @@ This repo is a pnpm + Turborepo monorepo:
 | Path | Description |
 |------|-------------|
 | [`apps/web`](apps/web) | SpinDeck web application |
+| [`apps/desktop`](apps/desktop) | Tauri 2 desktop shell (`src-tauri/` lives here) |
 | [`packages/core`](packages/core) | Core logic (playlist fetching, etc.) |
 | [`packages/player`](packages/player) | Third-party music app control & deep links |
 | [`packages/vinyl-ui`](packages/vinyl-ui) | Vinyl tonearm UI components |
