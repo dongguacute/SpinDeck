@@ -3,7 +3,8 @@ use std::{
   io::Write,
   net::TcpStream,
   path::PathBuf,
-  process::{Command, Stdio},
+  process::{Child, Command, Stdio},
+  sync::Mutex,
   thread,
   time::{Duration, Instant},
 };
@@ -13,6 +14,48 @@ use tauri::{Manager, Url};
 const SERVER_PORT: u16 = 17345;
 const SERVER_START_TIMEOUT: Duration = Duration::from_secs(30);
 const SERVER_POLL_INTERVAL: Duration = Duration::from_millis(200);
+
+/// Holds the spawned Node.js server process so it can be killed when the app exits.
+pub struct ServerProcess(pub Mutex<Option<Child>>);
+
+/// Kills any process listening on the given port.
+///
+/// On subsequent app launches, a previous Node.js server may still be holding the
+/// port (orphaned child process). This clears it so the new server can bind.
+fn kill_process_on_port(port: u16) {
+  #[cfg(unix)]
+  {
+    if let Ok(output) = Command::new("lsof")
+      .args(["-ti", &format!(":{port}"), "-sTCP:LISTEN"])
+      .output()
+    {
+      let stdout = String::from_utf8_lossy(&output.stdout);
+      for pid_str in stdout.lines() {
+        if let Ok(pid) = pid_str.parse::<i32>() {
+          let _ = Command::new("kill").args(["-9", &pid.to_string()]).output();
+        }
+      }
+    }
+  }
+
+  #[cfg(windows)]
+  {
+    if let Ok(output) = Command::new("cmd")
+      .args(["/C", &format!("netstat -ano | findstr :{port}")])
+      .output()
+    {
+      let stdout = String::from_utf8_lossy(&output.stdout);
+      for line in stdout.lines() {
+        let parts: Vec<&str> = line.split_whitespace().collect();
+        if parts.len() >= 5 && parts.last() != Some(&"0") {
+          let _ = Command::new("taskkill")
+            .args(["/PID", parts[4], "/F"])
+            .output();
+        }
+      }
+    }
+  }
+}
 
 fn append_startup_log(app: &tauri::AppHandle, message: &str) {
   eprintln!("SpinDeck startup: {message}");
@@ -193,7 +236,7 @@ pub fn show_startup_error(app: &tauri::AppHandle, message: &str) {
   }
 }
 
-fn start_local_server(app: &tauri::AppHandle) -> Result<u16, String> {
+fn start_local_server(app: &tauri::AppHandle) -> Result<(u16, Child), String> {
   let node = resolve_node_executable()?;
   let serve_script = resolve_serve_script(app)?;
   let runtime_root = resolve_runtime_root(app)?;
@@ -222,7 +265,13 @@ fn start_local_server(app: &tauri::AppHandle) -> Result<u16, String> {
     .open(log_dir.join("server.stderr.log"))
     .map_err(|error| format!("Failed to open server log file: {error}"))?;
 
-  Command::new(&node)
+  // Kill any orphaned server from a previous app launch that may still hold the port.
+  // Without this, the new server fails with EADDRINUSE and the app would connect to a
+  // stale server serving outdated code.
+  kill_process_on_port(SERVER_PORT);
+  thread::sleep(Duration::from_millis(200));
+
+  let child = Command::new(&node)
     .arg(&serve_script)
     .env("PORT", SERVER_PORT.to_string())
     .env("SPINDECK_RUNTIME_ROOT", &runtime_root)
@@ -240,11 +289,15 @@ fn start_local_server(app: &tauri::AppHandle) -> Result<u16, String> {
     })?;
 
   wait_for_server(SERVER_PORT)?;
-  Ok(SERVER_PORT)
+  Ok((SERVER_PORT, child))
 }
 
 pub fn start_and_navigate(app: &tauri::AppHandle) -> Result<(), String> {
-  let port = start_local_server(app)?;
+  let (port, child) = start_local_server(app)?;
+
+  // Track the child process so it can be killed when the app exits.
+  app.manage(ServerProcess(Mutex::new(Some(child))));
+
   let url = Url::parse(&format!("http://127.0.0.1:{port}"))
     .map_err(|error| format!("Invalid local server URL: {error}"))?;
 

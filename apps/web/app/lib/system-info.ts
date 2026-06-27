@@ -243,11 +243,26 @@ export async function bootstrapNativeDeviceOS(): Promise<void> {
 export async function getAppVersionLabel(): Promise<string | null> {
   if (!isTauri()) return null;
 
+  let tauriVersion: string | null = null;
   try {
     const { getVersion } = await import("@tauri-apps/api/app");
-    const version = await getVersion();
-    return `v${version}`;
+    tauriVersion = await getVersion();
   } catch {
-    return null;
+    // fall through — still try build info
   }
+
+  try {
+    const res = await fetch("/BUILD_INFO.json", { cache: "no-store" });
+    if (res.ok) {
+      const info = (await res.json()) as { version?: string; commit?: string };
+      const version = info.version ?? tauriVersion;
+      const commit = info.commit?.slice(0, 7);
+      if (version && commit) return `v${version} (${commit})`;
+      if (version) return `v${version}`;
+    }
+  } catch {
+    // ignore
+  }
+
+  return tauriVersion ? `v${tauriVersion}` : null;
 }

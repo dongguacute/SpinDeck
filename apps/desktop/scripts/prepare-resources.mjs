@@ -296,4 +296,18 @@ fs.copyFileSync(
   path.join(resourcesDir, "scripts/serve.mjs"),
 );
 
+const webPackage = JSON.parse(
+  fs.readFileSync(path.join(monorepoRoot, "apps/web/package.json"), "utf8"),
+);
+const buildInfo = {
+  version: webPackage.version ?? "unknown",
+  commit: process.env.GITHUB_SHA ?? "local",
+  builtAt: new Date().toISOString(),
+};
+fs.writeFileSync(
+  path.join(cacheDir, "build/client/BUILD_INFO.json"),
+  `${JSON.stringify(buildInfo, null, 2)}\n`,
+);
+
 console.log(`Prepared Tauri resources at ${resourcesDir}`);
+console.log(`Build info: ${JSON.stringify(buildInfo)}`);

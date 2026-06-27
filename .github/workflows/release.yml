@@ -74,6 +74,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Verify release commit
+        run: |
+          echo "Release tag: ${{ github.event.release.tag_name }}"
+          echo "Building commit: $(git rev-parse HEAD)"
+          git log -1 --oneline
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -116,6 +124,14 @@ jobs:
       - name: Set version from release title
         run: node scripts/set-version.mjs "${{ needs.prepare.outputs.version }}"
 
+      - name: Clean stale desktop build artifacts
+        shell: bash
+        run: |
+          rm -rf apps/desktop/src-tauri/resources
+          rm -rf apps/desktop/.cache
+          rm -rf apps/web/build
+          rm -rf node_modules/.cache/turbo
+
       - name: Map short drive on Windows
         if: matrix.platform == 'windows'
         shell: cmd
@@ -126,6 +142,9 @@ jobs:
         working-directory: ${{ matrix.platform == 'windows' && 'X:\\' || github.workspace }}
         env:
           CI: true
+          TURBO_FORCE: true
+          # Bust rust-cache bundling when only web/resources changed
+          RUSTFLAGS: -C metadata=${{ needs.prepare.outputs.version }}-${{ matrix.platform }}
 
       - name: Unmap short drive on Windows
         if: always() && matrix.platform == 'windows'

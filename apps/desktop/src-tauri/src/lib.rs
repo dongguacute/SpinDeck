@@ -1,6 +1,9 @@
 #[cfg(not(dev))]
 mod server;
 
+#[cfg(not(dev))]
+use server::ServerProcess;
+
 #[cfg(target_os = "macos")]
 use tauri::Manager;
 
@@ -35,6 +38,19 @@ pub fn run() {
 
       Ok(())
     })
-    .run(tauri::generate_context!())
-    .expect("error while running tauri application");
+    .build(tauri::generate_context!())
+    .expect("error while building tauri application")
+    .run(|_app_handle, _event| {
+      // Kill the spawned Node.js server when the app exits to prevent orphaned
+      // processes that hold the port and cause subsequent launches to fail.
+      #[cfg(not(dev))]
+      if let tauri::RunEvent::Exit = _event {
+        if let Some(state) = _app_handle.try_state::<ServerProcess>() {
+          if let Some(mut child) = state.0.lock().unwrap().take() {
+            let _ = child.kill();
+            let _ = child.wait();
+          }
+        }
+      }
+    });
 }
