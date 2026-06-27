@@ -1,8 +1,12 @@
-# SpinDeck
+<p align="center">
+  <img src="public/SpinDeckLogo.svg" alt="SpinDeck logo" width="72" height="72" />
+</p>
 
-**Cross-platform vinyl visualization player** — organize playlists in your browser, browse a 3D album shelf, and sync playback with your local music apps through an interactive tonearm UI.
+<h1 align="center">SpinDeck</h1>
 
-> SpinDeck does not stream or host any audio. All music is played by third-party apps; this project handles playlist management and playback control only.
+<p align="center"><strong>Cross-platform vinyl visualization player</strong> — organize playlists in your browser, browse a 3D album shelf, and sync playback with your local music apps through an interactive tonearm UI.</p>
+
+<p align="center"><em>SpinDeck does not stream or host any audio. All music is played by third-party apps; this project handles playlist management and playback control only.</em></p>
 
 ## Preview
 

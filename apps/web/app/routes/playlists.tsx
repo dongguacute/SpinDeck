@@ -3,6 +3,7 @@ import { Plus, Disc3, Settings, Trash2, CheckSquare, Square, X, Loader2 } from "
 import { useTranslation } from "react-i18next";
 import PlaylistCard from "../components/PlaylistCard";
 import CreatePlaylistModal from "../components/CreatePlaylistModal";
+import { BrandLogo } from "../components/BrandLogo";
 import { usePlaylistStore } from "../lib/playlist-store";
 import { Link } from "react-router";
 
@@ -212,14 +213,7 @@ export default function Playlists() {
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl border flex items-center justify-center transition-colors duration-200"
-              style={{
-                background: "linear-gradient(to bottom right, var(--surface-hover), var(--surface-color))",
-                borderColor: "var(--border-color)",
-              }}
-            >
-              <Disc3 className="w-5 h-5" style={{ color: "var(--text-secondary)" }} />
-            </div>
+            <BrandLogo />
             <h1 className="font-semibold text-base tracking-wide" style={{ color: "var(--text-primary)" }}>
               SpinDeck
             </h1>
