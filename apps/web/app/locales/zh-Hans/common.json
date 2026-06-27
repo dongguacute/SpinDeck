@@ -136,7 +136,9 @@
     "import_all": "导入全部",
     "unnamed_playlist": "未命名歌单",
     "add_to_shelf": "添加到歌单",
-    "import_from_platform": "来自 {{platform}} 的歌单"
+    "import_from_platform": "来自 {{platform}} 的歌单",
+    "kugou_import_incompatible_note": "由于技术原因，酷狗歌单导入暂无法兼容。",
+    "kugou_playlist_link_placeholder": "粘贴歌单链接、酷狗码，或输入「我喜欢」..."
   },
   "vinyl": {
     "tonearm_title": "拖动唱臂到唱片上，松手播放",

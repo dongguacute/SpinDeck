@@ -136,7 +136,9 @@
     "import_all": "Import All",
     "unnamed_playlist": "Unnamed Playlist",
     "add_to_shelf": "Add to Shelf",
-    "import_from_platform": "Playlist from {{platform}}"
+    "import_from_platform": "Playlist from {{platform}}",
+    "kugou_import_incompatible_note": "Kugou playlist import is not compatible due to technical limitations.",
+    "kugou_playlist_link_placeholder": "Paste playlist link, Kugou code, or enter \"My Favorites\"..."
   },
   "vinyl": {
     "tonearm_title": "Drag tonearm to record, release to play",

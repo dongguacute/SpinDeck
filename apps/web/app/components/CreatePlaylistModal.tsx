@@ -431,10 +431,16 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
                       </button>
                     );})}
                   </div>}
-                </div></div>
+                </div>
+                {importPlatform === "KugouMusic" && (
+                  <p className="mt-2 text-[11px] leading-relaxed" style={{ color: "var(--text-muted)" }}>
+                    {t('create_modal.kugou_import_incompatible_note')}
+                  </p>
+                )}
+              </div>
               <div><label className="block text-xs font-medium mb-1.5" style={labelStyle}>{t('create_modal.playlist_link')}</label>
                 <div className="relative"><Link className="absolute left-3.5 top-3.5 w-4 h-4" style={{ color: "var(--text-muted)" }} />
-                  <textarea value={importUrl} onChange={(e) => { setImportUrl(e.target.value); setImported(false); }} placeholder={importPlatform === "KugouMusic" ? "粘贴歌单链接、酷狗码，或输入“我喜欢”..." : t('create_modal.playlist_link_placeholder_multi')} rows={3} className="w-full border rounded-xl py-3 pl-10 pr-4 text-sm outline-none transition-colors resize-none"
+                  <textarea value={importUrl} onChange={(e) => { setImportUrl(e.target.value); setImported(false); }} placeholder={importPlatform === "KugouMusic" ? t('create_modal.kugou_playlist_link_placeholder') : t('create_modal.playlist_link_placeholder_multi')} rows={3} className="w-full border rounded-xl py-3 pl-10 pr-4 text-sm outline-none transition-colors resize-none"
                     style={inputStyle}
                     onFocus={(e) => (e.currentTarget.style.borderColor = "var(--border-hover)")}
                     onBlur={(e) => (e.currentTarget.style.borderColor = "var(--border-color)")}
