@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="SpinDeck">
+  <defs>
+    <linearGradient id="spindeck-logo-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#cfb095"/>
+      <stop offset="100%" stop-color="#dcbfa6"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#spindeck-logo-bg)" stroke="#c4a484" stroke-width="2"/>
+  <g transform="translate(20 20)" stroke="#5c4d41" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <circle cx="12" cy="12" r="10"/>
+    <path d="M6 12c0-1.7.7-3.2 1.8-4.2"/>
+    <circle cx="12" cy="12" r="2"/>
+    <path d="M18 12c0 1.7-.7 3.2-1.8 4.2"/>
+  </g>
+</svg>

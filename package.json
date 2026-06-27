@@ -29,6 +29,9 @@
     "dev:desktop": "pnpm --filter @spindeck/desktop dev",
     "desktop:icons": "pnpm --filter @spindeck/desktop generate:icons",
     "desktop:prepare": "pnpm --filter @spindeck/desktop prepare:resources",
+    "dev:docs": "vitepress dev docs",
+    "build:docs": "vitepress build docs",
+    "preview:docs": "vitepress preview docs",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
@@ -47,7 +50,8 @@
     "prettier": "^3.7.4",
     "turbo": "^2.9.18",
     "typescript": "5.9.2",
-    "typescript-eslint": "^8.18.0"
+    "typescript-eslint": "^8.18.0",
+    "vitepress": "^1.6.4"
   },
   "packageManager": "pnpm@9.0.0",
   "engines": {
