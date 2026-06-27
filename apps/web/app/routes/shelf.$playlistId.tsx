@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useThemeStore } from "../lib/theme-store";
 import PlaylistShelf from "../components/PlaylistShelf";
 import { SongVinylOverlay } from "@spindeck/vinyl-ui";
-import { beginShelfSession, stopSong, pauseSong } from "@spindeck/player";
+import { beginShelfSession, stopSong, prepareSongSwitch } from "@spindeck/player";
 import type { SongInfo } from "@spindeck/player";
 import {
   getDefaultChrome,
@@ -111,7 +111,7 @@ export default function ShelfPage() {
     const wasInPlayback = selectedIndex !== null;
     
     if (wasInPlayback && playlist?.platform) {
-      void pauseSong(playlist.platform);
+      void prepareSongSwitch(playlist.platform);
     }
 
     setSelectedIndex(index);

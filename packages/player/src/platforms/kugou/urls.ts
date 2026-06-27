@@ -1,13 +1,22 @@
 import type { DeviceOS, SongInfo } from "../../types";
 
-export function buildKugouPlayUrls(song: SongInfo, os: DeviceOS): string[] {
-  const id = song.platformSongId?.trim();
-  if (!id) return [];
-  
-  if (os === "macos") {
-    // Mac 版使用 mackugou 协议
-    return [`mackugou://start?type=3&cmd=play&content_type=1&content_id=${id}`];
-  }
-  
-  return [`kugoumusic://start?type=3&cmd=play&content_type=1&content_id=${id}`];
+export function buildKugouMacCmdUrl(_cmd: number, _jsonStr: Record<string, unknown>): string {
+  return "";
+}
+
+export function buildKugouMacListenPayload(_options: unknown): Record<string, unknown> {
+  return {};
+}
+
+export function buildKugouMacPlayUrls(
+  _song: SongInfo,
+  _meta?: unknown,
+): string[] {
+  return [];
+}
+
+export const KUGOU_MAC_TOGGLE_PLAY_URL = "";
+
+export function buildKugouPlayUrls(_song: SongInfo, _os: DeviceOS): string[] {
+  return [];
 }

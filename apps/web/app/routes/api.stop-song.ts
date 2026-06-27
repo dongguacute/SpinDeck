@@ -8,20 +8,20 @@ export async function action({ request }: Route.ActionArgs) {
     return Response.json({ error: "Method not allowed" }, { status: 405 });
   }
 
-  let body: { platform?: PlatformType };
+  let body: { platform?: PlatformType; cancelOnly?: boolean };
   try {
     body = await request.json();
   } catch {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { platform } = body;
+  const { platform, cancelOnly } = body;
   if (!platform) {
     return Response.json({ error: "缺少 platform" }, { status: 400 });
   }
 
   try {
-    const result = await serverPauseSong(platform);
+    const result = await serverPauseSong(platform, { cancelOnly: Boolean(cancelOnly) });
     if (!result.ok) {
       return Response.json({ error: result.error ?? "暂停失败" }, { status: 500 });
     }

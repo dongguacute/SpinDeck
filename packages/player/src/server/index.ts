@@ -76,6 +76,7 @@ export async function serverPlaySong(
 /** 服务端：暂停 */
 export async function serverPauseSong(
   platform: PlatformType,
+  options?: { cancelOnly?: boolean },
   exec?: ExecFileAsync,
 ): Promise<PlayResult> {
   if (nodePlatform() !== "darwin") {
@@ -83,15 +84,15 @@ export async function serverPauseSong(
   }
 
   if (platform === "QQMusic") {
-    return qqMusicMac.pauseOnMac(await getExec(exec));
+    return qqMusicMac.pauseOnMac(await getExec(exec), options?.cancelOnly);
   }
 
   if (platform === "NetEaseMusic") {
-    return neteaseMac.pauseOnMac(await getExec(exec));
+    return neteaseMac.pauseOnMac(await getExec(exec), options?.cancelOnly);
   }
 
   if (platform === "KugouMusic") {
-    return kugouMac.pauseOnMac(await getExec(exec));
+    return kugouMac.pauseOnMac(await getExec(exec), options?.cancelOnly);
   }
 
   return { ok: true, playing: false, stopped: false };

@@ -83,7 +83,11 @@ export async function playSongOnMac(
   };
 }
 
-export async function pauseOnMac(exec: ExecFileAsync): Promise<PlayResult> {
+export async function pauseOnMac(exec: ExecFileAsync, cancelOnly = false): Promise<PlayResult> {
+  if (cancelOnly) {
+    return { ok: true, playing: false, stopped: false, method: "cancel" };
+  }
+
   const { stdout } = await exec("osascript", ["-e", QQ_MUSIC_PAUSE_SCRIPT]);
   const stopped = String(stdout).trim() === "paused";
   return { ok: true, playing: false, stopped };

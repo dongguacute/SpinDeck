@@ -3,6 +3,7 @@ import {
   beginPageSession,
   canResumeSong,
   getPageSessionId,
+  isArmActivelyPlaying,
   isSameSongInSession,
   markSongPausedByArm,
   markSongStarted,
@@ -38,7 +39,7 @@ let lastPlayKey = "";
 function usesMacServer(platform: PlatformType): boolean {
   return (
     getDeviceOS() === "macos" &&
-    (platform === "QQMusic" || platform === "NetEaseMusic")
+    (platform === "QQMusic" || platform === "NetEaseMusic" || platform === "KugouMusic")
   );
 }
 
@@ -174,9 +175,13 @@ export async function playSong(
   );
 
   if (usesMacServer(platform)) {
-    if (song.platformNumericId == null) {
-      console.warn(`[Play] 缺少 songid — ${song.name}`);
-      return { ok: false, playing: false, error: "missing songid" };
+    const hasRequiredId = platform === "KugouMusic" 
+      ? song.platformSongId != null 
+      : song.platformNumericId != null;
+
+    if (!hasRequiredId) {
+      console.warn(`[Play] 缺少必要的 ID — ${song.name} (platform: ${platform})`);
+      return { ok: false, playing: false, error: "missing required id" };
     }
     try {
       const res = await fetch(api.playUrl ?? DEFAULT_API.playUrl, {
@@ -218,6 +223,29 @@ export async function playSong(
   }
 
   return clientFallbackPlay(platform, song, urls);
+}
+
+/** 切歌前：取消进行中的播放；仅在本地认为「正在播」时才 toggle 暂停 */
+export async function prepareSongSwitch(
+  platform: PlatformType,
+  api: PlayerApiConfig = DEFAULT_API,
+): Promise<void> {
+  lastPlayKey = "";
+  lastPlayAt = 0;
+  const cancelOnly = !isArmActivelyPlaying();
+  resetArmSession();
+
+  if (!usesMacServer(platform)) return;
+
+  try {
+    await fetch(api.pauseUrl ?? DEFAULT_API.pauseUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ platform, cancelOnly }),
+    });
+  } catch (err) {
+    console.warn("[PrepareSwitch] failed:", err);
+  }
 }
 
 /** 暂停（保留页面会话，供同页抬臂后再继续） */

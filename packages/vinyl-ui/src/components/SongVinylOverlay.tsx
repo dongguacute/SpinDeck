@@ -18,7 +18,9 @@ import {
   markSongStarted,
   pauseSong,
   playSong,
+  resetArmSession,
   resumeSong,
+  songSessionKey,
 } from "@spindeck/player";
 
 interface Props {
@@ -130,6 +132,7 @@ export default function SongVinylOverlay({
     lastLocalActionAtRef.current = Date.now();
     setArmProgress(1);
     const requestId = ++playRequestRef.current;
+    const targetKey = songSessionKey(song);
     setPendingPlay(true);
     setSpinActive(true);
     setPlaying(true);
@@ -142,9 +145,13 @@ export default function SongVinylOverlay({
     };
 
     try {
-      if (canResumeSong(song)) {
+      if (canResumeSong(song) && songSessionKey(song) === targetKey) {
         const result = await resumeSong(platform);
         if (playRequestRef.current !== requestId) return;
+        if (songSessionKey(song) !== targetKey) {
+          rollbackVisual();
+          return;
+        }
         setPendingPlay(false);
         if (result.ok && result.playing) {
           markSongStarted(song);
@@ -156,6 +163,10 @@ export default function SongVinylOverlay({
 
       const result = await playSong(platform, song);
       if (playRequestRef.current !== requestId) return;
+      if (songSessionKey(song) !== targetKey) {
+        rollbackVisual();
+        return;
+      }
       setPendingPlay(false);
       if (result.ok && result.playing) {
         markSongStarted(song);
@@ -169,6 +180,10 @@ export default function SongVinylOverlay({
       rollbackVisual();
     }
   }, [platform, song, setArmProgress]);
+
+  useEffect(() => {
+    resetArmSession();
+  }, [song.platformSongId, song.platformNumericId, song.name]);
 
   useEffect(() => {
     setSpinActive(false);

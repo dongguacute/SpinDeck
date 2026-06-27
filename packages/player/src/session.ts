@@ -54,3 +54,13 @@ export function canResumeSong(song: SongInfo): boolean {
 export function isSameSongInSession(song: SongInfo): boolean {
   return armSession.songKey === songSessionKey(song) && armSession.startedInSession;
 }
+
+/** 唱臂落下且未抬起：本地认为正在播放 */
+export function isArmActivelyPlaying(): boolean {
+  return armSession.startedInSession && !armSession.pausedByArm;
+}
+
+/** 唱臂抬起暂停：本地认为已暂停，可继续同一首 */
+export function isArmPausedByUser(): boolean {
+  return armSession.startedInSession && armSession.pausedByArm;
+}

@@ -14,6 +14,8 @@ export {
   beginPageSession,
   canResumeSong,
   getPageSessionId,
+  isArmActivelyPlaying,
+  isArmPausedByUser,
   isSameSongInSession,
   markSongPausedByArm,
   markSongStarted,
@@ -28,6 +30,7 @@ export {
   pauseSong,
   playSong,
   prelaunchApp,
+  prepareSongSwitch,
   resumeSong,
   stopSong,
 } from "./client/index";
