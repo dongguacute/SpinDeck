@@ -40,7 +40,8 @@
     "react-router": "7.16.0",
     "three": "^0.184.0",
     "@tauri-apps/api": "^2.9.0",
-    "@tauri-apps/plugin-os": "^2.3.0"
+    "@tauri-apps/plugin-os": "^2.3.0",
+    "@tauri-apps/plugin-shell": "^2.3.0"
   },
   "devDependencies": {
     "@react-router/dev": "7.16.0",

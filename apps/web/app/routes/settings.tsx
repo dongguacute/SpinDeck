@@ -89,16 +89,22 @@ export default function Settings() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleLinkClick = (e: React.MouseEvent, url: string, title: string) => {
-    e.preventDefault();
+  const handleLinkClick = (url: string, title: string) => {
     setConfirmLink({ url, title });
   };
 
   const confirmJump = () => {
-    if (confirmLink) {
-      window.open(confirmLink.url, '_blank', 'noopener,noreferrer');
-      setConfirmLink(null);
-    }
+    if (!confirmLink) return;
+    const { url } = confirmLink;
+    setConfirmLink(null);
+    void (async () => {
+      try {
+        const { open } = await import("@tauri-apps/plugin-shell");
+        await open(url);
+      } catch {
+        window.open(url, "_blank", "noopener,noreferrer");
+      }
+    })();
   };
 
   return (
@@ -343,12 +349,10 @@ export default function Settings() {
               </p>
             </div>
             
-            <a
-              href="https://spindeck.dgct.cc"
-              onClick={(e) => handleLinkClick(e, "https://spindeck.dgct.cc", t('settings.about.documentation'))}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-between px-5 py-4 hover:bg-(--bg-tertiary) transition-colors duration-200 group cursor-pointer"
+            <button
+              type="button"
+              onClick={() => handleLinkClick("https://spindeck.dgct.cc", t('settings.about.documentation'))}
+              className="w-full flex items-center justify-between px-5 py-4 hover:bg-(--bg-tertiary) transition-colors duration-200 group cursor-pointer bg-transparent border-0"
               style={{ borderBottom: "1px solid var(--border-color)" }}
             >
               <div className="flex items-center gap-3" style={{ color: "var(--text-secondary)" }}>
@@ -363,14 +367,12 @@ export default function Settings() {
                 </span>
                 <ArrowLeft className="w-4 h-4 rotate-180 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" style={{ color: "var(--text-muted)" }} />
               </div>
-            </a>
+            </button>
 
-            <a
-              href="https://github.com/dongguacute/SpinDeck"
-              onClick={(e) => handleLinkClick(e, "https://github.com/dongguacute/SpinDeck", t('settings.about.github'))}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-between px-5 py-4 hover:bg-(--bg-tertiary) transition-colors duration-200 group cursor-pointer"
+            <button
+              type="button"
+              onClick={() => handleLinkClick("https://github.com/dongguacute/SpinDeck", t('settings.about.github'))}
+              className="w-full flex items-center justify-between px-5 py-4 hover:bg-(--bg-tertiary) transition-colors duration-200 group cursor-pointer bg-transparent border-0"
               style={{ borderBottom: "1px solid var(--border-color)" }}
             >
               <div className="flex items-center gap-3" style={{ color: "var(--text-secondary)" }}>
@@ -385,14 +387,12 @@ export default function Settings() {
                 </span>
                 <ArrowLeft className="w-4 h-4 rotate-180 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" style={{ color: "var(--text-muted)" }} />
               </div>
-            </a>
+            </button>
 
-            <a
-              href="https://v.douyin.com/fPdV873AnKo"
-              onClick={(e) => handleLinkClick(e, "https://v.douyin.com/fPdV873AnKo", t('settings.about.author_douyin'))}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-between px-5 py-4 hover:bg-(--bg-tertiary) transition-colors duration-200 group cursor-pointer"
+            <button
+              type="button"
+              onClick={() => handleLinkClick("https://v.douyin.com/fPdV873AnKo", t('settings.about.author_douyin'))}
+              className="w-full flex items-center justify-between px-5 py-4 hover:bg-(--bg-tertiary) transition-colors duration-200 group cursor-pointer bg-transparent border-0"
               style={{ borderBottom: "1px solid var(--border-color)" }}
             >
               <div className="flex items-center gap-3" style={{ color: "var(--text-secondary)" }}>
@@ -407,14 +407,12 @@ export default function Settings() {
                 </span>
                 <ArrowLeft className="w-4 h-4 rotate-180 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" style={{ color: "var(--text-muted)" }} />
               </div>
-            </a>
+            </button>
 
-            <a
-              href="https://www.youtube.com/@dongguacute"
-              onClick={(e) => handleLinkClick(e, "https://www.youtube.com/@dongguacute", t('settings.about.author_youtube'))}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-between px-5 py-4 hover:bg-(--bg-tertiary) transition-colors duration-200 group cursor-pointer"
+            <button
+              type="button"
+              onClick={() => handleLinkClick("https://www.youtube.com/@dongguacute", t('settings.about.author_youtube'))}
+              className="w-full flex items-center justify-between px-5 py-4 hover:bg-(--bg-tertiary) transition-colors duration-200 group cursor-pointer bg-transparent border-0"
             >
               <div className="flex items-center gap-3" style={{ color: "var(--text-secondary)" }}>
                 <YoutubeIcon />
@@ -428,7 +426,7 @@ export default function Settings() {
                 </span>
                 <ArrowLeft className="w-4 h-4 rotate-180 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" style={{ color: "var(--text-muted)" }} />
               </div>
-            </a>
+            </button>
           </div>
         </section>
 

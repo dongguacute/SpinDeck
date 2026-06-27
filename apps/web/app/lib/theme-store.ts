@@ -48,6 +48,32 @@ function loadSettings(): VisualSettings {
   }
 }
 
+function resolveAppearanceMode(mode: AppearanceMode): "light" | "dark" {
+  if (typeof window === "undefined") return "dark";
+  if (mode === "system") {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }
+  return mode;
+}
+
+function syncThemeDom(resolvedMode: "light" | "dark", theme: ThemeType) {
+  if (typeof document === "undefined") return;
+
+  document.documentElement.setAttribute("data-theme", resolvedMode);
+
+  Object.values(THEME_CONFIGS).forEach((cfg) => {
+    document.body.classList.remove(cfg.className);
+  });
+
+  const currentCfg = THEME_CONFIGS[theme];
+  if (currentCfg) {
+    document.body.classList.add(currentCfg.className);
+  }
+}
+
+/** Runs before React paint to avoid appearance / theme-family flash. */
+export const THEME_BOOTSTRAP_SCRIPT = `(function(){try{var m=localStorage.getItem("${MODE_KEY}")||"system";var r=m==="system"?(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):m;document.documentElement.setAttribute("data-theme",r);}catch(e){}})();`;
+
 function saveTheme(theme: ThemeType) {
   localStorage.setItem(THEME_KEY, theme);
 }
@@ -68,35 +94,21 @@ function emit() {
 
 /* ---------- Hook ---------- */
 export function useThemeStore() {
-  const [theme, setThemeState] = useState<ThemeType>(THEMES.CAFE);
-  const [mode, setModeState] = useState<AppearanceMode>("system");
-  const [settings, setSettingsState] = useState<VisualSettings>(DEFAULT_SETTINGS);
-
-  // 计算实际生效的 mode (解决 system 逻辑)
-  const [resolvedMode, setResolvedMode] = useState<"light" | "dark">("dark");
+  const [theme, setThemeState] = useState<ThemeType>(() => loadTheme());
+  const [mode, setModeState] = useState<AppearanceMode>(() => loadMode());
+  const [settings, setSettingsState] = useState<VisualSettings>(() => loadSettings());
+  const [resolvedMode, setResolvedMode] = useState<"light" | "dark">(() => resolveAppearanceMode(loadMode()));
 
   useEffect(() => {
-    const t = loadTheme();
-    const m = loadMode();
-    setThemeState(t);
-    setModeState(m);
-    setSettingsState(loadSettings());
-
     const updateResolved = () => {
-      const currentMode = loadMode();
-      if (currentMode === "system") {
-        const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-        setResolvedMode(isDark ? "dark" : "light");
-      } else {
-        setResolvedMode(currentMode as "light" | "dark");
-      }
+      setResolvedMode(resolveAppearanceMode(loadMode()));
     };
 
-    updateResolved();
-
     const listener = () => {
-      setThemeState(loadTheme());
-      setModeState(loadMode());
+      const nextTheme = loadTheme();
+      const nextMode = loadMode();
+      setThemeState(nextTheme);
+      setModeState(nextMode);
       setSettingsState(loadSettings());
       updateResolved();
     };
@@ -115,19 +127,8 @@ export function useThemeStore() {
     };
   }, []);
 
-  // 同步 DOM 状态
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", resolvedMode);
-    
-    // 移除旧的主题类名
-    Object.values(THEME_CONFIGS).forEach(cfg => {
-      document.body.classList.remove(cfg.className);
-    });
-    // 添加当前主题类名
-    const currentCfg = THEME_CONFIGS[theme];
-    if (currentCfg) {
-      document.body.classList.add(currentCfg.className);
-    }
+    syncThemeDom(resolvedMode, theme);
   }, [resolvedMode, theme]);
 
   const setTheme = useCallback((t: ThemeType) => {

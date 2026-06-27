@@ -7,7 +7,7 @@ import {
 } from "react-router";
 import type { Route } from "./+types/root";
 import { useEffect, useState } from "react";
-import { useThemeStore } from "./lib/theme-store";
+import { useThemeStore, THEME_BOOTSTRAP_SCRIPT } from "./lib/theme-store";
 import { useBackgroundRefresh } from "./lib/use-background-refresh";
 import { isTauri } from "./lib/is-tauri";
 import { bootstrapNativeDeviceOS } from "./lib/system-info";
@@ -28,13 +28,10 @@ export function meta(): Route.MetaDescriptors {
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const { theme } = useThemeStore();
+  // Keep hook mounted at layout level so theme DOM stays in sync on every route.
+  useThemeStore();
   useBackgroundRefresh();
   const [showDragRegion, setShowDragRegion] = useState(false);
-
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-  }, [theme]);
 
   useEffect(() => {
     void (async () => {
@@ -64,10 +61,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <html lang={i18n.language} data-theme={theme} suppressHydrationWarning>
+    <html lang={i18n.language} suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP_SCRIPT }} />
         <Meta />
         <Links />
       </head>
