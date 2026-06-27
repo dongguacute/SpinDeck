@@ -1,0 +1,34 @@
+{
+  "name": "@spindeck/docs",
+  "version": "0.1.0",
+  "description": "SpinDeck documentation site",
+  "author": "Cherry Fu <https://github.com/dongguacute>",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dongguacute/SpinDeck.git",
+    "directory": "docs"
+  },
+  "homepage": "https://github.com/dongguacute/SpinDeck/tree/main/docs#readme",
+  "bugs": {
+    "url": "https://github.com/dongguacute/SpinDeck/issues"
+  },
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vitepress dev",
+    "build": "vitepress build",
+    "preview": "vitepress preview"
+  },
+  "devDependencies": {
+    "@nolebase/vitepress-plugin-enhanced-mark": "^2.18.2",
+    "@nolebase/vitepress-plugin-enhanced-readabilities": "^2.18.2",
+    "@nolebase/vitepress-plugin-git-changelog": "^2.18.2",
+    "@nolebase/vitepress-plugin-highlight-targeted-heading": "^2.18.2",
+    "@nolebase/vitepress-plugin-inline-link-preview": "^2.18.2",
+    "@nolebase/vitepress-plugin-sidebar": "^2.18.2",
+    "typescript": "5.9.2",
+    "vite": "5.4.21",
+    "vitepress": "^1.6.4"
+  }
+}

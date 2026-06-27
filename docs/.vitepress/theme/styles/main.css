@@ -1,0 +1,21 @@
+.VPSocialLinks.VPNavBarSocialLinks.social-links {
+  margin-right: 0;
+}
+
+/* Sidebar — ensure cafe palette wins over default theme load order */
+.VPSidebar,
+.VPSidebar .curtain {
+  background-color: #f5efe6 !important;
+}
+
+.dark .VPSidebar,
+.dark .VPSidebar .curtain {
+  background-color: #231f1c !important;
+}
+
+.VPSidebarItem.level-2.is-active > .item > .indicator,
+.VPSidebarItem.level-3.is-active > .item > .indicator,
+.VPSidebarItem.level-4.is-active > .item > .indicator,
+.VPSidebarItem.level-5.is-active > .item > .indicator {
+  background-color: var(--vp-c-brand-1) !important;
+}

@@ -1,0 +1,3 @@
+# Netlify: root only — browser language → locale home (fallback English)
+/  /zh/  302  Language=zh*
+/  /en/  302
