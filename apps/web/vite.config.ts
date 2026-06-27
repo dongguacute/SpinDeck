@@ -13,7 +13,13 @@ export default defineConfig({
   },
   ssr: {
     external: ["@react-router/node"],
-    noExternal: ["@spindeck/core", "@spindeck/picker", "@spindeck/player", "@spindeck/vinyl-ui"],
+    noExternal: [
+      "@spindeck/core",
+      "@spindeck/picker",
+      "@spindeck/player",
+      "@spindeck/ui",
+      "@spindeck/vinyl-ui",
+    ],
   },
   server: {
     host: '0.0.0.0',

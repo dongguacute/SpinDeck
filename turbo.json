@@ -9,7 +9,9 @@
         ".next/**",
         "!.next/cache/**",
         "!.next/dev/**",
-        ".vitepress/dist/**"
+        ".vitepress/dist/**",
+        "dist/**",
+        "build/**"
       ]
     },
     "lint": {

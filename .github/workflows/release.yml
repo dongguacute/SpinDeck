@@ -116,25 +116,35 @@ jobs:
         run: node scripts/set-version.mjs "${{ needs.prepare.outputs.version }}"
 
       - name: Build desktop bundle
-        run: pnpm --filter @spindeck/desktop exec tauri build -- --target ${{ matrix.target }}
+        run: pnpm --filter @spindeck/desktop run build -- --target ${{ matrix.target }}
         env:
           CI: true
 
       - name: Collect release assets
         shell: bash
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+          PLATFORM: ${{ matrix.platform }}
         run: |
           mkdir -p release-assets
           bundle_root="apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle"
-          shopt -s globstar nullglob
-          for file in \
-            "$bundle_root"/**/*.msi \
-            "$bundle_root"/**/*.exe \
-            "$bundle_root"/**/*.deb \
-            "$bundle_root"/**/*.AppImage \
-            "$bundle_root"/**/*.dmg; do
-            cp "$file" "release-assets/${{ matrix.platform }}-$(basename "$file")"
-          done
-          if [ -z "$(ls -A release-assets)" ]; then
+          shopt -s nullglob
+
+          if [ "$PLATFORM" = "windows" ]; then
+            for file in "$bundle_root"/nsis/*.exe; do
+              cp "$file" "release-assets/spindeck-${VERSION}-${PLATFORM}.exe"
+            done
+          else
+            for file in \
+              "$bundle_root"/deb/*.deb \
+              "$bundle_root"/appimage/*.AppImage \
+              "$bundle_root"/dmg/*.dmg; do
+              ext="${file##*.}"
+              cp "$file" "release-assets/spindeck-${VERSION}-${PLATFORM}.${ext}"
+            done
+          fi
+
+          if [ -z "$(ls -A release-assets 2>/dev/null)" ]; then
             echo "No bundle artifacts found under $bundle_root"
             find apps/desktop/src-tauri/target -type f | head -50
             exit 1
