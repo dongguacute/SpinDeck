@@ -11,18 +11,19 @@ SpinDeck ships a [Tauri 2](https://v2.tauri.app/) desktop shell for macOS, Windo
 
 Download pre-built desktop installers from GitHub Releases:
 
-**[v1.0.0-beta.4](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.4)** (latest)
+**[v1.0.0-beta.5](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.5)** (latest)
 
 Pick the asset for your platform (`.dmg` / `.app` on macOS, `.msi` / `.exe` on Windows, etc.). Release builds currently require **Node.js** on the user's machine to run the embedded server.
 
-### What's new in v1.0.0-beta.4
+### What's new in v1.0.0-beta.5
 
-- **macOS QQ Music control** — Fixed AppleScript pause/resume; keyboard fallback when menu control fails; idempotent pause avoids accidental resume when leaving the shelf
+- **macOS Accessibility permission** — Pause/resume controls local clients via AppleScript and requires the Accessibility permission; the app auto-opens System Settings to guide authorization when missing
+- **macOS QQ Music control** — Fixed AppleScript pause/resume; keyboard fallback when menu control fails; idempotent pause avoids accidental resume when leaving the shelf; pause no longer triggers play when nothing is playing
 - **Pre-launch & external links** — Pre-launch opens local clients via Tauri `shell.open`; settings and playlist links open in the system browser
 - **Playlist refresh** — Manual refresh bypasses QQ Music server cache; 3D shelf rebuilds when song data changes
 - **Desktop dev & runtime** — Tauri dev resources, WebView capabilities, and Vite SSR compatibility fixes
 
-Previous release: [v1.0.0-beta.3](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.3)
+Previous release: [v1.0.0-beta.4](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.4)
 
 ::: warning Unavailable releases
 The following builds are **not recommended** due to a white-screen issue in packaged desktop apps:
@@ -58,6 +59,27 @@ macOS applies the strictest restrictions to unsigned apps. **Most “can’t ope
 | “SpinDeck is damaged and can’t be opened. You should move it to the Trash” | Download quarantine attribute (`com.apple.quarantine`) | In Terminal (replace the path with your actual `.app` location):<br>`xattr -cr /Applications/SpinDeck.app`<br>Then right-click → **Open** again |
 | Double-clicking inside the DMG does nothing useful | App was not copied to Applications | Drag `SpinDeck.app` into **Applications**, then launch from Launchpad or the Applications folder |
 | Wrong architecture | Build does not match your Mac | Apple Silicon (M-series): use the **macos-arm** asset; Intel Macs: use **macos-intel** |
+
+#### macOS Accessibility permission (pause/resume)
+
+SpinDeck controls local music clients (QQ Music, NetEase, etc.) on macOS via AppleScript for pause/resume, which requires the **Accessibility** permission. **Play-only** (URL scheme) does not need it, but **pause / resume** must be authorized.
+
+| Symptom | Cause | What to do |
+|---------|-------|------------|
+| Clicking pause does nothing and the app prompts for Accessibility | SpinDeck lacks Accessibility permission | Open **System Settings → Privacy & Security → Accessibility** and toggle **SpinDeck** on |
+| Toggle is on but the prompt still appears | TCC database did not refresh (occasional macOS issue) | Toggle off and back on; or remove SpinDeck with **「–」**, restart the app, and re-authorize |
+| Pause turns into play (clicking pause while nothing is playing) | Old versions' space-key fallback triggers play when idle | Upgrade to v1.0.0-beta.5 or later; the new build checks playback state before sending pause |
+| Works in dev, fails in packaged build | The packaged `.app` has a different signing/permission context than dev | Re-grant Accessibility permission to the `SpinDeck.app` installed in `/Applications` |
+
+**Authorization steps:**
+
+1. On first pause click, the app shows a prompt and opens **System Settings → Privacy & Security → Accessibility**
+2. Find **SpinDeck** in the list and toggle it on
+3. Return to the app and click pause again
+
+::: tip Permission not taking effect?
+If the toggle is on but the prompt still appears, try: **System Settings → Privacy & Security → Accessibility** → select SpinDeck → click **「–」** to remove → restart SpinDeck → authorize again when prompted. This is a known occasional issue with the macOS TCC database.
+:::
 
 **Recommended Node.js install (macOS):**
 

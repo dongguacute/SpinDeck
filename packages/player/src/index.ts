@@ -11,6 +11,7 @@ export type {
 
 export { getDeviceOS, setNativeDeviceOS } from "./device";
 export { setAppUrlOpener, setExternalUrlOpener } from "./client/url-open";
+export { setAccessibilityMissingHandler } from "./client/accessibility";
 export {
   beginPageSession,
   canResumeSong,

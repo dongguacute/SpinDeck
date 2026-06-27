@@ -77,8 +77,8 @@ export const NETEASE_MUSIC_PAUSE_SCRIPT = buildScript(`
         end try
       end repeat
       return "idle"
-    on error
-      return "error"
+    on error err
+      return "error:" & err
     end try
 `);
 
@@ -96,8 +96,8 @@ export const NETEASE_MUSIC_RESUME_SCRIPT = buildScript(`
         end try
       end repeat
       return "idle"
-    on error
-      return "error"
+    on error err
+      return "error:" & err
     end try
 `);
 
@@ -110,8 +110,8 @@ export const NETEASE_MUSIC_IS_PLAYING_SCRIPT = buildScript(`
         end try
       end repeat
       return "false"
-    on error
-      return "false"
+    on error err
+      return "error:" & err
     end try
 `);
 

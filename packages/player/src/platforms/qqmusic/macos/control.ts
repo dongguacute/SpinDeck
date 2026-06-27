@@ -36,7 +36,7 @@ function buildScript(inner: string): string {
   `.trim();
 }
 
-/** v8+：在「播放控制 / Playback」子菜单中点击暂停项（或首项 toggle） */
+/** v8+：在「播放控制 / Playback」子菜单中点击暂停项（没播放时返回 idle 不误触播放） */
 const PLAYBACK_MENU_PAUSE = `
       try
         if exists menu bar item "播放控制" of menu bar 1 then
@@ -48,8 +48,7 @@ const PLAYBACK_MENU_PAUSE = `
               click menu item "Pause"
               return "paused"
             else
-              click menu item 1
-              return "paused"
+              return "idle"
             end if
           end tell
         else if exists menu bar item "Playback" of menu bar 1 then
@@ -61,8 +60,7 @@ const PLAYBACK_MENU_PAUSE = `
               click menu item "Pause"
               return "paused"
             else
-              click menu item 1
-              return "paused"
+              return "idle"
             end if
           end tell
         end if
@@ -154,13 +152,9 @@ export const QQ_MUSIC_PAUSE_SCRIPT = buildScript(`
           end if
         end try
       end repeat
-      try
-        click menu item 1 of menu 1 of menu bar item 4 of menu bar 1
-        return "paused"
-      end try
       return "idle"
-    on error
-      return "error"
+    on error err
+      return "error:" & err
     end try
 `);
 
@@ -183,8 +177,8 @@ export const QQ_MUSIC_RESUME_SCRIPT = buildScript(`
         return "resumed"
       end try
       return "idle"
-    on error
-      return "error"
+    on error err
+      return "error:" & err
     end try
 `);
 
@@ -198,8 +192,8 @@ export const QQ_MUSIC_IS_PLAYING_SCRIPT = buildScript(`
         end try
       end repeat
       return "false"
-    on error
-      return "false"
+    on error err
+      return "error:" & err
     end try
 `);
 

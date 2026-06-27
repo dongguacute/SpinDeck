@@ -17,8 +17,17 @@ import {
 import { buildNetEasePlayUrls } from "../urls";
 
 export async function isNeteaseMusicPlaying(exec: ExecFileAsync): Promise<boolean> {
-  const { stdout } = await exec("osascript", ["-e", NETEASE_MUSIC_IS_PLAYING_SCRIPT]);
-  return String(stdout).trim() === "true";
+  try {
+    const { stdout } = await exec("osascript", ["-e", NETEASE_MUSIC_IS_PLAYING_SCRIPT]);
+    const result = String(stdout).trim();
+    if (result.startsWith("error:")) {
+      console.warn("[NeteaseMusic] isPlaying AppleScript error:", result);
+    }
+    return result === "true";
+  } catch (err) {
+    console.warn("[NeteaseMusic] isPlaying AppleScript failed:", err);
+    return false;
+  }
 }
 
 export async function waitForNeteaseMusicPlaying(exec: ExecFileAsync): Promise<boolean> {
@@ -96,13 +105,41 @@ export async function pauseOnMac(exec: ExecFileAsync, cancelOnly = false): Promi
     return { ok: true, playing: false, stopped: false, method: "cancel" };
   }
 
-  if (!(await isNeteaseMusicPlaying(exec))) {
-    return { ok: true, playing: false, stopped: false, method: "idle" };
+  // 不再依赖 isNeteaseMusicPlaying 提前返回：当辅助功能权限缺失时，菜单查询会抛错被
+  // 脚本 catch 返回 "false"，导致这里误判为「未播放」直接返回 idle。
+  // 改为直接尝试暂停脚本，让错误能被捕获和上报。
+
+  let stopped = false;
+  let pauseOutput = "";
+
+  try {
+    const { stdout } = await exec("osascript", ["-e", NETEASE_MUSIC_PAUSE_SCRIPT]);
+    pauseOutput = String(stdout).trim();
+    stopped = pauseOutput === "paused";
+  } catch (err) {
+    console.warn("[NeteaseMusic] pause AppleScript failed:", err);
   }
 
-  const { stdout } = await exec("osascript", ["-e", NETEASE_MUSIC_PAUSE_SCRIPT]);
-  const stopped = String(stdout).trim() === "paused";
-  return { ok: true, playing: false, stopped };
+  // 检测辅助功能权限错误（osascript 返回 "error:..." 或包含 assistive access）
+  const needsAccessibility =
+    !stopped &&
+    (pauseOutput.startsWith("error:") ||
+      pauseOutput.toLowerCase().includes("assistive") ||
+      pauseOutput.toLowerCase().includes("not allowed"));
+
+  if (needsAccessibility) {
+    console.warn("[NeteaseMusic] pause needs accessibility permission. Output:", pauseOutput);
+    return {
+      ok: false,
+      playing: false,
+      stopped: false,
+      method: "needs-accessibility",
+      error: "macOS 辅助功能权限缺失，请在系统设置 > 隐私与安全性 > 辅助功能中授权 SpinDeck",
+      needsAccessibility: true,
+    };
+  }
+
+  return { ok: true, playing: false, stopped, method: stopped ? "pause" : "idle" };
 }
 
 export async function resumeOnMac(exec: ExecFileAsync): Promise<PlayResult> {

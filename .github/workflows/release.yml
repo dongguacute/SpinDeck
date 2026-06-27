@@ -124,6 +124,17 @@ jobs:
       - name: Set version from release title
         run: node scripts/set-version.mjs "${{ needs.prepare.outputs.version }}"
 
+      - name: Prepare sanitized Rust metadata
+        id: rust-meta
+        shell: bash
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          # rustc -C metadata 要求合法标识符，把 . 和 - 替换为 _
+          sanitized=$(printf '%s' "$VERSION" | tr '.-' '__')
+          echo "metadata=${sanitized}_${PLATFORM}" >> "$GITHUB_OUTPUT"
+
       - name: Clean stale desktop build artifacts
         shell: bash
         run: |
@@ -144,7 +155,7 @@ jobs:
           CI: true
           TURBO_FORCE: true
           # Bust rust-cache bundling when only web/resources changed
-          RUSTFLAGS: -C metadata=${{ needs.prepare.outputs.version }}-${{ matrix.platform }}
+          RUSTFLAGS: -C metadata=${{ steps.rust-meta.outputs.metadata }}
 
       - name: Unmap short drive on Windows
         if: always() && matrix.platform == 'windows'

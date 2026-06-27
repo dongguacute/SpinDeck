@@ -11,5 +11,8 @@
     <key>PATH</key>
     <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
   </dict>
+  <!-- AppleEvent 自动化权限：控制 QQ 音乐等第三方应用所必需 -->
+  <key>NSAppleEventsUsageDescription</key>
+  <string>SpinDeck needs to send Apple events to control music playback in QQ Music.</string>
 </dict>
 </plist>

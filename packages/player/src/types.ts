@@ -38,6 +38,8 @@ export interface PlayResult {
   url?: string;
   songid?: number;
   stopped?: boolean;
+  /** macOS 辅助功能权限缺失，需要用户授权后才能控制第三方应用 */
+  needsAccessibility?: boolean;
 }
 
 export interface SystemPlaybackStatus {

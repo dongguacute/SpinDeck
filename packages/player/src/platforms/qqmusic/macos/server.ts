@@ -20,8 +20,45 @@ import { buildQQMusicMacPlayUrls } from "./urls";
 export async function isQQMusicPlaying(exec: ExecFileAsync): Promise<boolean> {
   try {
     const { stdout } = await exec("osascript", ["-e", QQ_MUSIC_IS_PLAYING_SCRIPT]);
-    return String(stdout).trim() === "true";
-  } catch {
+    const result = String(stdout).trim();
+    if (result.startsWith("error:")) {
+      console.warn("[QQMusic] isPlaying AppleScript error:", result);
+    }
+    return result === "true";
+  } catch (err) {
+    console.warn("[QQMusic] isPlaying AppleScript failed:", err);
+    return false;
+  }
+}
+
+/**
+ * 检测 osascript 是否拥有辅助功能权限。
+ * 当 SpinDeck.app 缺少「辅助功能」权限时，AppleScript 控制其他应用 UI 会失败。
+ * 这里通过一个最小化的菜单访问测试来检测权限。
+ */
+export async function checkAccessibility(exec: ExecFileAsync): Promise<boolean> {
+  const probe = `
+tell application "System Events"
+  try
+    tell process "Finder"
+      set mb to menu bar items of menu bar 1
+      return "ok"
+    end tell
+  on error err
+    return "error:" & err
+  end try
+end tell
+`;
+  try {
+    const { stdout } = await exec("osascript", ["-e", probe]);
+    const result = String(stdout).trim();
+    if (result.startsWith("error:")) {
+      console.warn("[QQMusic] accessibility probe failed:", result);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn("[QQMusic] accessibility probe error:", err);
     return false;
   }
 }
@@ -93,23 +130,46 @@ export async function pauseOnMac(exec: ExecFileAsync, cancelOnly = false): Promi
     return { ok: true, playing: false, stopped: false, method: "cancel" };
   }
 
-  if (!(await isQQMusicPlaying(exec))) {
+  // 暂停前先检查是否在播放：没播放时发暂停可能触发 toggle 变成播放
+  const wasPlaying = await isQQMusicPlaying(exec);
+  if (!wasPlaying) {
     return { ok: true, playing: false, stopped: false, method: "idle" };
   }
 
   let stopped = false;
+  let pauseOutput = "";
 
   try {
     const { stdout } = await exec("osascript", ["-e", QQ_MUSIC_PAUSE_SCRIPT]);
-    stopped = String(stdout).trim() === "paused";
+    pauseOutput = String(stdout).trim();
+    stopped = pauseOutput === "paused";
   } catch (err) {
     console.warn("[QQMusic] pause AppleScript failed:", err);
   }
 
-  if (!stopped && (await isQQMusicPlaying(exec))) {
+  const needsAccessibility =
+    !stopped &&
+    (pauseOutput.startsWith("error:") ||
+      pauseOutput.toLowerCase().includes("assistive") ||
+      pauseOutput.toLowerCase().includes("not allowed"));
+
+  if (needsAccessibility) {
+    return {
+      ok: false,
+      playing: false,
+      stopped: false,
+      method: "needs-accessibility",
+      error: "macOS 辅助功能权限缺失，请在系统设置 > 隐私与安全性 > 辅助功能中授权 SpinDeck",
+      needsAccessibility: true,
+    };
+  }
+
+  // keyboard fallback 也只在确认在播放时才执行（空格键是 toggle，没播放时会触发播放）
+  if (!stopped) {
     try {
       await exec("osascript", ["-e", QQ_MUSIC_PAUSE_KEYBOARD_SCRIPT]);
-      stopped = !(await isQQMusicPlaying(exec));
+      const stillPlaying = await isQQMusicPlaying(exec);
+      stopped = !stillPlaying;
     } catch (err) {
       console.warn("[QQMusic] pause keyboard fallback failed:", err);
     }

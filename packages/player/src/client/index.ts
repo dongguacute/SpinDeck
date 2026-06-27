@@ -26,6 +26,7 @@ import {
   openQQMusicDeepLink,
 } from "./deep-link";
 import { prelaunchApp } from "./prelaunch";
+import { dispatchAccessibilityMissing } from "./accessibility";
 
 export interface PlayerApiConfig {
   playUrl?: string;
@@ -348,11 +349,24 @@ export async function pauseSong(
   if (!usesMacServer(platform)) return;
 
   try {
-    await fetch(api.pauseUrl ?? DEFAULT_API.pauseUrl, {
+    const response = await fetch(api.pauseUrl ?? DEFAULT_API.pauseUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ platform }),
     });
+
+    // macOS 辅助功能权限缺失：server 端 osascript 失败时返回 403
+    if (response.status === 403) {
+      try {
+        const body = await response.json();
+        if (body?.needsAccessibility) {
+          console.warn("[Pause] macOS accessibility permission missing");
+          void dispatchAccessibilityMissing();
+        }
+      } catch {
+        // 响应体解析失败忽略
+      }
+    }
   } catch (err) {
     console.warn("[Pause] failed:", err);
   }

@@ -22,10 +22,21 @@ export async function action({ request }: Route.ActionArgs) {
 
   try {
     const result = await serverPauseSong(platform, { cancelOnly: Boolean(cancelOnly) });
+
     if (!result.ok) {
+      if (result.needsAccessibility) {
+        console.warn("[api/stop-song] needs accessibility permission");
+        return Response.json(
+          {
+            error: result.error ?? "需要辅助功能权限",
+            needsAccessibility: true,
+          },
+          { status: 403 },
+        );
+      }
       return Response.json({ error: result.error ?? "暂停失败" }, { status: 500 });
     }
-    console.log(`[api/stop-song] stopped=${result.stopped}`);
+    console.log(`[api/stop-song] stopped=${result.stopped} method=${result.method}`);
     return Response.json({ ok: true, stopped: result.stopped });
   } catch (err) {
     console.error("[api/stop-song] failed:", err);

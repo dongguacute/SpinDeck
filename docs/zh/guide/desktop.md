@@ -11,18 +11,19 @@ SpinDeck 提供适用于 macOS、Windows 和 Linux 的 [Tauri 2](https://v2.taur
 
 从 GitHub Releases 下载预构建的桌面安装包：
 
-**[v1.0.0-beta.4](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.4)**（最新）
+**[v1.0.0-beta.5](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.5)**（最新）
 
 按平台选择对应资源（macOS 为 `.dmg` / `.app`，Windows 为 `.msi` / `.exe` 等）。发布构建目前要求用户机器上安装 **Node.js** 以运行内嵌服务器。
 
-### v1.0.0-beta.4 更新内容
+### v1.0.0-beta.5 更新内容
 
-- **macOS QQ 音乐控制** — 修复 AppleScript 暂停/继续；菜单控制失败时空格键兜底；离开歌单页时不再误触播放
+- **macOS 辅助功能权限** — 暂停/继续通过 AppleScript 控制本地客户端，需要「辅助功能」权限；权限缺失时自动引导用户前往系统设置授权
+- **macOS QQ 音乐控制** — 修复 AppleScript 暂停/继续；菜单控制失败时空格键兜底；离开歌单页时不再误触播放；未播放时暂停不再误触播放
 - **预启动与外链** — 预启动通过 Tauri `shell.open` 唤起本地客户端；设置页与歌单外链在系统浏览器打开
 - **歌单刷新** — 手动刷新跳过 QQ 音乐服务端缓存；歌曲数据变化时重建 3D 书架
 - **桌面开发与运行** — Tauri 开发资源、WebView 权限与 Vite SSR 兼容性修复
 
-上一版本：[v1.0.0-beta.3](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.3)
+上一版本：[v1.0.0-beta.4](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.4)
 
 ::: warning 不可用版本
 以下版本因打包后存在**白屏问题**，**不建议使用**：
@@ -58,6 +59,27 @@ macOS 对未签名应用限制最严，也是**最常见**遇到「无法打开 
 | 「已损坏，无法打开。你应该将它移到废纸篓」 | 下载文件带有隔离属性（quarantine） | 在终端执行（将路径换成你的 `.app` 实际位置）：<br>`xattr -cr /Applications/SpinDeck.app`<br>然后再次右键 → **打开** |
 | 从 DMG 双击无反应 | 未将应用拖入「应用程序」文件夹 | 打开 DMG 后，将 `SpinDeck.app` **拖入「应用程序」**，再从启动台或应用程序文件夹打开 |
 | 架构不匹配 | 下载了与芯片不符的构建 | Apple 芯片（M 系列）请选 **macos-arm** 资源；Intel Mac 请选 **macos-intel** |
+
+#### macOS 辅助功能权限（暂停/继续播放）
+
+SpinDeck 在 macOS 上通过 AppleScript 控制本地音乐客户端（QQ 音乐、网易云等）的播放与暂停，这需要 **辅助功能（Accessibility）** 权限。**仅播放**（通过 URL scheme 唤起）不需要该权限，但**暂停 / 继续**操作必须授权。
+
+| 现象 | 原因 | 处理方式 |
+|------|------|----------|
+| 点击暂停无反应，应用提示「需要辅助功能权限」 | SpinDeck 未获得辅助功能权限 | 打开 **系统设置 → 隐私与安全性 → 辅助功能**，找到 **SpinDeck** 并开启开关 |
+| 开启后仍提示权限缺失 | 权限状态未刷新（TCC 数据库偶发问题） | 关闭开关再重新开启；或先点 **「–」** 移除 SpinDeck，重启应用，再次按提示授权 |
+| 暂停变成播放（未播放时点暂停） | 旧版本空格键兜底在未播放时会触发播放 | 升级到 v1.0.0-beta.5 或更高版本；新版本会先检测播放状态再决定是否发送暂停指令 |
+| 开发模式正常，打包后暂停失效 | 打包后的 `.app` 与开发模式签名/权限上下文不同 | 对**安装到 `/Applications` 的 `SpinDeck.app`** 重新授权辅助功能权限 |
+
+**授权步骤：**
+
+1. 首次点击暂停时，应用会弹出提示并自动打开 **系统设置 → 隐私与安全性 → 辅助功能** 面板
+2. 在列表中找到 **SpinDeck**，点击开关开启
+3. 回到应用再次点击暂停即可生效
+
+::: tip 权限未生效？
+若已开启开关仍提示权限缺失，尝试：**系统设置 → 隐私与安全性 → 辅助功能** → 选中 SpinDeck → 点 **「–」** 移除 → 重启 SpinDeck → 再次按提示授权。这是 macOS TCC 数据库偶发的已知问题。
+:::
 
 **推荐安装 Node.js（macOS）：**
 
