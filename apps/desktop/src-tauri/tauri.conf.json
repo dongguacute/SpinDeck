@@ -8,7 +8,7 @@
     "beforeDevCommand": "pnpm --filter @spindeck/web dev",
     "devUrl": "http://localhost:5173",
     "beforeBuildCommand": "pnpm turbo run build --filter=@spindeck/web && pnpm --filter @spindeck/desktop prepare:resources",
-    "frontendDist": "../web/build/client"
+    "frontendDist": "../../web/build/client"
   },
   "app": {
     "windows": [

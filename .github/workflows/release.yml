@@ -116,7 +116,7 @@ jobs:
         run: node scripts/set-version.mjs "${{ needs.prepare.outputs.version }}"
 
       - name: Build desktop bundle
-        run: pnpm --filter @spindeck/desktop run build -- --target ${{ matrix.target }}
+        run: pnpm --filter @spindeck/desktop build --target ${{ matrix.target }}
         env:
           CI: true
 
