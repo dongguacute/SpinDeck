@@ -116,10 +116,21 @@ jobs:
       - name: Set version from release title
         run: node scripts/set-version.mjs "${{ needs.prepare.outputs.version }}"
 
+      - name: Map short drive on Windows
+        if: matrix.platform == 'windows'
+        shell: cmd
+        run: subst X: ${{ github.workspace }}
+
       - name: Build desktop bundle
         run: pnpm --filter @spindeck/desktop build --target ${{ matrix.target }}
+        working-directory: ${{ matrix.platform == 'windows' && 'X:\\' || github.workspace }}
         env:
           CI: true
+
+      - name: Unmap short drive on Windows
+        if: always() && matrix.platform == 'windows'
+        shell: cmd
+        run: subst X: /d
 
       - name: Collect release assets
         shell: bash

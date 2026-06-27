@@ -59,19 +59,19 @@ importers:
         version: 7.16.0(react-router@7.16.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(typescript@5.9.3)
       '@spindeck/core':
         specifier: workspace:*
-        version: link:../../packages/core
+        version: file:packages/core
       '@spindeck/picker':
         specifier: workspace:*
-        version: link:../../packages/picker
+        version: file:packages/picker
       '@spindeck/player':
         specifier: workspace:*
-        version: link:../../packages/player
+        version: file:packages/player
       '@spindeck/ui':
         specifier: workspace:*
-        version: link:../../packages/ui
+        version: file:packages/ui
       '@spindeck/vinyl-ui':
         specifier: workspace:*
-        version: link:../../packages/vinyl-ui
+        version: file:packages/vinyl-ui(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@tauri-apps/api':
         specifier: ^2.9.0
         version: 2.11.1
@@ -139,6 +139,17 @@ importers:
       vite-plugin-svgr:
         specifier: ^5.2.0
         version: 5.2.0(rollup@4.62.0)(typescript@5.9.3)(vite@8.0.16(@types/node@22.19.21)(esbuild@0.27.7)(jiti@2.7.0)(less@4.6.7)(yaml@2.9.0))
+    dependenciesMeta:
+      '@spindeck/core':
+        injected: true
+      '@spindeck/picker':
+        injected: true
+      '@spindeck/player':
+        injected: true
+      '@spindeck/ui':
+        injected: true
+      '@spindeck/vinyl-ui':
+        injected: true
 
   docs:
     devDependencies:
@@ -1268,6 +1279,24 @@ packages:
   '@sindresorhus/merge-streams@4.0.0':
     resolution: {integrity: sha512-tlqY9xq5ukxTUZBmoOp+m61cqwQD5pHJtFY3Mn8CA8ps6yghLH/Hw8UPdqg4OLmFW3IFlcXnQNmo/dh8HzXYIQ==}
     engines: {node: '>=18'}
+
+  '@spindeck/core@file:packages/core':
+    resolution: {directory: packages/core, type: directory}
+
+  '@spindeck/picker@file:packages/picker':
+    resolution: {directory: packages/picker, type: directory}
+
+  '@spindeck/player@file:packages/player':
+    resolution: {directory: packages/player, type: directory}
+
+  '@spindeck/ui@file:packages/ui':
+    resolution: {directory: packages/ui, type: directory}
+
+  '@spindeck/vinyl-ui@file:packages/vinyl-ui':
+    resolution: {directory: packages/vinyl-ui, type: directory}
+    peerDependencies:
+      react: ^18.0.0
+      react-dom: ^18.0.0
 
   '@svgr/babel-plugin-add-jsx-attribute@8.0.0':
     resolution: {integrity: sha512-b9MIk7yhdS1pMCZM8VeNfUlSKVRhsHZNMl5O9SfaX0l0t5wjdgu4IDzGB8bpnGBBOjGST3rRFVsaaEtI4W6f7g==}
@@ -5056,6 +5085,23 @@ snapshots:
   '@sindresorhus/merge-streams@2.3.0': {}
 
   '@sindresorhus/merge-streams@4.0.0': {}
+
+  '@spindeck/core@file:packages/core':
+    dependencies:
+      ky: 1.14.3
+
+  '@spindeck/picker@file:packages/picker': {}
+
+  '@spindeck/player@file:packages/player': {}
+
+  '@spindeck/ui@file:packages/ui': {}
+
+  '@spindeck/vinyl-ui@file:packages/vinyl-ui(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+    dependencies:
+      '@spindeck/picker': file:packages/picker
+      '@spindeck/player': file:packages/player
+      react: 19.2.7
+      react-dom: 19.2.7(react@19.2.7)
 
   '@svgr/babel-plugin-add-jsx-attribute@8.0.0(@babel/core@7.29.7)':
     dependencies:
