@@ -5,6 +5,7 @@ interface NavigatorUAData {
   getHighEntropyValues(hints: string[]): Promise<{
     platform?: string;
     platformVersion?: string;
+    architecture?: string;
   }>;
 }
 

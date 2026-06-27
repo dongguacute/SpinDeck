@@ -1,5 +1,5 @@
 import type { TFunction } from "i18next";
-import type { DeviceOS } from "@spindeck/player";
+import { setNativeDeviceOS, type DeviceOS } from "@spindeck/player";
 import { isTauri } from "./is-tauri";
 
 export type SystemInfo = {
@@ -26,6 +26,18 @@ const WEBVIEW_LABELS: Record<string, string> = {
   linux: "WebKitGTK",
 };
 
+const OS_TYPE_MAP: Record<string, DeviceOS> = {
+  macos: "macos",
+  windows: "windows",
+  linux: "linux",
+  android: "android",
+  ios: "ios",
+};
+
+function hasTauriOsPlugin(): boolean {
+  return isTauri() && "__TAURI_OS_PLUGIN_INTERNALS__" in window;
+}
+
 function formatArch(arch: string): string {
   switch (arch) {
     case "x86_64":
@@ -46,19 +58,19 @@ function parseBrowserFromUserAgent(ua: string, unknown: string) {
   if (ua.includes("Firefox") && !ua.includes("Seamonkey")) {
     browser = "Firefox";
     const match = /Firefox\/(\d+(?:\.\d+)?)/.exec(ua);
-    if (match) browserVersion = match[1];
+    if (match?.[1]) browserVersion = match[1];
   } else if (ua.includes("Edg/")) {
     browser = "Edge";
     const match = /Edg\/(\d+(?:\.\d+)?)/.exec(ua);
-    if (match) browserVersion = match[1];
+    if (match?.[1]) browserVersion = match[1];
   } else if (ua.includes("Chrome") && !ua.includes("Edg/")) {
     browser = "Chrome";
     const match = /Chrome\/(\d+(?:\.\d+)?)/.exec(ua);
-    if (match) browserVersion = match[1];
+    if (match?.[1]) browserVersion = match[1];
   } else if (ua.includes("Safari") && !ua.includes("Chrome") && !ua.includes("Chromium")) {
     browser = "Safari";
     const match = /Version\/(\d+(?:\.\d+)?)/.exec(ua);
-    if (match) browserVersion = match[1];
+    if (match?.[1]) browserVersion = match[1];
   }
 
   let engine = unknown;
@@ -70,32 +82,44 @@ function parseBrowserFromUserAgent(ua: string, unknown: string) {
   return { browser, browserVersion, engine };
 }
 
-async function parseOsFromUserAgentData(): Promise<{ os: string; osVersion: string } | null> {
-  const uaData = navigator.userAgentData;
+function parseOsFromPlatform(navigatorLike: Navigator, unknown: string): { os: string; osVersion: string } | null {
+  const platform = navigatorLike.userAgentData?.platform ?? navigatorLike.platform;
+  if (/Win/i.test(platform)) return { os: "Windows", osVersion: "" };
+  if (/Mac/i.test(platform)) return { os: "macOS", osVersion: "" };
+  if (/Linux/i.test(platform)) return { os: "Linux", osVersion: "" };
+  if (/Android/i.test(platform)) return { os: "Android", osVersion: "" };
+  if (/iPhone|iPad|iPod/i.test(platform)) return { os: "iOS", osVersion: "" };
+  return platform ? { os: platform, osVersion: "" } : { os: unknown, osVersion: "" };
+}
+
+async function parseOsFromUserAgentData(
+  navigatorLike: Navigator,
+): Promise<{ os: string; osVersion: string; arch: string } | null> {
+  const uaData = navigatorLike.userAgentData;
   if (!uaData) return null;
 
   try {
-    const hints = await uaData.getHighEntropyValues(["platform", "platformVersion"]);
+    const hints = await uaData.getHighEntropyValues(["platform", "platformVersion", "architecture"]);
     const platform = hints.platform?.toLowerCase() ?? uaData.platform.toLowerCase();
+    const arch = hints.architecture ? formatArch(hints.architecture) : "";
 
     if (platform.includes("win")) {
       const major = hints.platformVersion?.split(".")[0];
       const versionLabel =
         major === "15" ? "11" : major === "10" ? "10" : hints.platformVersion ?? "";
-      return { os: "Windows", osVersion: versionLabel };
+      return { os: "Windows", osVersion: versionLabel, arch };
     }
 
     if (platform.includes("mac")) {
-      const version = hints.platformVersion?.replace(/\./g, "_") ?? "";
-      return { os: "macOS", osVersion: version.replace(/_/g, ".") };
+      return { os: "macOS", osVersion: hints.platformVersion ?? "", arch };
     }
 
     if (platform.includes("android")) {
-      return { os: "Android", osVersion: hints.platformVersion ?? "" };
+      return { os: "Android", osVersion: hints.platformVersion ?? "", arch };
     }
 
     if (platform.includes("linux")) {
-      return { os: "Linux", osVersion: hints.platformVersion ?? "" };
+      return { os: "Linux", osVersion: hints.platformVersion ?? "", arch };
     }
   } catch {
     return null;
@@ -138,7 +162,9 @@ function parseOsFromUserAgent(ua: string, unknown: string): { os: string; osVers
 
 async function collectBrowserSystemInfo(t: TFunction): Promise<SystemInfo> {
   const unknown = t("settings.device_info.unknown");
-  if (typeof navigator === "undefined") {
+  const navigatorLike = typeof navigator !== "undefined" ? navigator : undefined;
+
+  if (!navigatorLike) {
     return {
       os: unknown,
       osVersion: "",
@@ -150,15 +176,17 @@ async function collectBrowserSystemInfo(t: TFunction): Promise<SystemInfo> {
     };
   }
 
-  const ua = navigator.userAgent;
-  const fromHints = await parseOsFromUserAgentData();
-  const { os, osVersion } = fromHints ?? parseOsFromUserAgent(ua, unknown);
+  const ua = navigatorLike.userAgent;
+  const fromHints = await parseOsFromUserAgentData(navigatorLike);
+  const fromPlatform = fromHints ? null : parseOsFromPlatform(navigatorLike, unknown);
+  const { os, osVersion } = fromHints ?? fromPlatform ?? parseOsFromUserAgent(ua, unknown);
+  const arch = fromHints?.arch ?? "";
   const { browser, browserVersion, engine } = parseBrowserFromUserAgent(ua, unknown);
 
   return {
     os,
     osVersion,
-    arch: "",
+    arch,
     runtime: t("settings.device_info.web_app"),
     browser,
     browserVersion,
@@ -168,53 +196,58 @@ async function collectBrowserSystemInfo(t: TFunction): Promise<SystemInfo> {
 
 async function collectTauriSystemInfo(t: TFunction): Promise<SystemInfo> {
   const unknown = t("settings.device_info.unknown");
-  const { arch, type, version } = await import("@tauri-apps/plugin-os");
 
-  const osType = type();
-  const osLabel = OS_LABELS[osType] ?? osType;
-  const webviewLabel = WEBVIEW_LABELS[osType] ?? unknown;
+  try {
+    const { arch, type, version } = await import("@tauri-apps/plugin-os");
 
-  return {
-    os: osLabel,
-    osVersion: version(),
-    arch: formatArch(arch()),
-    runtime: t("settings.device_info.desktop_app"),
-    browser: webviewLabel,
-    browserVersion: "",
-    engine: webviewLabel,
-  };
+    const osType = type();
+    const osLabel = OS_LABELS[osType] ?? osType;
+    const webviewLabel = WEBVIEW_LABELS[osType] ?? unknown;
+
+    return {
+      os: osLabel,
+      osVersion: version(),
+      arch: formatArch(arch()),
+      runtime: t("settings.device_info.desktop_app"),
+      browser: webviewLabel,
+      browserVersion: "",
+      engine: webviewLabel,
+    };
+  } catch {
+    const fallback = await collectBrowserSystemInfo(t);
+    return {
+      ...fallback,
+      runtime: t("settings.device_info.desktop_app"),
+    };
+  }
 }
 
 export async function collectSystemInfo(t: TFunction): Promise<SystemInfo> {
-  if (isTauri()) {
+  if (hasTauriOsPlugin()) {
     return collectTauriSystemInfo(t);
   }
   return collectBrowserSystemInfo(t);
 }
 
 export async function bootstrapNativeDeviceOS(): Promise<void> {
-  if (!isTauri()) return;
+  if (!hasTauriOsPlugin()) return;
 
-  const [{ type }, { setNativeDeviceOS }] = await Promise.all([
-    import("@tauri-apps/plugin-os"),
-    import("@spindeck/player"),
-  ]);
-
-  const osMap: Record<string, DeviceOS> = {
-    macos: "macos",
-    windows: "windows",
-    linux: "linux",
-    android: "android",
-    ios: "ios",
-  };
-
-  setNativeDeviceOS(osMap[type()] ?? null);
+  try {
+    const { type } = await import("@tauri-apps/plugin-os");
+    setNativeDeviceOS(OS_TYPE_MAP[type()] ?? null);
+  } catch {
+    setNativeDeviceOS(null);
+  }
 }
 
 export async function getAppVersionLabel(): Promise<string | null> {
   if (!isTauri()) return null;
 
-  const { getVersion } = await import("@tauri-apps/api/app");
-  const version = await getVersion();
-  return `v${version}`;
+  try {
+    const { getVersion } = await import("@tauri-apps/api/app");
+    const version = await getVersion();
+    return `v${version}`;
+  } catch {
+    return null;
+  }
 }
