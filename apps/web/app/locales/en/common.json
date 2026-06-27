@@ -27,6 +27,8 @@
       "title": "About",
       "description": "SpinDeck — Music Playlist Management Tool",
       "version": "Version {{version}}",
+      "documentation": "Official Documentation",
+      "view_docs": "Browse docs",
       "github": "GitHub Repository",
       "source_code": "Source Code",
       "author_douyin": "Author's Douyin",

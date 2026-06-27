@@ -1,6 +1,6 @@
 import { useThemeStore } from "../lib/theme-store";
 import { useState, useRef, useEffect } from "react";
-import { ArrowLeft, Monitor, Check, Sun, Moon, ExternalLink, ShieldAlert, X, Languages, ChevronDown } from "lucide-react";
+import { ArrowLeft, Monitor, Check, Sun, Moon, ExternalLink, ShieldAlert, X, Languages, ChevronDown, BookOpen } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 const GithubIcon = () => (
@@ -343,6 +343,28 @@ export default function Settings() {
               </p>
             </div>
             
+            <a
+              href="https://spindeck.dgct.cc"
+              onClick={(e) => handleLinkClick(e, "https://spindeck.dgct.cc", t('settings.about.documentation'))}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between px-5 py-4 hover:bg-(--bg-tertiary) transition-colors duration-200 group cursor-pointer"
+              style={{ borderBottom: "1px solid var(--border-color)" }}
+            >
+              <div className="flex items-center gap-3" style={{ color: "var(--text-secondary)" }}>
+                <BookOpen className="w-5 h-5" />
+                <span className="text-sm" style={{ color: "var(--text-primary)" }}>
+                  {t('settings.about.documentation')}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+                  {t('settings.about.view_docs')}
+                </span>
+                <ArrowLeft className="w-4 h-4 rotate-180 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" style={{ color: "var(--text-muted)" }} />
+              </div>
+            </a>
+
             <a
               href="https://github.com/dongguacute/SpinDeck"
               onClick={(e) => handleLinkClick(e, "https://github.com/dongguacute/SpinDeck", t('settings.about.github'))}
