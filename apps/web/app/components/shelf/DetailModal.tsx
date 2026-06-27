@@ -5,6 +5,7 @@ import type { SongInfo } from "@spindeck/player";
 import { PLATFORM_CONFIG } from "../../lib/types";
 import QQMusicIcon from "../../assets/icons/QQMusicIcon.svg?react";
 import NetEaseMusicIcon from "../../assets/icons/NetEaseMusicIcon.svg?react";
+import KugouMusicIcon from "../../assets/icons/KugouMusicIcon.svg?react";
 
 interface DetailModalProps {
   showDetail: boolean;
@@ -88,7 +89,8 @@ export function DetailModal({
             >
               {playlist.platform === "QQMusic" && <QQMusicIcon className="w-3.5 h-3.5" />}
               {playlist.platform === "NetEaseMusic" && <NetEaseMusicIcon className="w-3.5 h-3.5" />}
-              {playlist.platform !== "QQMusic" && playlist.platform !== "NetEaseMusic" && (
+              {playlist.platform === "KugouMusic" && <KugouMusicIcon className="w-3.5 h-3.5" />}
+              {playlist.platform !== "QQMusic" && playlist.platform !== "NetEaseMusic" && playlist.platform !== "KugouMusic" && (
                 <span
                   className="w-2 h-2 rounded-full"
                   style={{ backgroundColor: PLATFORM_CONFIG[playlist.platform]?.color || '#fff' }}

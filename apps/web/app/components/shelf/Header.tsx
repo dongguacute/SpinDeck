@@ -8,6 +8,7 @@ import type { Playlist } from "../../lib/types";
 import type { SongInfo } from "@spindeck/player";
 import QQMusicIcon from "../../assets/icons/QQMusicIcon.svg?react";
 import NetEaseMusicIcon from "../../assets/icons/NetEaseMusicIcon.svg?react";
+import KugouMusicIcon from "../../assets/icons/KugouMusicIcon.svg?react";
 
 interface HeaderProps {
   inPlayback: boolean;
@@ -141,6 +142,7 @@ export function Header({
             <div className="flex items-center gap-1.5 md:gap-2">
               {playlist.platform === "QQMusic" && <QQMusicIcon className="w-3.5 h-3.5 md:w-4 md:h-4" />}
               {playlist.platform === "NetEaseMusic" && <NetEaseMusicIcon className="w-3.5 h-3.5 md:w-4 md:h-4" />}
+              {playlist.platform === "KugouMusic" && <KugouMusicIcon className="w-3.5 h-3.5 md:w-4 md:h-4" />}
               <span
                 className="text-xs md:text-sm font-medium tracking-wide max-w-[120px] md:max-w-[200px] truncate transition-colors duration-700"
                 style={{ color: chrome.textSecondary, opacity: showThemeBackdrop ? 0.95 : 0.7 }}

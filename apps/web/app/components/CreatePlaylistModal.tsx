@@ -7,6 +7,7 @@ import type { PlatformType, SongInfo } from "../lib/types";
 import { PLATFORM_CONFIG } from "../lib/types";
 import QQMusicIcon from "../assets/icons/QQMusicIcon.svg?react";
 import NetEaseMusicIcon from "../assets/icons/NetEaseMusicIcon.svg?react";
+import KugouMusicIcon from "../assets/icons/KugouMusicIcon.svg?react";
 
 interface CreateData {
   name: string;
@@ -315,7 +316,8 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
                     <span className="flex items-center gap-2.5">
                       {platform === "QQMusic" && <QQMusicIcon className="w-4 h-4" />}
                       {platform === "NetEaseMusic" && <NetEaseMusicIcon className="w-4 h-4" />}
-                      {platform !== "QQMusic" && platform !== "NetEaseMusic" && (
+                      {platform === "KugouMusic" && <KugouMusicIcon className="w-4 h-4" />}
+                      {platform !== "QQMusic" && platform !== "NetEaseMusic" && platform !== "KugouMusic" && (
                         <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: selectedCfg.color }} />
                       )}
                       <span style={{ color: "var(--text-primary)" }}>{t(`platforms.${platform}`)}</span>
@@ -333,7 +335,8 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
                       >
                         {p === "QQMusic" && <QQMusicIcon className="w-4 h-4" />}
                         {p === "NetEaseMusic" && <NetEaseMusicIcon className="w-4 h-4" />}
-                        {p !== "QQMusic" && p !== "NetEaseMusic" && (
+                        {p === "KugouMusic" && <KugouMusicIcon className="w-4 h-4" />}
+                        {p !== "QQMusic" && p !== "NetEaseMusic" && p !== "KugouMusic" && (
                           <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cfg.color }} />
                         )}
                         <span style={{ color: "var(--text-primary)" }}>{t(`platforms.${p}`)}</span>
@@ -401,7 +404,8 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
                     <span className="flex items-center gap-2.5">
                       {importPlatform === "QQMusic" && <QQMusicIcon className="w-4 h-4" />}
                       {importPlatform === "NetEaseMusic" && <NetEaseMusicIcon className="w-4 h-4" />}
-                      {importPlatform !== "QQMusic" && importPlatform !== "NetEaseMusic" && (
+                      {importPlatform === "KugouMusic" && <KugouMusicIcon className="w-4 h-4" />}
+                      {importPlatform !== "QQMusic" && importPlatform !== "NetEaseMusic" && importPlatform !== "KugouMusic" && (
                         <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: importSelectedCfg.color }} />
                       )}
                       <span style={{ color: "var(--text-primary)" }}>{t(`platforms.${importPlatform}`)}</span>
@@ -419,7 +423,8 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
                       >
                         {p === "QQMusic" && <QQMusicIcon className="w-4 h-4" />}
                         {p === "NetEaseMusic" && <NetEaseMusicIcon className="w-4 h-4" />}
-                        {p !== "QQMusic" && p !== "NetEaseMusic" && (
+                        {p === "KugouMusic" && <KugouMusicIcon className="w-4 h-4" />}
+                        {p !== "QQMusic" && p !== "NetEaseMusic" && p !== "KugouMusic" && (
                           <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cfg.color }} />
                         )}
                         <span style={{ color: "var(--text-primary)" }}>{t(`platforms.${p}`)}</span>
