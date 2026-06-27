@@ -138,6 +138,7 @@ const GITHUB_RELEASES_URL = "https://github.com/dongguacute/SpinDeck/releases";
 
 /** Newest first — add new tags here when publishing releases. */
 const RELEASE_VERSIONS = [
+  { tag: "v1.0.0-beta.4", available: true },
   { tag: "v1.0.0-beta.3", available: true },
   { tag: "v1.0.0-beta.2", available: false },
   { tag: "v1.0.0-beta.1", available: false },

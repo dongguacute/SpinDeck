@@ -11,9 +11,18 @@ SpinDeck ships a [Tauri 2](https://v2.tauri.app/) desktop shell for macOS, Windo
 
 Download pre-built desktop installers from GitHub Releases:
 
-**[v1.0.0-beta.3](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.3)** (latest)
+**[v1.0.0-beta.4](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.4)** (latest)
 
 Pick the asset for your platform (`.dmg` / `.app` on macOS, `.msi` / `.exe` on Windows, etc.). Release builds currently require **Node.js** on the user's machine to run the embedded server.
+
+### What's new in v1.0.0-beta.4
+
+- **macOS QQ Music control** — Fixed AppleScript pause/resume; keyboard fallback when menu control fails; idempotent pause avoids accidental resume when leaving the shelf
+- **Pre-launch & external links** — Pre-launch opens local clients via Tauri `shell.open`; settings and playlist links open in the system browser
+- **Playlist refresh** — Manual refresh bypasses QQ Music server cache; 3D shelf rebuilds when song data changes
+- **Desktop dev & runtime** — Tauri dev resources, WebView capabilities, and Vite SSR compatibility fixes
+
+Previous release: [v1.0.0-beta.3](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.3)
 
 ::: warning Unavailable releases
 The following builds are **not recommended** due to a white-screen issue in packaged desktop apps:

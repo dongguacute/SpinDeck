@@ -11,9 +11,18 @@ SpinDeck 提供适用于 macOS、Windows 和 Linux 的 [Tauri 2](https://v2.taur
 
 从 GitHub Releases 下载预构建的桌面安装包：
 
-**[v1.0.0-beta.3](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.3)**（最新）
+**[v1.0.0-beta.4](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.4)**（最新）
 
 按平台选择对应资源（macOS 为 `.dmg` / `.app`，Windows 为 `.msi` / `.exe` 等）。发布构建目前要求用户机器上安装 **Node.js** 以运行内嵌服务器。
+
+### v1.0.0-beta.4 更新内容
+
+- **macOS QQ 音乐控制** — 修复 AppleScript 暂停/继续；菜单控制失败时空格键兜底；离开歌单页时不再误触播放
+- **预启动与外链** — 预启动通过 Tauri `shell.open` 唤起本地客户端；设置页与歌单外链在系统浏览器打开
+- **歌单刷新** — 手动刷新跳过 QQ 音乐服务端缓存；歌曲数据变化时重建 3D 书架
+- **桌面开发与运行** — Tauri 开发资源、WebView 权限与 Vite SSR 兼容性修复
+
+上一版本：[v1.0.0-beta.3](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.3)
 
 ::: warning 不可用版本
 以下版本因打包后存在**白屏问题**，**不建议使用**：
