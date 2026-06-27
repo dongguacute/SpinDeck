@@ -45,9 +45,15 @@ const LAUNCH_CONFIG: Record<PlatformType, LaunchConfig> = {
 export function prelaunchApp(platform: PlatformType): void {
   const deviceOS = getDeviceOS();
   const config = LAUNCH_CONFIG[platform];
+  let scheme = config.scheme;
+
+  if (platform === "KugouMusic" && deviceOS === "macos") {
+    scheme = "mackugou://";
+  }
+
   console.log(`[Prelaunch] Platform: ${platform}, OS: ${deviceOS}`);
 
-  if (!config.scheme) {
+  if (!scheme) {
     window.open(config.webFallback, "_blank", "noopener,noreferrer");
     return;
   }
@@ -71,7 +77,7 @@ export function prelaunchApp(platform: PlatformType): void {
   window.addEventListener("blur", handleBlur);
 
   try {
-    openDeepLink(config.scheme);
+    openDeepLink(scheme);
   } catch (e) {
     console.warn("[Prelaunch] Direct launch failed:", e);
     fallbackToWeb("exception thrown");

@@ -63,6 +63,8 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
   const nameRef = useRef<HTMLInputElement>(null);
 
   const [importUrl, setImportUrl] = useState("");
+  const [importCookie, setImportCookie] = useState("");
+  const [isAutofillingCookie, setIsAutofillingCookie] = useState(false);
   const [importPlatform, setImportPlatform] = useState<PlatformType>("QQMusic");
   const [importDropdownOpen, setImportDropdownOpen] = useState(false);
   const [importDropdownDirection, setImportDropdownDirection] = useState<"up" | "down">("down");
@@ -151,7 +153,7 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
 
   const resetAll = () => {
     setName(""); setPlatform("QQMusic"); setCoverUrl(""); setSongCount(0);
-    setImportUrl(""); setImportPlatform("QQMusic"); setImported(false);
+    setImportUrl(""); setImportCookie(""); setImportPlatform("QQMusic"); setImported(false);
     setRefreshInterval(0); setRefreshDropdownOpen(false);
     setPreviewResults([]);
     setMode("manual");
@@ -173,9 +175,24 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
   const handleImport = () => {
     if (!importUrl.trim()) return;
     importFetcher.submit(
-      { url: importUrl.trim(), platform: importPlatform },
+      { url: importUrl.trim(), platform: importPlatform, cookie: importCookie.trim() },
       { method: "POST", action: "/api/import" },
     );
+  };
+
+  const handleAutofillKugouCookie = async () => {
+    setIsAutofillingCookie(true);
+    try {
+      const res = await fetch("/api/kugou-local-auth");
+      const data = await res.json();
+      if (data.cookie) {
+        setImportCookie(data.cookie);
+      }
+    } catch (err) {
+      console.error("[CreatePlaylistModal] Failed to autofill cookie:", err);
+    } finally {
+      setIsAutofillingCookie(false);
+    }
   };
 
   const handleImportCreate = (e?: React.MouseEvent) => {
@@ -429,12 +446,32 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
                 </div></div>
               <div><label className="block text-xs font-medium mb-1.5" style={labelStyle}>{t('create_modal.playlist_link')}</label>
                 <div className="relative"><Link className="absolute left-3.5 top-3.5 w-4 h-4" style={{ color: "var(--text-muted)" }} />
-                  <textarea value={importUrl} onChange={(e) => { setImportUrl(e.target.value); setImported(false); }} placeholder={t('create_modal.playlist_link_placeholder_multi')} rows={3} className="w-full border rounded-xl py-3 pl-10 pr-4 text-sm outline-none transition-colors resize-none"
+                  <textarea value={importUrl} onChange={(e) => { setImportUrl(e.target.value); setImported(false); }} placeholder={importPlatform === "KugouMusic" ? "粘贴歌单链接、酷狗码，或输入“我喜欢”..." : t('create_modal.playlist_link_placeholder_multi')} rows={3} className="w-full border rounded-xl py-3 pl-10 pr-4 text-sm outline-none transition-colors resize-none"
                     style={inputStyle}
                     onFocus={(e) => (e.currentTarget.style.borderColor = "var(--border-hover)")}
                     onBlur={(e) => (e.currentTarget.style.borderColor = "var(--border-color)")}
                   />
                 </div></div>
+              {importPlatform === "KugouMusic" && (
+                <div><label className="block text-xs font-medium mb-1.5 flex items-center justify-between" style={labelStyle}>
+                  <span>Cookie <span style={{ color: "var(--text-muted)" }}>(可选，私有歌单必填)</span></span>
+                  <button 
+                    type="button" 
+                    onClick={handleAutofillKugouCookie} 
+                    disabled={isAutofillingCookie}
+                    className="text-[10px] px-2 py-0.5 rounded-lg border border-[var(--border-color)] hover:bg-[var(--surface-hover)] transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    {isAutofillingCookie ? "正在读取..." : "尝试从本地应用读取"}
+                  </button>
+                </label>
+                  <div className="relative">
+                    <textarea value={importCookie} onChange={(e) => setImportCookie(e.target.value)} placeholder="粘贴酷狗音乐浏览器 Cookie..." rows={2} className="w-full border rounded-xl py-3 px-4 text-xs outline-none transition-colors resize-none"
+                      style={inputStyle}
+                      onFocus={(e) => (e.currentTarget.style.borderColor = "var(--border-hover)")}
+                      onBlur={(e) => (e.currentTarget.style.borderColor = "var(--border-color)")}
+                    />
+                  </div></div>
+              )}
               <button onClick={handleImport} disabled={!importUrl.trim() || importing}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer disabled:cursor-not-allowed"
                 style={{

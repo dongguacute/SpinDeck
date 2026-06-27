@@ -12,6 +12,7 @@ export default [
   route("api/playback-status", "routes/api.playback-status.ts"),
   route("api/set-play-mode", "routes/api.set-play-mode.ts"),
   route("api/image", "routes/api.image.ts"),
+  route("api/kugou-local-auth", "routes/api.kugou-local-auth.ts"),
   route("not-found", "routes/not-found.tsx"),
   route("*", "routes/$.tsx"),
 ] satisfies RouteConfig;

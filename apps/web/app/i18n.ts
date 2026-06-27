@@ -18,18 +18,9 @@ const resources = {
 const LANGUAGE_KEY = 'spindeck_language';
 
 const getInitialLanguage = () => {
-  if (typeof window !== 'undefined') {
-    const savedLanguage = localStorage.getItem(LANGUAGE_KEY);
-    if (savedLanguage && (savedLanguage === 'zh-Hans' || savedLanguage === 'en')) {
-      return savedLanguage;
-    }
-    // 也可以根据浏览器语言设置默认语言
-    const browserLang = navigator.language;
-    if (browserLang.startsWith('zh')) {
-      return 'zh-Hans';
-    }
-  }
-  return 'en'; // 默认英语，或者根据项目需求设为 zh-Hans
+  // SSR 期间和客户端首次渲染必须保持一致，以避免 Hydration Mismatch
+  // 统一返回英语作为默认值
+  return 'en';
 };
 
 i18n
@@ -37,7 +28,7 @@ i18n
   .init({
     resources,
     lng: getInitialLanguage(),
-    fallbackLng: 'zh-Hans',
+    fallbackLng: 'en',
     ns: ['common'],
     defaultNS: 'common',
     interpolation: {

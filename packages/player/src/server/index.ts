@@ -1,5 +1,7 @@
 import * as qqMusicMac from "../platforms/qqmusic/macos/server";
 import * as neteaseMac from "../platforms/netease/macos/server";
+import * as kugouMac from "../platforms/kugou/macos/server";
+import { getKugouLocalAuthOnMac, buildKugouCookie } from "../platforms/kugou/macos/auth";
 import type {
   ExecFileAsync,
   PlatformType,
@@ -33,6 +35,10 @@ export async function serverSetPlayMode(
     return neteaseMac.setPlayModeOnMac(mode, await getExec(exec));
   }
 
+  if (platform === "KugouMusic") {
+    return kugouMac.setPlayModeOnMac(mode, await getExec(exec));
+  }
+
   return { ok: true, playing: false, method: "noop" };
 }
 
@@ -52,6 +58,10 @@ export async function serverPlaySong(
 
   if (platform === "NetEaseMusic") {
     return neteaseMac.playSongOnMac(song, await getExec(exec));
+  }
+
+  if (platform === "KugouMusic") {
+    return kugouMac.playSongOnMac(song, await getExec(exec));
   }
 
   const urls = buildSongPlayUrls(platform, song, "macos");
@@ -81,6 +91,10 @@ export async function serverPauseSong(
     return neteaseMac.pauseOnMac(await getExec(exec));
   }
 
+  if (platform === "KugouMusic") {
+    return kugouMac.pauseOnMac(await getExec(exec));
+  }
+
   return { ok: true, playing: false, stopped: false };
 }
 
@@ -99,6 +113,10 @@ export async function serverResumeSong(
 
   if (platform === "NetEaseMusic") {
     return neteaseMac.resumeOnMac(await getExec(exec));
+  }
+
+  if (platform === "KugouMusic") {
+    return kugouMac.resumeOnMac(await getExec(exec));
   }
 
   return { ok: true, playing: false, method: "noop" };
@@ -121,9 +139,27 @@ export async function serverGetPlaybackStatus(
     return neteaseMac.getStatusOnMac(await getExec(exec));
   }
 
+  if (platform === "KugouMusic") {
+    return kugouMac.getStatusOnMac(await getExec(exec));
+  }
+
   return { playing: false, paused: false, idle: true };
+}
+
+/** 服务端：尝试获取本地酷狗 Cookie */
+export async function serverGetKugouLocalCookie(exec?: ExecFileAsync): Promise<string | null> {
+  if (nodePlatform() !== "darwin") return null;
+  try {
+    const auth = await getKugouLocalAuthOnMac(await getExec(exec));
+    if (!auth.userId || !auth.token) return null;
+    return buildKugouCookie(auth);
+  } catch (e) {
+    console.warn("[server] Failed to get local Kugou auth:", e);
+    return null;
+  }
 }
 
 export { createNodeExec, nodePlatform } from "./node";
 export * as qqMusicMac from "../platforms/qqmusic/macos/server";
 export * as neteaseMac from "../platforms/netease/macos/server";
+export * as kugouMac from "../platforms/kugou/macos/server";

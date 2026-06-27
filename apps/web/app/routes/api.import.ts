@@ -1,11 +1,12 @@
 import type { Route } from "./+types/api.import";
-import { getQQMusicPlaylistSongs, getNeteaseMusicPlaylistSongs } from "@spindeck/core";
+import { getQQMusicPlaylistSongs, getNeteaseMusicPlaylistSongs, getKugouMusicPlaylistSongs } from "@spindeck/core";
 import type { PlatformType, SongInfo } from "../lib/types";
 
 export async function action({ request }: Route.ActionArgs) {
   const formData = await request.formData();
   const url = (formData.get("url") as string)?.trim();
   const platform = (formData.get("platform") as PlatformType)?.trim();
+  const cookie = (formData.get("cookie") as string)?.trim();
 
   if (!url || !platform) {
     return Response.json(
@@ -59,6 +60,25 @@ export async function action({ request }: Route.ActionArgs) {
           return {
             url: u,
             name: result.name || "网易云音乐歌单",
+            cover: result.cover || "",
+            songCount: songs.length,
+            songs,
+          };
+        }
+        if (platform === "KugouMusic") {
+          const result = await getKugouMusicPlaylistSongs(u, { cookie });
+          const songs: SongInfo[] = result.songs.slice(0, 300).map((s) => ({
+            name: s.name,
+            artist: s.artist,
+            cover: s.cover || "",
+            album: s.album || "",
+            platformSongId: s.platformSongId || "",
+            platformNumericId: s.platformNumericId,
+            platformSongType: s.platformSongType,
+          }));
+          return {
+            url: u,
+            name: result.name || "酷狗音乐歌单",
             cover: result.cover || "",
             songCount: songs.length,
             songs,
