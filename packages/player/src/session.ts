@@ -1,4 +1,4 @@
-import type { SongInfo } from "./types";
+import type { PlaybackStatus, SongInfo } from "./types";
 
 export function songSessionKey(song: SongInfo): string {
   return `${song.platformSongId ?? song.name}:${song.platformNumericId ?? ""}`;
@@ -63,4 +63,41 @@ export function isArmActivelyPlaying(): boolean {
 /** 唱臂抬起暂停：本地认为已暂停，可继续同一首 */
 export function isArmPausedByUser(): boolean {
   return armSession.startedInSession && armSession.pausedByArm;
+}
+
+/** 无法查询系统播放器时，由页面会话推导播放状态 */
+export function buildSessionPlaybackStatus(song: SongInfo): PlaybackStatus {
+  const sameSongInSession = isSameSongInSession(song);
+  const canResume = canResumeSong(song);
+  const activelyPlaying = isArmActivelyPlaying() && sameSongInSession;
+
+  if (activelyPlaying) {
+    return {
+      playing: true,
+      paused: false,
+      idle: false,
+      sameSongInSession,
+      canResume,
+      currentSongName: song.name,
+      currentArtistName: song.artist,
+    };
+  }
+
+  if (canResume) {
+    return {
+      playing: false,
+      paused: true,
+      idle: false,
+      sameSongInSession,
+      canResume,
+    };
+  }
+
+  return {
+    playing: false,
+    paused: true,
+    idle: true,
+    sameSongInSession,
+    canResume,
+  };
 }

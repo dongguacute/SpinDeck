@@ -1,6 +1,7 @@
 import type { PlatformType } from "../types";
 import { getDeviceOS } from "../device";
 import { openDeepLink } from "./deep-link";
+import { isMobileQQMusicTarget } from "./qqmusic-background";
 
 interface LaunchConfig {
   scheme: string;
@@ -41,20 +42,41 @@ const LAUNCH_CONFIG: Record<PlatformType, LaunchConfig> = {
   },
 };
 
-/** 预启动本地音乐客户端 */
-export function prelaunchApp(platform: PlatformType): void {
+function resolveLaunchScheme(platform: PlatformType, deviceOS: ReturnType<typeof getDeviceOS>): string {
+  const config = LAUNCH_CONFIG[platform];
+  if (platform === "KugouMusic" && deviceOS === "macos") {
+    return "mackugou://";
+  }
+  if (platform === "QQMusic" && (deviceOS === "ios" || deviceOS === "android" || deviceOS === "windows" || deviceOS === "linux")) {
+    return "qqmusic://";
+  }
+  return config.scheme;
+}
+
+export interface PrelaunchOptions {
+  /** 静默预启动，不打开网页 fallback */
+  silent?: boolean;
+}
+
+/** 预启动本地音乐客户端（需用户主动点击） */
+export function prelaunchApp(platform: PlatformType, options?: PrelaunchOptions): void {
   const deviceOS = getDeviceOS();
   const config = LAUNCH_CONFIG[platform];
-  let scheme = config.scheme;
-
-  if (platform === "KugouMusic" && deviceOS === "macos") {
-    scheme = "mackugou://";
-  }
+  const scheme = resolveLaunchScheme(platform, deviceOS);
+  const silent = options?.silent ?? false;
+  const mobileQQ = platform === "QQMusic" && isMobileQQMusicTarget();
 
   console.log(`[Prelaunch] Platform: ${platform}, OS: ${deviceOS}`);
 
   if (!scheme) {
-    window.open(config.webFallback, "_blank", "noopener,noreferrer");
+    if (!silent) {
+      window.open(config.webFallback, "_blank", "noopener,noreferrer");
+    }
+    return;
+  }
+
+  if (mobileQQ) {
+    openDeepLink(scheme, { background: true });
     return;
   }
 
@@ -62,7 +84,7 @@ export function prelaunchApp(platform: PlatformType): void {
   let appLaunched = false;
 
   const fallbackToWeb = (reason: string) => {
-    if (hasFallenBack) return;
+    if (hasFallenBack || silent) return;
     hasFallenBack = true;
     clearTimeout(fallbackTimer);
     window.removeEventListener("blur", handleBlur);

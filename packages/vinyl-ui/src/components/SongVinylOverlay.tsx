@@ -103,10 +103,10 @@ export default function SongVinylOverlay({
   const stopPlayback = useCallback(() => {
     lastLocalActionAtRef.current = Date.now();
     playRequestRef.current += 1;
+    void pauseSong(platform, undefined, { fromUserGesture: true });
     setPendingPlay(false);
     setPlaying(false);
     markSongPausedByArm(song);
-    void pauseSong(platform);
     progressRef.current = 0;
     setProgress(0);
   }, [platform, song]);
