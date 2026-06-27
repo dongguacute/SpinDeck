@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { defineConfig, type DefaultTheme } from "vitepress";
 import { InlineLinkPreviewElementTransform } from "@nolebase/vitepress-plugin-inline-link-preview/markdown-it";
 import { calculateSidebar } from "@nolebase/vitepress-plugin-sidebar";
+import { releaseNavButtonLabel } from "./theme/release-nav";
 
 const docsDir = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -133,6 +134,36 @@ const socialLinks = [
   },
 ];
 
+const GITHUB_RELEASES_URL = "https://github.com/dongguacute/SpinDeck/releases";
+
+/** Newest first — add new tags here when publishing releases. */
+const RELEASE_VERSIONS = ["v1.0.0-beta.1"] as const;
+
+function releaseTagUrl(tag: string) {
+  return `${GITHUB_RELEASES_URL}/tag/${tag}`;
+}
+
+function getDownloadNavItem(
+  locale: "en" | "zh",
+): DefaultTheme.NavItemWithChildren {
+  const latestVersion = RELEASE_VERSIONS[0];
+  return {
+    text: releaseNavButtonLabel(latestVersion),
+    items: [
+      ...RELEASE_VERSIONS.map((version) => ({
+        text: version,
+        link: releaseTagUrl(version),
+        noIcon: true,
+      })),
+      {
+        text: locale === "en" ? "All releases" : "全部版本",
+        link: GITHUB_RELEASES_URL,
+        noIcon: true,
+      },
+    ],
+  };
+}
+
 export default defineConfig({
   head: [
     ["link", { rel: "icon", type: "image/svg+xml", href: "/SpinDeckLogo.svg" }],
@@ -220,6 +251,7 @@ export default defineConfig({
             link: "/en/guide/getting-started",
             activeMatch: "/en/guide/",
           },
+          getDownloadNavItem("en"),
           { text: "GitHub", link: "https://github.com/dongguacute/SpinDeck" },
         ],
         sidebar: getLocaleGuideSidebar("en"),
@@ -249,6 +281,7 @@ export default defineConfig({
             link: "/zh/guide/getting-started",
             activeMatch: "/zh/guide/",
           },
+          getDownloadNavItem("zh"),
           { text: "GitHub", link: "https://github.com/dongguacute/SpinDeck" },
         ],
         sidebar: getLocaleGuideSidebar("zh"),
