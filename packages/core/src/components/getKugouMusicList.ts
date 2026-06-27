@@ -12,6 +12,14 @@ interface KugouSong {
   duration?: number;
   timelen?: number;
   remark?: string;
+  imgurl?: string;
+  album_img?: string;
+  pic?: string;
+  cover?: string;
+  trans_param?: {
+    union_cover?: string;
+    [key: string]: unknown;
+  };
 }
 
 interface KugouPlaylistInfo {
@@ -199,14 +207,19 @@ export async function getKugouMusicList(url: string, options?: { cookie?: string
                                 nickname: '',
                                 specialid: 0
                             },
-                            songs: songs.map((s: { filename?: string; name?: string; hash?: string; audio_id?: number | string; album_id?: string; album_name?: string; duration?: number; remark?: string }) => ({
+                            songs: songs.map((s: { filename?: string; name?: string; hash?: string; audio_id?: number | string; album_id?: string; album_name?: string; duration?: number; remark?: string; imgurl?: string; album_img?: string; pic?: string; cover?: string; trans_param?: { union_cover?: string; [key: string]: unknown } }) => ({
                                 filename: s.filename || s.name || '',
                                 hash: s.hash || '',
                                 audio_id: s.audio_id || 0,
                                 album_id: s.album_id || '',
                                 album_name: s.album_name || '',
                                 duration: s.duration || 0,
-                                remark: s.remark || ''
+                                remark: s.remark || '',
+                                imgurl: s.imgurl || '',
+                                album_img: s.album_img || s.pic || s.cover || s.trans_param?.union_cover || '',
+                                pic: s.pic || '',
+                                cover: s.cover || '',
+                                trans_param: s.trans_param
                             }))
                         };
                     }
@@ -233,14 +246,19 @@ export async function getKugouMusicList(url: string, options?: { cookie?: string
                                                 nickname: '',
                                                 specialid: 0
                                             },
-                            songs: songs.map((s: { filename?: string; name?: string; songname?: string; hash?: string; audio_id?: number | string; album_id?: string; album_name?: string; duration?: number; remark?: string }) => ({
+                            songs: songs.map((s: { filename?: string; name?: string; songname?: string; hash?: string; audio_id?: number | string; album_id?: string; album_name?: string; duration?: number; remark?: string; imgurl?: string; album_img?: string; pic?: string; cover?: string; trans_param?: { union_cover?: string; [key: string]: unknown } }) => ({
                                 filename: s.filename || s.name || s.songname || '',
                                 hash: s.hash || '',
                                 audio_id: s.audio_id || 0,
                                 album_id: s.album_id || '',
                                 album_name: s.album_name || '',
                                 duration: s.duration || 0,
-                                remark: s.remark || ''
+                                remark: s.remark || '',
+                                imgurl: s.imgurl || '',
+                                album_img: s.album_img || s.pic || s.cover || s.trans_param?.union_cover || '',
+                                pic: s.pic || '',
+                                cover: s.cover || '',
+                                trans_param: s.trans_param
                             }))
                                         };
                                     }
@@ -373,7 +391,7 @@ export async function getKugouMusicList(url: string, options?: { cookie?: string
     console.log(`[core] Kugou playlist specialid = ${specialid}`);
 
     // 获取歌单详情
-    const infoUrl = `http://mobilecdn.kugou.com/api/v3/special/info?specialid=${specialid}`;
+    const infoUrl = `http://mobilecdn.kugou.com/api/v3/special/info?specialid=${specialid}&plat=0&version=8352`;
     let infoRes: { status: number; data?: KugouPlaylistInfo };
     try {
         const rawRes = await ky.get(infoUrl, {
@@ -415,11 +433,14 @@ export async function getKugouMusicList(url: string, options?: { cookie?: string
         throw new Error(`酷狗歌单详情接口返回错误: ${infoRes.status || 'timeout'} (ID: ${specialid})`);
     }
 
-    const songsUrl = `http://mobilecdn.kugou.com/api/v3/special/song?specialid=${specialid}&page=1&pagesize=-1`;
+    const songsUrl = `http://mobilecdn.kugou.com/api/v3/special/song?specialid=${specialid}&page=1&pagesize=-1&plat=2&version=8989&with_res_tag=1`;
     let songsRes: { status: number; data?: { info: KugouSong[] } };
     try {
         const rawRes = await ky.get(songsUrl, {
-            headers,
+            headers: {
+                ...headers,
+                'Cookie': 'kg_mid=1'
+            },
             timeout: 5000
         }).json<{ status: number; data?: { info: KugouSong[] } }>();
         songsRes = { status: Number(rawRes.status), data: rawRes.data };
@@ -432,13 +453,122 @@ export async function getKugouMusicList(url: string, options?: { cookie?: string
         throw new Error(`酷狗歌单歌曲列表接口返回错误: ${songsRes.status || 'timeout'} (ID: ${specialid})`);
     }
 
+    const songs = songsRes.data.info;
+    
+    // 预处理：有些接口返回的封面在 pic, cover 或 trans_param.union_cover 中
+    songs.forEach(s => {
+        const directCover = s.album_img || s.imgurl || s.pic || s.cover || s.trans_param?.union_cover;
+        if (directCover && !s.album_img) {
+            s.album_img = directCover;
+        }
+    });
+
+    // 如果返回的歌曲仍然没有封面，尝试使用批量接口获取详情
+    const hasAnyCover = songs.some(s => s.imgurl || s.album_img);
+    
+    if (!hasAnyCover && songs.length > 0) {
+        try {
+            console.log(`[core] Songs missing covers, fetching details via info_list for ${songs.length} songs`);
+            const hashes = songs.map(s => s.hash);
+            // 批量获取详情，每次最多 100 个
+            const batchSize = 100;
+            for (let i = 0; i < hashes.length; i += batchSize) {
+                const batchHashes = hashes.slice(i, i + batchSize);
+                const detailUrl = `http://mobilecdn.kugou.com/api/v3/song/info_list?plat=2&version=8989`;
+                const detailRes = await ky.post(detailUrl, {
+                    json: { data: batchHashes.map(h => ({ hash: h })) },
+                    headers: {
+                        ...headers,
+                        'Content-Type': 'application/json',
+                        'Cookie': 'kg_mid=1'
+                    },
+                    timeout: 10000
+                }).json<{ status: number; data?: Array<{ 
+                    hash: string; 
+                    imgurl?: string; 
+                    imgUrl?: string; 
+                    album_img?: string; 
+                    singer_img?: string; 
+                    album_name?: string; 
+                    album_id?: string 
+                }> }>();
+                
+                if (detailRes.status === 1 && detailRes.data) {
+                    const detailMap = new Map(detailRes.data.map(d => [d.hash.toLowerCase(), d]));
+                    for (const song of songs) {
+                        const detail = detailMap.get(song.hash.toLowerCase());
+                        if (detail) {
+                            // 优先保存 album_img
+                            const albumCover = detail.album_img || detail.imgurl || detail.imgUrl;
+                            if (albumCover) song.album_img = albumCover;
+                            if (detail.album_name && !song.album_name) song.album_name = detail.album_name;
+                            if (detail.album_id && !song.album_id) song.album_id = detail.album_id;
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('[core] Failed to fetch Kugou song details batch:', e);
+        }
+    }
+
+    // 如果还是没有封面，尝试使用更稳健的详情接口
+    const missingCoverSongs = songs.filter(s => !s.imgurl && !s.album_img);
+    if (missingCoverSongs.length > 0) {
+        try {
+            console.log(`[core] Still missing covers for ${missingCoverSongs.length} songs, fetching via detail APIs`);
+            const limit = 5; // 进一步降低并发，确保稳定性
+            const songsToFetch = missingCoverSongs.slice(0, 30); // 仅处理前 30 首，保证首屏加载速度
+            for (let i = 0; i < songsToFetch.length; i += limit) {
+                const batch = songsToFetch.slice(i, i + limit);
+                await Promise.all(batch.map(async (song) => {
+                    try {
+                        // 1. 优先尝试 play/getdata，这个接口返回的 img 字段最准
+                        const playDataUrl = `https://wwwapi.kugou.com/yy/index.php?r=play/getdata&hash=${song.hash}&album_id=${song.album_id || 0}&mid=1&platid=4`;
+                        const playRes = await ky.get(playDataUrl, { 
+                            headers: { ...headers, 'Cookie': 'kg_mid=1' }, 
+                            timeout: 3000 
+                        }).json<{ status: number; data?: { img?: string; album_name?: string } }>();
+                        
+                        if (playRes.status === 1 && playRes.data?.img) {
+                            song.album_img = playRes.data.img;
+                            if (playRes.data.album_name) song.album_name = playRes.data.album_name;
+                        } else {
+                            // 2. 备选尝试 getSongInfo.php
+                            const songInfoUrl = `http://m.kugou.com/app/i/getSongInfo.php?cmd=playInfo&hash=${song.hash.toUpperCase()}`;
+                            const infoRes = await ky.get(songInfoUrl, { headers, timeout: 3000 }).json<{ imgUrl?: string; album_img?: string }>();
+                            if (infoRes.album_img) song.album_img = infoRes.album_img;
+                            else if (infoRes.imgUrl) song.imgurl = infoRes.imgUrl;
+                        }
+                    } catch {
+                        // ignore single song failure
+                    }
+                }));
+            }
+        } catch (e) {
+            console.warn('[core] Failed to fetch Kugou song details via detail APIs:', e);
+        }
+    }
+
     return {
         info: infoRes.data,
-        songs: songsRes.data.info,
+        songs: songs,
     };
 }
 
-function parseKugouSongs(songs: KugouSong[]): SongInfo[] {
+function formatKugouImage(url?: string): string {
+    if (!url) return '';
+    let formatted = url;
+    if (url.includes('stdmusic')) {
+        // 对于 stdmusic 格式，移除 {size}/ 占位符通常能直接获取原图，这符合用户提供的格式
+        formatted = url.replace('{size}/', '').replace('{size}', '');
+    } else {
+        formatted = url.replace('{size}', '400');
+    }
+    return formatted.replace('http://', 'https://');
+}
+
+function parseKugouSongs(songs: KugouSong[], playlistCover?: string): SongInfo[] {
     return songs.map((item) => {
         let artist = '未知歌手';
         const rawName = item.filename || item.name || '未知歌曲';
@@ -450,9 +580,12 @@ function parseKugouSongs(songs: KugouSong[]): SongInfo[] {
             name = parts[1].trim();
         }
         
+        // 极力优先使用 album_img，因为 imgurl 往往返回的是歌手头像，如果都没有则降级使用歌单封面
+        const cover = formatKugouImage(item.album_img || item.pic || item.cover || item.trans_param?.union_cover || item.imgurl) || playlistCover || '';
+        
         return {
             name: decodeHtmlEntities(name),
-            cover: '', 
+            cover, 
             artist: decodeHtmlEntities(artist),
             album: decodeHtmlEntities(item.album_name || ''),
             platformSongId: item.hash, 
@@ -464,12 +597,13 @@ function parseKugouSongs(songs: KugouSong[]): SongInfo[] {
 
 export async function getKugouMusicPlaylistSongs(url: string, options?: { cookie?: string }): Promise<PlaylistResult> {
     const { info, songs: rawSongs } = await getKugouMusicList(url, options);
-    const songs = parseKugouSongs(rawSongs);
+    const playlistCover = info.imgurl ? info.imgurl.replace('{size}', '400') : '';
+    const songs = parseKugouSongs(rawSongs, playlistCover);
 
     return {
         platform: 'KugouMusic',
         name: decodeHtmlEntities(info.specialname ?? ''),
-        cover: info.imgurl ? info.imgurl.replace('{size}', '400') : '',
+        cover: playlistCover,
         creator: decodeHtmlEntities(info.nickname ?? ''),
         songs,
     };
