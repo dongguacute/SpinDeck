@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import type { ChromeStyle, ThemePalette } from "../../lib/theme-color";
 import { PLATFORM_CONFIG } from "../../lib/types";
 import { prelaunchApp } from "@spindeck/player";
+import { ensureExternalOpenersReady } from "../../lib/open-external";
 import type { Playlist } from "../../lib/types";
 import type { SongInfo } from "@spindeck/player";
 import QQMusicIcon from "../../assets/icons/QQMusicIcon.svg?react";
@@ -25,6 +26,7 @@ interface HeaderProps {
   setShowDetail: (show: boolean) => void;
   onRefresh?: () => void;
   loading?: boolean;
+  refreshing?: boolean;
 }
 
 export function Header({
@@ -42,8 +44,10 @@ export function Header({
   setShowDetail,
   onRefresh,
   loading = false,
+  refreshing = false,
 }: HeaderProps) {
   const { t } = useTranslation('common');
+  const isRefreshBusy = loading || refreshing;
   if (!playlist) return null;
 
   const chromeButtonHandlers = {
@@ -139,25 +143,29 @@ export function Header({
 
                 {playlist.importUrl && (
                   <button
-                    onClick={onRefresh}
-                    disabled={loading}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRefresh?.();
+                    }}
+                    disabled={isRefreshBusy}
                     className="p-1 rounded-lg transition-all cursor-pointer disabled:cursor-not-allowed"
                     style={{ color: chrome.textMuted, opacity: showThemeBackdrop ? 0.65 : 0.25 }}
                     onMouseEnter={(e) => {
-                      if (loading) return;
+                      if (isRefreshBusy) return;
                       e.currentTarget.style.color = chrome.textSecondary;
                       e.currentTarget.style.opacity = showThemeBackdrop ? "0.95" : "0.5";
                       e.currentTarget.style.background = chrome.surfaceHover;
                     }}
                     onMouseLeave={(e) => {
-                      if (loading) return;
+                      if (isRefreshBusy) return;
                       e.currentTarget.style.color = chrome.textMuted;
                       e.currentTarget.style.opacity = showThemeBackdrop ? "0.65" : "0.25";
                       e.currentTarget.style.background = "transparent";
                     }}
                     title={t('shelf.refresh_list')}
                   >
-                    <RefreshCw className={`w-3 h-3 md:w-3.5 md:h-3.5 ${loading ? "animate-spin" : ""}`} />
+                    <RefreshCw className={`w-3 h-3 md:w-3.5 md:h-3.5 ${isRefreshBusy ? "animate-spin" : ""}`} />
                   </button>
                 )}
 
@@ -196,7 +204,12 @@ export function Header({
             </div>
 
             <button
-              onClick={() => prelaunchApp(playlist.platform)}
+              onClick={() => {
+                void (async () => {
+                  await ensureExternalOpenersReady();
+                  await prelaunchApp(playlist.platform);
+                })();
+              }}
               className="shelf-header-action flex items-center gap-1.5 px-2.5 py-1.5 md:px-3.5 md:py-2 rounded-xl border text-[10px] md:text-xs font-medium transition-all backdrop-blur-sm cursor-pointer"
               style={{
                 backgroundColor: PLATFORM_CONFIG[playlist.platform]?.bg || "var(--surface-color)",

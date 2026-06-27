@@ -230,13 +230,13 @@ export async function collectSystemInfo(t: TFunction): Promise<SystemInfo> {
 }
 
 export async function bootstrapNativeDeviceOS(): Promise<void> {
-  if (!hasTauriOsPlugin()) return;
+  if (!isTauri()) return;
 
   try {
     const { type } = await import("@tauri-apps/plugin-os");
     setNativeDeviceOS(OS_TYPE_MAP[type()] ?? null);
   } catch {
-    setNativeDeviceOS(null);
+    // 插件不可用时保留 UA / platform 检测，不写入错误 override
   }
 }
 

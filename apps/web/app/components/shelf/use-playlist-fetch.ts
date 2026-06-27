@@ -84,7 +84,11 @@ export function usePlaylistFetch(playlistId: string | undefined) {
     }
   }, [updatePlaylist]);
 
-  const submitFetch = useCallback((
+  const [overrideResult, setOverrideResult] = useState<FetchResult | null>(null);
+  const [directFetching, setDirectFetching] = useState(false);
+  const [songsRevision, setSongsRevision] = useState(0);
+
+  const runImport = useCallback((
     offset: number,
     limit: number,
     metaOnly = false,
@@ -107,6 +111,8 @@ export function usePlaylistFetch(playlistId: string | undefined) {
     if (metaOnly) form.metaOnly = "true";
     fetcherRef.current.submit(form, { method: "POST", action: "/api/import" });
   }, [paginated]);
+
+  const submitFetch = runImport;
 
   const loadMore = useCallback(() => {
     if (!paginated || !hasMoreRef.current || loadingRef.current || fetcherRef.current.state !== "idle") return;
@@ -148,12 +154,82 @@ export function usePlaylistFetch(playlistId: string | undefined) {
     submitFetch(0, PAGE_SIZE);
   }, [resetPagedState, submitFetch]);
 
+  const refreshPlaylist = useCallback(async () => {
+    const pl = playlistRef.current;
+    if (!pl?.importUrl || !pl?.platform) return;
+
+    expectedImportUrlRef.current = pl.importUrl.trim();
+    setDirectFetching(true);
+
+    if (paginated) {
+      resetPagedState();
+    }
+
+    try {
+      const body = new FormData();
+      body.set("url", pl.importUrl);
+      body.set("platform", pl.platform);
+      body.set("forceRefresh", "true");
+      if (paginated) {
+        body.set("offset", "0");
+        body.set("limit", String(PAGE_SIZE));
+        if (platformPlaylistIdRef.current) {
+          body.set("platformPlaylistId", platformPlaylistIdRef.current);
+        }
+      }
+
+      const res = await fetch("/api/import", { method: "POST", body });
+      if (!res.ok) {
+        console.warn("[Refresh] import failed:", res.status);
+        return;
+      }
+
+      const data = (await res.json()) as { results?: FetchResult[]; error?: string };
+      const next = data.results?.[0];
+      if (!next || !isResultForPlaylist(next, pl.importUrl)) return;
+
+      if (next.error) {
+        console.warn("[Refresh] import error:", next.error);
+        return;
+      }
+
+      syncPlaylistMeta(next);
+
+      if (paginated && next.paginated === true) {
+        if (next.platformPlaylistId) {
+          platformPlaylistIdRef.current = next.platformPlaylistId;
+        }
+        if (next.songCount != null) {
+          setTotalCount(next.songCount);
+        }
+        const incoming = next.songs ?? [];
+        setPagedSongs(incoming);
+        loadedCountRef.current = incoming.length;
+        hasMoreRef.current = next.hasMore ?? false;
+        loadingRef.current = false;
+        setInitialLoading(false);
+        setInitialLoadDone(true);
+        setSongsRevision((revision) => revision + 1);
+        return;
+      }
+
+      setOverrideResult(next);
+      setSongsRevision((revision) => revision + 1);
+    } catch (err) {
+      console.warn("[Refresh] import error:", err);
+    } finally {
+      setDirectFetching(false);
+    }
+  }, [paginated, resetPagedState, syncPlaylistMeta]);
+
   // 切换歌单：发起请求
   useEffect(() => {
     const pl = playlistRef.current;
     const key = `${playlistId ?? ""}:${pl?.importUrl ?? ""}:${pl?.platform ?? ""}`;
     if (key === activeKeyRef.current) return;
     activeKeyRef.current = key;
+    setOverrideResult(null);
+    setSongsRevision(0);
 
     if (isPaginated(pl?.platform) && pl?.importUrl) {
       startPagedFetch();
@@ -179,6 +255,7 @@ export function usePlaylistFetch(playlistId: string | undefined) {
 
     // metaOnly 刷新：只更新元数据，不动已加载歌曲
     if ((result.songs?.length ?? 0) === 0 && result.limit === 0) {
+      loadingRef.current = false;
       if (result.songCount != null) setTotalCount(result.songCount);
       syncPlaylistMeta(result);
       return;
@@ -255,8 +332,12 @@ export function usePlaylistFetch(playlistId: string | undefined) {
     };
   }, [paginated, initialLoadDone, playlist?.refreshInterval, playlist?.importUrl, playlist?.platform, submitFetch]);
 
-  const result = fetcher.data?.results?.[0];
-  const isFetching = fetcher.state !== "idle";
+  const fetcherResult = fetcher.data?.results?.[0];
+  const result = overrideResult
+    && isResultForPlaylist(overrideResult, expectedImportUrlRef.current ?? playlist?.importUrl)
+    ? overrideResult
+    : fetcherResult;
+  const isFetching = fetcher.state !== "idle" || directFetching;
 
   if (!paginated) {
     const fullSongs = isResultForPlaylist(result ?? {}, expectedImportUrlRef.current ?? playlist?.importUrl)
@@ -267,6 +348,8 @@ export function usePlaylistFetch(playlistId: string | undefined) {
       paginated: false,
       loading: isFetching && fullSongs.length === 0,
       loadingMore: false,
+      isFetching,
+      songsRevision,
       error: fetcher.data?.error || result?.error,
       songs: fullSongs,
       totalCount: fullSongs.length,
@@ -274,14 +357,7 @@ export function usePlaylistFetch(playlistId: string | undefined) {
       handleScrollCenter: () => {},
       loadMore: () => {},
       retry: () => {
-        const pl = playlistRef.current;
-        if (pl?.importUrl && pl?.platform) {
-          expectedImportUrlRef.current = pl.importUrl.trim();
-          fetcherRef.current.submit(
-            { url: pl.importUrl, platform: pl.platform },
-            { method: "POST", action: "/api/import" },
-          );
-        }
+        void refreshPlaylist();
       },
     };
   }
@@ -291,6 +367,8 @@ export function usePlaylistFetch(playlistId: string | undefined) {
     paginated: true,
     loading: initialLoading && pagedSongs.length === 0 && (isFetching || totalCount === 0),
     loadingMore: initialLoadDone && isFetching,
+    isFetching,
+    songsRevision,
     error: fetcher.data?.error || result?.error,
     songs: pagedSongs,
     totalCount: totalCount || pagedSongs.length,
@@ -298,7 +376,7 @@ export function usePlaylistFetch(playlistId: string | undefined) {
     handleScrollCenter,
     loadMore,
     retry: () => {
-      startPagedFetch();
+      void refreshPlaylist();
     },
   };
 }

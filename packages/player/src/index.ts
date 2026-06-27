@@ -10,6 +10,7 @@ export type {
 } from "./types";
 
 export { getDeviceOS, setNativeDeviceOS } from "./device";
+export { setAppUrlOpener, setExternalUrlOpener } from "./client/url-open";
 export {
   beginPageSession,
   canResumeSong,

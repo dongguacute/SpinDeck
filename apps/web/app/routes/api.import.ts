@@ -22,7 +22,12 @@ function mapSongs(songs: SongInfo[]): SongInfo[] {
   }));
 }
 
-async function importFullPlaylist(platform: PlatformType, url: string, metaOnly: boolean) {
+async function importFullPlaylist(
+  platform: PlatformType,
+  url: string,
+  metaOnly: boolean,
+  forceRefresh = false,
+) {
   if (metaOnly) {
     const meta = await getPlaylistMeta(platform, url);
     return {
@@ -38,9 +43,10 @@ async function importFullPlaylist(platform: PlatformType, url: string, metaOnly:
     };
   }
 
+  const importOptions = forceRefresh ? { forceRefresh: true } : undefined;
   const result = platform === "QQMusic"
-    ? await getQQMusicPlaylistSongs(url)
-    : await getKugouMusicPlaylistSongs(url);
+    ? await getQQMusicPlaylistSongs(url, importOptions)
+    : await getKugouMusicPlaylistSongs(url, importOptions);
   const songs = mapSongs(result.songs);
 
   return {
@@ -61,6 +67,7 @@ export async function action({ request }: Route.ActionArgs) {
   const url = (formData.get("url") as string)?.trim();
   const platform = (formData.get("platform") as PlatformType)?.trim();
   const metaOnly = formData.get("metaOnly") === "true";
+  const forceRefresh = formData.get("forceRefresh") === "true";
   const offsetRaw = formData.get("offset");
   const limitRaw = formData.get("limit");
   const platformPlaylistId = (formData.get("platformPlaylistId") as string)?.trim() || undefined;
@@ -90,7 +97,7 @@ export async function action({ request }: Route.ActionArgs) {
     const results = await Promise.all(urls.map(async (u) => {
       try {
         if (platform === "QQMusic" || platform === "KugouMusic") {
-          return await importFullPlaylist(platform, u, metaOnly);
+          return await importFullPlaylist(platform, u, metaOnly, forceRefresh);
         }
         if (platform === "NetEaseMusic") {
           const result = await getPlaylistPage(platform, u, offset, limit, {

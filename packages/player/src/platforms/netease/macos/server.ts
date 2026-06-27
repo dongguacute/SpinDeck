@@ -96,6 +96,10 @@ export async function pauseOnMac(exec: ExecFileAsync, cancelOnly = false): Promi
     return { ok: true, playing: false, stopped: false, method: "cancel" };
   }
 
+  if (!(await isNeteaseMusicPlaying(exec))) {
+    return { ok: true, playing: false, stopped: false, method: "idle" };
+  }
+
   const { stdout } = await exec("osascript", ["-e", NETEASE_MUSIC_PAUSE_SCRIPT]);
   const stopped = String(stdout).trim() === "paused";
   return { ok: true, playing: false, stopped };

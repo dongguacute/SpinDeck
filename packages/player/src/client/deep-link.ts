@@ -1,5 +1,6 @@
 import { getDeviceOS } from "../device";
 import type { PlatformType, SongInfo } from "../types";
+import { dispatchAppUrl, dispatchExternalUrl } from "./url-open";
 import { isMobileQQMusicTarget } from "./qqmusic-background";
 
 export interface OpenDeepLinkOptions {
@@ -56,16 +57,22 @@ function openViaAnchorClick(url: string): void {
 }
 
 function dispatchDeepLink(url: string, preferAnchor: boolean): void {
-  if (preferAnchor && isAndroid()) {
-    openViaAnchorClick(url);
-    window.setTimeout(() => openViaIframe(url), 40);
-    return;
-  }
-  openViaIframe(url);
+  void (async () => {
+    if (await dispatchAppUrl(url)) return;
+
+    if (preferAnchor && isAndroid()) {
+      openViaAnchorClick(url);
+      window.setTimeout(() => openViaIframe(url), 40);
+      return;
+    }
+    openViaIframe(url);
+  })();
 }
 
-/** 浏览器内唤起本地 App（桌面端默认 iframe） */
-export function openDeepLink(url: string, options: OpenDeepLinkOptions = {}): void {
+/** 浏览器内唤起本地 App（桌面端优先走注入的 shell.open） */
+export async function openDeepLink(url: string, options: OpenDeepLinkOptions = {}): Promise<void> {
+  if (await dispatchAppUrl(url)) return;
+
   const mobile = isMobileOS();
   const preferBackground = options.background ?? mobile;
 
@@ -81,7 +88,9 @@ export function openDeepLink(url: string, options: OpenDeepLinkOptions = {}): vo
  * 移动端 QQ 音乐：始终通过隐藏 iframe 发指令，避免反复跳转 App。
  * iOS/Android 不支持从网页可靠地后台控制第三方 App，这是目前最优折中。
  */
-export function openQQMusicDeepLink(url: string): void {
+export async function openQQMusicDeepLink(url: string): Promise<void> {
+  if (await dispatchAppUrl(url)) return;
+
   if (isMobileQQMusicTarget()) {
     openViaIframe(url);
     return;
@@ -125,9 +134,9 @@ export function openQQMusicStaggeredDeepLinks(urls: string[]): void {
   openQQMusicControlBurst(urls, { rounds: 1, syncFirst: false });
 }
 
-export function openDeepLinks(urls: string[], options: OpenDeepLinkOptions = {}): boolean {
+export async function openDeepLinks(urls: string[], options: OpenDeepLinkOptions = {}): Promise<boolean> {
   if (urls.length === 0) return false;
-  openDeepLink(urls[0], options);
+  await openDeepLink(urls[0], options);
   return true;
 }
 
@@ -158,19 +167,23 @@ function buildWebFallback(platform: PlatformType, song: SongInfo): string {
   }
 }
 
-export function clientFallbackPlay(
+export async function clientFallbackPlay(
   platform: PlatformType,
   song: SongInfo,
   urls: string[],
-): { ok: boolean; playing: boolean } {
+): Promise<{ ok: boolean; playing: boolean }> {
   if (urls.length > 0) {
     if (platform === "QQMusic" && isMobileQQMusicTarget()) {
-      openQQMusicDeepLink(urls[0]);
+      await openQQMusicDeepLink(urls[0]);
     } else {
-      openDeepLinks(urls);
+      await openDeepLinks(urls);
     }
     return { ok: true, playing: true };
   }
-  window.open(buildWebFallback(platform, song), "_blank", "noopener,noreferrer");
+  const fallbackUrl = buildWebFallback(platform, song);
+  if (await dispatchExternalUrl(fallbackUrl)) {
+    return { ok: true, playing: false };
+  }
+  window.open(fallbackUrl, "_blank", "noopener,noreferrer");
   return { ok: true, playing: false };
 }

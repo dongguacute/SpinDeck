@@ -12,9 +12,9 @@ export function resolveQQMacPlayModeLabel(mode: PlayMode): string {
   return QQ_MUSIC_PLAY_MODE_LABELS[mode];
 }
 
-/** 
+/**
  * QQ 音乐 Mac 客户端控制脚本
- * 兼容中英文菜单，并自动处理进程名
+ * 兼容 v8+「播放控制」菜单、旧版顶层「暂停/播放」菜单，以及中英文界面
  */
 
 function buildScript(inner: string): string {
@@ -35,6 +35,89 @@ function buildScript(inner: string): string {
     end tell
   `.trim();
 }
+
+/** v8+：在「播放控制 / Playback」子菜单中点击暂停项（或首项 toggle） */
+const PLAYBACK_MENU_PAUSE = `
+      try
+        if exists menu bar item "播放控制" of menu bar 1 then
+          tell menu "播放控制" of menu bar item "播放控制" of menu bar 1
+            if exists menu item "暂停" then
+              click menu item "暂停"
+              return "paused"
+            else if exists menu item "Pause" then
+              click menu item "Pause"
+              return "paused"
+            else
+              click menu item 1
+              return "paused"
+            end if
+          end tell
+        else if exists menu bar item "Playback" of menu bar 1 then
+          tell menu "Playback" of menu bar item "Playback" of menu bar 1
+            if exists menu item "暂停" then
+              click menu item "暂停"
+              return "paused"
+            else if exists menu item "Pause" then
+              click menu item "Pause"
+              return "paused"
+            else
+              click menu item 1
+              return "paused"
+            end if
+          end tell
+        end if
+      end try
+`.trim();
+
+/** v8+：在「播放控制 / Playback」子菜单中点击播放项（或首项 toggle） */
+const PLAYBACK_MENU_RESUME = `
+      try
+        if exists menu bar item "播放控制" of menu bar 1 then
+          tell menu "播放控制" of menu bar item "播放控制" of menu bar 1
+            if exists menu item "播放" then
+              click menu item "播放"
+              return "resumed"
+            else if exists menu item "Play" then
+              click menu item "Play"
+              return "resumed"
+            else
+              click menu item 1
+              return "resumed"
+            end if
+          end tell
+        else if exists menu bar item "Playback" of menu bar 1 then
+          tell menu "Playback" of menu bar item "Playback" of menu bar 1
+            if exists menu item "播放" then
+              click menu item "播放"
+              return "resumed"
+            else if exists menu item "Play" then
+              click menu item "Play"
+              return "resumed"
+            else
+              click menu item 1
+              return "resumed"
+            end if
+          end tell
+        end if
+      end try
+`.trim();
+
+/** v8+：检测「播放控制」菜单是否显示暂停项 */
+const PLAYBACK_MENU_IS_PLAYING = `
+      try
+        if exists menu bar item "播放控制" of menu bar 1 then
+          tell menu "播放控制" of menu bar item "播放控制" of menu bar 1
+            if exists menu item "暂停" then return "true"
+            if exists menu item "Pause" then return "true"
+          end tell
+        else if exists menu bar item "Playback" of menu bar 1 then
+          tell menu "Playback" of menu bar item "Playback" of menu bar 1
+            if exists menu item "暂停" then return "true"
+            if exists menu item "Pause" then return "true"
+          end tell
+        end if
+      end try
+`.trim();
 
 export function buildQQMusicSetPlayModeScript(mode: PlayMode): string {
   const label = resolveQQMacPlayModeLabel(mode);
@@ -59,6 +142,7 @@ export function buildQQMusicSetPlayModeScript(mode: PlayMode): string {
 
 export const QQ_MUSIC_PAUSE_SCRIPT = buildScript(`
     try
+      ${PLAYBACK_MENU_PAUSE}
       repeat with m in menu bar items of menu bar 1
         try
           if exists menu item "暂停" of menu 1 of m then
@@ -70,6 +154,10 @@ export const QQ_MUSIC_PAUSE_SCRIPT = buildScript(`
           end if
         end try
       end repeat
+      try
+        click menu item 1 of menu 1 of menu bar item 4 of menu bar 1
+        return "paused"
+      end try
       return "idle"
     on error
       return "error"
@@ -78,6 +166,7 @@ export const QQ_MUSIC_PAUSE_SCRIPT = buildScript(`
 
 export const QQ_MUSIC_RESUME_SCRIPT = buildScript(`
     try
+      ${PLAYBACK_MENU_RESUME}
       repeat with m in menu bar items of menu bar 1
         try
           if exists menu item "播放" of menu 1 of m then
@@ -89,6 +178,10 @@ export const QQ_MUSIC_RESUME_SCRIPT = buildScript(`
           end if
         end try
       end repeat
+      try
+        click menu item 1 of menu 1 of menu bar item 4 of menu bar 1
+        return "resumed"
+      end try
       return "idle"
     on error
       return "error"
@@ -97,6 +190,7 @@ export const QQ_MUSIC_RESUME_SCRIPT = buildScript(`
 
 export const QQ_MUSIC_IS_PLAYING_SCRIPT = buildScript(`
     try
+      ${PLAYBACK_MENU_IS_PLAYING}
       repeat with m in menu bar items of menu bar 1
         try
           if exists menu item "暂停" of menu 1 of m then return "true"
@@ -109,9 +203,21 @@ export const QQ_MUSIC_IS_PLAYING_SCRIPT = buildScript(`
     end try
 `);
 
+/** 菜单点击失败时：聚焦 QQ 音乐并发送空格（播放/暂停快捷键） */
+export const QQ_MUSIC_PAUSE_KEYBOARD_SCRIPT = buildScript(`
+    try
+      set frontmost to true
+      delay 0.05
+      keystroke space
+      delay 0.12
+      return "paused"
+    on error
+      return "error"
+    end try
+`);
+
 export const QQ_MUSIC_GET_INFO_SCRIPT = buildScript(`
     try
-      -- 尝试从窗口标题获取，QQ 音乐 Mac 版窗口标题通常是 "歌手 - 歌曲名"
       set winName to name of window 1
       return winName
     on error

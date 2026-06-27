@@ -11,6 +11,7 @@ import { useThemeStore, THEME_BOOTSTRAP_SCRIPT } from "./lib/theme-store";
 import { useBackgroundRefresh } from "./lib/use-background-refresh";
 import { isTauri } from "./lib/is-tauri";
 import { bootstrapNativeDeviceOS } from "./lib/system-info";
+import { ensureExternalOpenersReady } from "./lib/open-external";
 import { DesktopDragRegion } from "./components/DesktopDragRegion";
 import i18n from "./i18n";
 import spinDeckLogo from "./assets/icons/SpinDeckLogo.svg?url";
@@ -34,8 +35,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [showDragRegion, setShowDragRegion] = useState(false);
 
   useEffect(() => {
+    void ensureExternalOpenersReady();
     void (async () => {
       await bootstrapNativeDeviceOS();
+      await ensureExternalOpenersReady();
       const { getDeviceOS } = await import("@spindeck/player");
       if (isTauri() && getDeviceOS() === "macos") {
         document.documentElement.setAttribute("data-tauri-overlay", "");

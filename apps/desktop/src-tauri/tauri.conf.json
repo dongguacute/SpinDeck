@@ -34,6 +34,11 @@
       "csp": null
     }
   },
+  "plugins": {
+    "shell": {
+      "open": "^((mailto:\\w+)|(tel:\\w+)|(https?://\\w+)[^\\s]*)|([a-z][a-z0-9+.-]*://.*)$"
+    }
+  },
   "bundle": {
     "active": true,
     "targets": ["nsis", "deb", "appimage", "dmg"],

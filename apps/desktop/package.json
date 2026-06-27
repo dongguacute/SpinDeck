@@ -7,7 +7,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tauri dev",
+    "dev": "node ./scripts/prepare-dev-resources.mjs && tauri dev",
     "build": "tauri build",
     "generate:icons": "node ./scripts/generate-icons.mjs",
     "prepare:resources": "node ./scripts/prepare-resources.mjs"

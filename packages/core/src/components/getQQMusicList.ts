@@ -1,7 +1,7 @@
 import ky from "ky";
 import type { Input } from '../types/url';
 import { decodeHtmlEntities } from '../utils/decodeHtmlEntities';
-import { getCachedPlaylist, playlistCacheKey, setCachedPlaylist } from '../utils/playlistCache';
+import { getCachedPlaylist, invalidateCachedPlaylist, playlistCacheKey, setCachedPlaylist } from '../utils/playlistCache';
 
 export interface SongInfo {
     name: string;
@@ -138,10 +138,25 @@ interface QQRawEntry {
 const qqRawCache = new Map<string, QQRawEntry>();
 const QQ_RAW_TTL_MS = 5 * 60 * 1000;
 
-async function getQQMusicRaw(url: string): Promise<QQRawEntry> {
+export interface QQPlaylistImportOptions {
+  /** 手动刷新时跳过内存缓存，重新拉取 QQ API */
+  forceRefresh?: boolean;
+}
+
+export function invalidateQQMusicPlaylistCache(url: string): void {
+  const cacheKey = playlistCacheKey('QQMusic', url);
+  qqRawCache.delete(cacheKey);
+  invalidateCachedPlaylist('QQMusic', url);
+}
+
+async function getQQMusicRaw(url: string, forceRefresh = false): Promise<QQRawEntry> {
     const cacheKey = playlistCacheKey('QQMusic', url);
-    const cached = qqRawCache.get(cacheKey);
-    if (cached && Date.now() < cached.expires) return cached;
+    if (forceRefresh) {
+      qqRawCache.delete(cacheKey);
+    } else {
+      const cached = qqRawCache.get(cacheKey);
+      if (cached && Date.now() < cached.expires) return cached;
+    }
 
     const playlistData = await getQQMusicList(url);
     const cdInfo = playlistData?.cdlist?.[0] ?? {};
@@ -179,12 +194,19 @@ export async function getQQMusicPlaylistPage(
     return { meta, songs };
 }
 
-async function getQQMusicPlaylistResult(url: string): Promise<PlaylistResult> {
+async function getQQMusicPlaylistResult(
+  url: string,
+  options?: QQPlaylistImportOptions,
+): Promise<PlaylistResult> {
     const cacheKey = playlistCacheKey('QQMusic', url);
-    const cached = getCachedPlaylist(cacheKey);
-    if (cached) return cached;
+    if (options?.forceRefresh) {
+      invalidateQQMusicPlaylistCache(url);
+    } else {
+      const cached = getCachedPlaylist(cacheKey);
+      if (cached) return cached;
+    }
 
-    const raw = await getQQMusicRaw(url);
+    const raw = await getQQMusicRaw(url, options?.forceRefresh);
     const meta = metaFromQQRaw(raw);
     const songs = parseSonglistToDetails(raw.songlist);
 
@@ -216,6 +238,9 @@ export async function getQQMusicPlaylistSongsPage(
     return songs;
 }
 
-export async function getQQMusicPlaylistSongs(url: string): Promise<PlaylistResult> {
-    return getQQMusicPlaylistResult(url);
+export async function getQQMusicPlaylistSongs(
+  url: string,
+  options?: QQPlaylistImportOptions,
+): Promise<PlaylistResult> {
+    return getQQMusicPlaylistResult(url, options);
 }

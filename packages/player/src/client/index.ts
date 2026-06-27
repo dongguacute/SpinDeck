@@ -94,7 +94,7 @@ function pauseQQMusicRemote(options?: PauseSongOptions): void {
 
   const url = isMobileOS(os) ? pickQQMusicMobilePauseUrl() : buildQQMusicClientPauseUrls()[0];
   if (!url) return;
-  openQQMusicDeepLink(url);
+  void openQQMusicDeepLink(url);
 }
 
 export interface BeginShelfSessionOptions {
@@ -185,10 +185,10 @@ export async function resumeSong(
         if (os === "android") {
           openQQMusicControlBurst(urls, { rounds: 2, syncFirst: false });
         } else {
-          openQQMusicDeepLink(urls[0]);
+          await openQQMusicDeepLink(urls[0]);
         }
       } else {
-        openDeepLink(urls[0]);
+        await openDeepLink(urls[0]);
       }
     }
     return { ok: true, playing: true, resumed: true };
@@ -280,7 +280,7 @@ export async function playSong(
       console.warn(`[Play] 缺少 songmid/songid — ${song.name}`);
       return { ok: false, playing: false, error: "missing required id" };
     }
-    return clientFallbackPlay(platform, song, urls);
+    return await clientFallbackPlay(platform, song, urls);
   }
 
   if (os === "macos" && urls.length > 0) {
@@ -299,7 +299,7 @@ export async function playSong(
     }
   }
 
-  return clientFallbackPlay(platform, song, urls);
+  return await clientFallbackPlay(platform, song, urls);
 }
 
 /** 切歌前：取消进行中的播放；仅在本地认为「正在播」时才 toggle 暂停 */
@@ -363,13 +363,17 @@ export async function stopSong(
   platform: PlatformType,
   api: PlayerApiConfig = DEFAULT_API,
 ): Promise<void> {
-  const wasPlaying = isArmActivelyPlaying();
+  const wasActivelyPlaying = isArmActivelyPlaying();
   resetArmSession();
   if (usesQQMusicClientDeepLink(platform)) {
-    if (wasPlaying) pauseQQMusicRemote();
+    if (wasActivelyPlaying) pauseQQMusicRemote();
     return;
   }
-  await pauseSong(platform, api);
+  if (!usesMacServer(platform)) return;
+  // 已抬臂暂停时勿再发暂停，避免 QQ 音乐等客户端 toggle 成播放
+  if (wasActivelyPlaying) {
+    await pauseSong(platform, api);
+  }
 }
 
 export { prelaunchApp, getDeviceOS, buildSongPlayUrls };

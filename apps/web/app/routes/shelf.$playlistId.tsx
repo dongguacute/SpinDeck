@@ -32,12 +32,14 @@ export default function ShelfPage() {
     playlist,
     paginated: isPaginatedShelf,
     loading,
+    isFetching,
     error,
     songs,
     totalCount,
     ensureLoadedUpTo,
     handleScrollCenter,
     retry,
+    songsRevision,
   } = usePlaylistFetch(playlistId);
 
   const [showSettings, setShowSettings] = useState(false);
@@ -257,6 +259,7 @@ export default function ShelfPage() {
         setShowDetail={setShowDetail}
         onRefresh={retry}
         loading={loading}
+        refreshing={isFetching}
       />
 
       {/* 加载中 */}
@@ -367,6 +370,7 @@ export default function ShelfPage() {
 
         <PlaylistShelf
           songs={songs}
+          songsRevision={songsRevision}
           totalSongCount={isPaginatedShelf ? totalCount : undefined}
           onSongSelect={handleSongSelect}
           onSelectionAnimationComplete={handleBookAnimationComplete}

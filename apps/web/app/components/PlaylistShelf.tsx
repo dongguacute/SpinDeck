@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import gsap from "gsap";
@@ -295,6 +295,8 @@ interface Props {
   onScrollXChange?: (x: number) => void;
   /** 滚动到某区域时回调，用于按需加载歌曲 */
   onScrollCenter?: (centerIndex: number) => void;
+  /** 手动刷新计数，强制重建书架（QQ 等同内容刷新） */
+  songsRevision?: number;
 }
 
 function placeholderSong(index: number): SongInfo {
@@ -327,6 +329,7 @@ export default function PlaylistShelf({
   initialScrollX = 0,
   onScrollXChange,
   onScrollCenter,
+  songsRevision = 0,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<SceneState | null>(null);
@@ -343,6 +346,12 @@ export default function PlaylistShelf({
   const scrollXRef = useRef(initialScrollX);
   const songsRef = useRef(songs);
   const coverLoadStartedRef = useRef(0);
+
+  /** 歌曲内容指纹 + 刷新序号：内容变化或手动刷新时重建书架 */
+  const songsFingerprint = useMemo(
+    () => `${songsRevision}:${songs.map((s) => `${s.platformSongId}|${s.name}|${s.artist}|${s.cover}`).join("\n")}`,
+    [songs, songsRevision],
+  );
   const animatingRef = useRef(false);
   const prevCoverOverlayRef = useRef(coverOverlay);
   const coverPivotWorldRef = useRef<THREE.Vector3 | null>(null);
@@ -395,11 +404,13 @@ export default function PlaylistShelf({
     scrollXRef.current = initialScrollX;
   }, [initialScrollX]);
 
+  const shelfBookCount = totalSongCount ?? songs.length;
+
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    const count = totalSongCount ?? songs.length;
+    const count = shelfBookCount;
     if (!count) {
       onAllLoadedRef.current?.();
       return;
@@ -977,7 +988,8 @@ export default function PlaylistShelf({
       prevIndexRef.current = null;
     };
     // 网易云：totalSongCount 确定书架长度；QQ/酷狗：随 songs.length 一次性构建
-  }, [totalSongCount ?? songs.length]);
+    // songsFingerprint：歌单内容变化（刷新）时重建，即使数量未变
+  }, [shelfBookCount, songsFingerprint]);
 
   // 按需加载的新歌曲到达后，更新书脊并加载封面
   useEffect(() => {

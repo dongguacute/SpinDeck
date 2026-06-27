@@ -1,7 +1,7 @@
 import ky from "ky";
 import { decodeHtmlEntities } from '../utils/decodeHtmlEntities';
 import type { SongInfo, PlaylistResult, PlaylistMeta } from './getQQMusicList';
-import { getCachedPlaylist, playlistCacheKey, setCachedPlaylist } from '../utils/playlistCache';
+import { getCachedPlaylist, invalidateCachedPlaylist, playlistCacheKey, setCachedPlaylist } from '../utils/playlistCache';
 
 interface KugouSong {
   filename?: string;
@@ -555,10 +555,17 @@ function parseKugouSongs(songs: KugouSong[], playlistCover?: string): SongInfo[]
     });
 }
 
-async function getKugouMusicPlaylistResult(url: string): Promise<PlaylistResult> {
+async function getKugouMusicPlaylistResult(
+  url: string,
+  options?: { forceRefresh?: boolean },
+): Promise<PlaylistResult> {
     const cacheKey = playlistCacheKey('KugouMusic', url);
-    const cached = getCachedPlaylist(cacheKey);
-    if (cached) return cached;
+    if (options?.forceRefresh) {
+      invalidateCachedPlaylist('KugouMusic', url);
+    } else {
+      const cached = getCachedPlaylist(cacheKey);
+      if (cached) return cached;
+    }
 
     const { info, songs: rawSongs } = await getKugouMusicList(url);
     const playlistCover = info.imgurl ? info.imgurl.replace('{size}', '400') : '';
@@ -598,6 +605,9 @@ export async function getKugouMusicPlaylistSongsPage(
     return result.songs.slice(safeOffset, safeOffset + safeLimit);
 }
 
-export async function getKugouMusicPlaylistSongs(url: string): Promise<PlaylistResult> {
-    return getKugouMusicPlaylistResult(url);
+export async function getKugouMusicPlaylistSongs(
+  url: string,
+  options?: { forceRefresh?: boolean },
+): Promise<PlaylistResult> {
+    return getKugouMusicPlaylistResult(url, options);
 }

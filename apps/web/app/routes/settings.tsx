@@ -45,6 +45,7 @@ const YoutubeIcon = () => (
 import { Link } from "react-router";
 import { THEME_CONFIGS, type AppearanceMode, type ThemeType } from "@spindeck/ui";
 import { collectSystemInfo, getAppVersionLabel, type SystemInfo } from "../lib/system-info";
+import { openExternalUrl } from "../lib/open-external";
 
 const EMPTY_SYSTEM_INFO: SystemInfo = {
   os: "",
@@ -97,14 +98,7 @@ export default function Settings() {
     if (!confirmLink) return;
     const { url } = confirmLink;
     setConfirmLink(null);
-    void (async () => {
-      try {
-        const { open } = await import("@tauri-apps/plugin-shell");
-        await open(url);
-      } catch {
-        window.open(url, "_blank", "noopener,noreferrer");
-      }
-    })();
+    void openExternalUrl(url);
   };
 
   return (

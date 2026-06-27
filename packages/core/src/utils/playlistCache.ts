@@ -27,6 +27,10 @@ export function setCachedPlaylist(
   cache.set(key, { expires: Date.now() + ttlMs, result });
 }
 
+export function invalidateCachedPlaylist(platform: string, url: string): void {
+  cache.delete(playlistCacheKey(platform, url));
+}
+
 export function playlistCacheKey(platform: string, url: string): string {
   return `${platform}:${url.trim()}`;
 }

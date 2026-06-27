@@ -11,14 +11,19 @@ import {
   PLAY_DETECT_TIMEOUT_MS,
   QQ_MUSIC_GET_INFO_SCRIPT,
   QQ_MUSIC_IS_PLAYING_SCRIPT,
+  QQ_MUSIC_PAUSE_KEYBOARD_SCRIPT,
   QQ_MUSIC_PAUSE_SCRIPT,
   QQ_MUSIC_RESUME_SCRIPT,
 } from "./control";
 import { buildQQMusicMacPlayUrls } from "./urls";
 
 export async function isQQMusicPlaying(exec: ExecFileAsync): Promise<boolean> {
-  const { stdout } = await exec("osascript", ["-e", QQ_MUSIC_IS_PLAYING_SCRIPT]);
-  return String(stdout).trim() === "true";
+  try {
+    const { stdout } = await exec("osascript", ["-e", QQ_MUSIC_IS_PLAYING_SCRIPT]);
+    return String(stdout).trim() === "true";
+  } catch {
+    return false;
+  }
 }
 
 export async function waitForQQMusicPlaying(exec: ExecFileAsync): Promise<boolean> {
@@ -88,14 +93,39 @@ export async function pauseOnMac(exec: ExecFileAsync, cancelOnly = false): Promi
     return { ok: true, playing: false, stopped: false, method: "cancel" };
   }
 
-  const { stdout } = await exec("osascript", ["-e", QQ_MUSIC_PAUSE_SCRIPT]);
-  const stopped = String(stdout).trim() === "paused";
-  return { ok: true, playing: false, stopped };
+  if (!(await isQQMusicPlaying(exec))) {
+    return { ok: true, playing: false, stopped: false, method: "idle" };
+  }
+
+  let stopped = false;
+
+  try {
+    const { stdout } = await exec("osascript", ["-e", QQ_MUSIC_PAUSE_SCRIPT]);
+    stopped = String(stdout).trim() === "paused";
+  } catch (err) {
+    console.warn("[QQMusic] pause AppleScript failed:", err);
+  }
+
+  if (!stopped && (await isQQMusicPlaying(exec))) {
+    try {
+      await exec("osascript", ["-e", QQ_MUSIC_PAUSE_KEYBOARD_SCRIPT]);
+      stopped = !(await isQQMusicPlaying(exec));
+    } catch (err) {
+      console.warn("[QQMusic] pause keyboard fallback failed:", err);
+    }
+  }
+
+  return { ok: true, playing: false, stopped, method: stopped ? "pause" : "idle" };
 }
 
 export async function resumeOnMac(exec: ExecFileAsync): Promise<PlayResult> {
-  const { stdout } = await exec("osascript", ["-e", QQ_MUSIC_RESUME_SCRIPT]);
-  const resumed = String(stdout).trim() === "resumed";
+  let resumed = false;
+  try {
+    const { stdout } = await exec("osascript", ["-e", QQ_MUSIC_RESUME_SCRIPT]);
+    resumed = String(stdout).trim() === "resumed";
+  } catch (err) {
+    console.warn("[QQMusic] resume AppleScript failed:", err);
+  }
   const alreadyPlaying = !resumed && (await waitForQQMusicPlaying(exec));
   const playing = resumed ? await waitForQQMusicPlaying(exec) : alreadyPlaying;
 

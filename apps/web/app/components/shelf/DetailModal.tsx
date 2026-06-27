@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { Playlist } from "../../lib/types";
 import type { SongInfo } from "@spindeck/player";
 import { PLATFORM_CONFIG } from "../../lib/types";
+import { openExternalUrl } from "../../lib/open-external";
 import QQMusicIcon from "../../assets/icons/QQMusicIcon.svg?react";
 import NetEaseMusicIcon from "../../assets/icons/NetEaseMusicIcon.svg?react";
 import KugouMusicIcon from "../../assets/icons/KugouMusicIcon.svg?react";
@@ -109,6 +110,10 @@ export function DetailModal({
                 rel="noopener noreferrer"
                 className="flex items-center gap-1.5 text-xs transition-colors break-all group cursor-pointer"
                 style={{ color: "#60a5fa", opacity: 0.7 }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  void openExternalUrl(playlist.importUrl);
+                }}
                 onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.color = "#93c5fd", (e.currentTarget as HTMLAnchorElement).style.opacity = "1")}
                 onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.color = "#60a5fa", (e.currentTarget as HTMLAnchorElement).style.opacity = "0.7")}
               >

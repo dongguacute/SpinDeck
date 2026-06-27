@@ -7,6 +7,14 @@ export function setNativeDeviceOS(os: DeviceOS | null): void {
   nativeOsOverride = os;
 }
 
+function detectMacOSFromNavigator(): boolean {
+  if (typeof navigator === "undefined") return false;
+
+  if (/Mac/i.test(navigator.platform)) return true;
+
+  return /Mac OS X|Macintosh/i.test(navigator.userAgent);
+}
+
 export function getDeviceOS(): DeviceOS {
   if (nativeOsOverride) return nativeOsOverride;
 
@@ -14,6 +22,6 @@ export function getDeviceOS(): DeviceOS {
   if (/Android/i.test(ua)) return "android";
   if (/iPhone|iPad|iPod/i.test(ua)) return "ios";
   if (/Windows/i.test(ua)) return "windows";
-  if (/Mac OS X|Macintosh/i.test(ua)) return "macos";
+  if (detectMacOSFromNavigator()) return "macos";
   return "linux";
 }
