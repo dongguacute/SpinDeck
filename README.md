@@ -8,6 +8,8 @@
 
 <p align="center"><em>SpinDeck doesn't stream or host any audio. Your music apps handle playback; we handle playlists and control.</em></p>
 
+<p align="center"><a href="https://spindeck.dgct.cc">📖 Official Documentation</a></p>
+
 ---
 
 ## 👀 Preview
@@ -198,6 +200,7 @@ Licensed under the [Apache License 2.0](LICENSE).
 
 ## 🔗 Links
 
+- **Documentation**: <https://spindeck.dgct.cc>
 - **Repository**: <https://github.com/dongguacute/SpinDeck>
 - **Issues**: <https://github.com/dongguacute/SpinDeck/issues>
 - **Author**: Cherry Fu · [@dongguacute](https://github.com/dongguacute)
