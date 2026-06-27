@@ -14,6 +14,26 @@ function copyDir(from, to) {
   fs.cpSync(from, to, { recursive: true });
 }
 
+function removeAllBinDirs(dir) {
+  if (!fs.existsSync(dir)) {
+    return;
+  }
+
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (!entry.isDirectory()) {
+      continue;
+    }
+
+    const fullPath = path.join(dir, entry.name);
+    if (entry.name === ".bin") {
+      fs.rmSync(fullPath, { recursive: true, force: true });
+      continue;
+    }
+
+    removeAllBinDirs(fullPath);
+  }
+}
+
 function removeBrokenSymlinks(dir) {
   if (!fs.existsSync(dir)) {
     return;
@@ -38,12 +58,9 @@ function removeBrokenSymlinks(dir) {
 }
 
 function pruneDeployOutput(deployDir) {
-  const binDir = path.join(deployDir, "node_modules/.bin");
-  if (fs.existsSync(binDir)) {
-    fs.rmSync(binDir, { recursive: true, force: true });
-  }
-
-  removeBrokenSymlinks(path.join(deployDir, "node_modules"));
+  const nodeModulesDir = path.join(deployDir, "node_modules");
+  removeAllBinDirs(nodeModulesDir);
+  removeBrokenSymlinks(nodeModulesDir);
 }
 
 if (!fs.existsSync(path.join(webBuildDir, "server/index.js"))) {
