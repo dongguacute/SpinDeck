@@ -1,3 +1,8 @@
+---
+title: Desktop App
+weight: 20
+---
+
 # Desktop App
 
 SpinDeck ships a [Tauri 2](https://v2.tauri.app/) desktop shell for macOS, Windows, and Linux. The desktop build bundles the web UI and is recommended on macOS for full playback control.

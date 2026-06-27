@@ -1,3 +1,8 @@
+---
+title: Supported Platforms
+weight: 30
+---
+
 # Supported Platforms
 
 Only **QQ Music** is fully supported end to end. Other integrations vary by platform and environment.

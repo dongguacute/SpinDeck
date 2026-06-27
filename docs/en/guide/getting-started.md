@@ -1,3 +1,8 @@
+---
+title: Getting Started
+weight: 10
+---
+
 # Getting Started
 
 SpinDeck is a cross-platform vinyl visualization player. It organizes playlists in your browser, displays them on a 3D album shelf, and controls playback in third-party music apps.
@@ -47,3 +52,8 @@ pnpm format        # Format code
 ```
 
 See [Desktop App](./desktop) for the Tauri shell, or [Supported Platforms](./platforms) for music service compatibility.
+
+## Extending the UI
+
+- [Extending `@spindeck/ui`](./extending-ui) — Theme families and the Material Contract
+- [Extending `@spindeck/vinyl-ui`](./extending-vinyl-ui) — Vinyl player visual styles

@@ -1,3 +1,8 @@
+---
+title: 快速开始
+weight: 10
+---
+
 # 快速开始
 
 SpinDeck 是一款跨平台黑胶可视化播放器。它在浏览器中整理歌单，在 3D 专辑架上展示封面，并控制第三方音乐应用的播放。
@@ -47,3 +52,8 @@ pnpm format        # 代码格式化
 ```
 
 请参阅 [桌面应用](./desktop) 了解 Tauri 壳，或 [支持的平台](./platforms) 了解音乐服务兼容性。
+
+## 扩展 UI
+
+- [扩展 `@spindeck/ui`](./extending-ui) — 主题族与材质契约
+- [扩展 `@spindeck/vinyl-ui`](./extending-vinyl-ui) — 黑胶播放器视觉风格

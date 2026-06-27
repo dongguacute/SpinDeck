@@ -1,3 +1,8 @@
+---
+title: 桌面应用
+weight: 20
+---
+
 # 桌面应用
 
 SpinDeck 提供适用于 macOS、Windows 和 Linux 的 [Tauri 2](https://v2.tauri.app/) 桌面壳。桌面版捆绑 Web UI，在 macOS 上推荐用于完整播放控制。

@@ -1,24 +1,63 @@
+import { readFileSync } from "node:fs";
 import { chdir, cwd } from "node:process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { defineConfig } from "vitepress";
+import { defineConfig, type DefaultTheme } from "vitepress";
 import { InlineLinkPreviewElementTransform } from "@nolebase/vitepress-plugin-inline-link-preview/markdown-it";
 import { calculateSidebar } from "@nolebase/vitepress-plugin-sidebar";
 
 const docsDir = join(dirname(fileURLToPath(import.meta.url)), "..");
 
-function getAutoSidebar(targets: string[]) {
+function readFrontmatterWeight(filePath: string): number {
+  try {
+    const content = readFileSync(filePath, "utf-8");
+    const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+    if (!match) return Number.POSITIVE_INFINITY;
+    const weightMatch = match[1].match(/^weight:\s*(\d+)\s*$/m);
+    return weightMatch ? Number(weightMatch[1]) : Number.POSITIVE_INFINITY;
+  } catch {
+    return Number.POSITIVE_INFINITY;
+  }
+}
+
+type SidebarEntry = DefaultTheme.SidebarItem & { index?: string };
+
+function sortSidebarByWeight(
+  items: DefaultTheme.SidebarItem[],
+): DefaultTheme.SidebarItem[] {
+  const sorted = [...items].sort((a, b) => {
+    const weightA = a.link
+      ? readFrontmatterWeight(join(docsDir, `${a.link.slice(1)}.md`))
+      : Number.POSITIVE_INFINITY;
+    const weightB = b.link
+      ? readFrontmatterWeight(join(docsDir, `${b.link.slice(1)}.md`))
+      : Number.POSITIVE_INFINITY;
+    if (weightA !== weightB) return weightA - weightB;
+    return (a.text ?? "").localeCompare(b.text ?? "");
+  });
+
+  return sorted.map((item) =>
+    item.items?.length
+      ? { ...item, items: sortSidebarByWeight(item.items) }
+      : item,
+  );
+}
+
+function getAutoSidebar(targets: string[]): SidebarEntry[] {
   const previousCwd = cwd();
   chdir(docsDir);
   const sidebar = calculateSidebar(targets);
   chdir(previousCwd);
-  return sidebar;
+  if (Array.isArray(sidebar)) return sidebar;
+  const first = Object.values(sidebar)[0];
+  return Array.isArray(first) ? first : [];
 }
 
-function getLocaleGuideSidebar(localeDir: string) {
+function getLocaleGuideSidebar(localeDir: string): DefaultTheme.SidebarItem[] {
   const sidebar = getAutoSidebar([localeDir]);
   const guide = sidebar.find((item) => item.index === "guide");
-  return guide?.items ?? sidebar;
+  const items = guide?.items ?? sidebar;
+  return sortSidebarByWeight(items);
 }
 
 const footerYear = new Date().getFullYear();
