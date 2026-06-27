@@ -2,6 +2,14 @@
   "identifier": "default",
   "description": "Default capabilities for SpinDeck desktop",
   "windows": ["main"],
+  "remote": {
+    "urls": [
+      "http://127.0.0.1:17345",
+      "http://127.0.0.1:17345/**",
+      "http://localhost:17345",
+      "http://localhost:17345/**"
+    ]
+  },
   "permissions": [
     "core:default",
     "core:window:allow-start-dragging",

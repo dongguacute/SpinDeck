@@ -137,22 +137,38 @@ const socialLinks = [
 const GITHUB_RELEASES_URL = "https://github.com/dongguacute/SpinDeck/releases";
 
 /** Newest first — add new tags here when publishing releases. */
-const RELEASE_VERSIONS = ["v1.0.0-beta.2", "v1.0.0-beta.1"] as const;
+const RELEASE_VERSIONS = [
+  { tag: "v1.0.0-beta.3", available: true },
+  { tag: "v1.0.0-beta.2", available: false },
+  { tag: "v1.0.0-beta.1", available: false },
+] as const;
 
 function releaseTagUrl(tag: string) {
   return `${GITHUB_RELEASES_URL}/tag/${tag}`;
 }
 
+function releaseNavItemLabel(
+  version: (typeof RELEASE_VERSIONS)[number],
+  locale: "en" | "zh",
+) {
+  if (version.available) {
+    return version.tag;
+  }
+  return locale === "en"
+    ? `${version.tag} (Unavailable)`
+    : `${version.tag}（不可用）`;
+}
+
 function getDownloadNavItem(
   locale: "en" | "zh",
 ): DefaultTheme.NavItemWithChildren {
-  const latestVersion = RELEASE_VERSIONS[0];
+  const latestVersion = RELEASE_VERSIONS[0].tag;
   return {
     text: releaseNavButtonLabel(latestVersion),
     items: [
       ...RELEASE_VERSIONS.map((version) => ({
-        text: version,
-        link: releaseTagUrl(version),
+        text: releaseNavItemLabel(version, locale),
+        link: releaseTagUrl(version.tag),
         noIcon: true,
       })),
       {

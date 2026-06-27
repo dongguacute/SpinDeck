@@ -39,6 +39,21 @@
   opacity: 1;
 }
 
+.VPNavBarMenuGroup .VPMenuLink .link[href*="/tag/v1.0.0-beta.1"] .text,
+.VPNavBarMenuGroup .VPMenuLink .link[href*="/tag/v1.0.0-beta.2"] .text,
+.VPNavScreenMenuGroupLink[href*="/tag/v1.0.0-beta.1"],
+.VPNavScreenMenuGroupLink[href*="/tag/v1.0.0-beta.2"] {
+  opacity: 0.55;
+  text-decoration: line-through;
+}
+
+.dark .VPNavBarMenuGroup .VPMenuLink .link[href*="/tag/v1.0.0-beta.1"] .text,
+.dark .VPNavBarMenuGroup .VPMenuLink .link[href*="/tag/v1.0.0-beta.2"] .text,
+.dark .VPNavScreenMenuGroupLink[href*="/tag/v1.0.0-beta.1"],
+.dark .VPNavScreenMenuGroupLink[href*="/tag/v1.0.0-beta.2"] {
+  opacity: 0.45;
+}
+
 /* Sidebar — ensure cafe palette wins over default theme load order */
 .VPSidebar,
 .VPSidebar .curtain {

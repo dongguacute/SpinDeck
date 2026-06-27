@@ -24,10 +24,14 @@ pub fn run() {
     .plugin(tauri_plugin_shell::init())
     .setup(|app| {
       #[cfg(target_os = "macos")]
-      configure_window(app.handle())?;
+      if let Err(error) = configure_window(app.handle()) {
+        eprintln!("Window configuration failed: {error}");
+      }
 
       #[cfg(not(dev))]
-      server::start_and_navigate(app.handle())?;
+      if let Err(error) = server::start_and_navigate(app.handle()) {
+        server::show_startup_error(app.handle(), &error);
+      }
 
       Ok(())
     })
