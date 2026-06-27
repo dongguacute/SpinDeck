@@ -8,7 +8,9 @@
 
 <p align="center"><em>SpinDeck doesn't stream or host any audio. Your music apps handle playback; we handle playlists and control.</em></p>
 
-<p align="center"><a href="https://spindeck.dgct.cc">📖 Official Documentation</a></p>
+<p align="center">
+  English · <a href="./README.zh-Hans.md">简体中文</a> · <a href="https://spindeck.dgct.cc">📖 Official Documentation</a>
+</p>
 
 <p align="center">
   <a href="https://github.com/dongguacute/SpinDeck/releases"><img src="https://img.shields.io/github/v/release/dongguacute/SpinDeck?label=latest%20release" alt="Latest release" /></a>
