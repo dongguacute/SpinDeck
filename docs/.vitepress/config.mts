@@ -25,6 +25,59 @@ const footerYear = new Date().getFullYear();
 
 const sharedFooterCopyright = `Copyright © <span class="vp-footer-year">${footerYear}</span> <a href="https://github.com/dongguacute" target="_blank" rel="noopener noreferrer">Cherry Fu</a>`;
 
+const enThemeI18n = {
+  outline: { label: "On this page" },
+  docFooter: { prev: "Previous page", next: "Next page" },
+  darkModeSwitchLabel: "Appearance",
+  lightModeSwitchTitle: "Switch to light theme",
+  darkModeSwitchTitle: "Switch to dark theme",
+  sidebarMenuLabel: "Menu",
+  returnToTopLabel: "Return to top",
+  langMenuLabel: "Change language",
+  skipToContentLabel: "Skip to content",
+  notFound: {
+    title: "PAGE NOT FOUND",
+    quote:
+      "But if you don't change your direction, and if you keep looking, you may end up where you are heading.",
+    linkLabel: "go to home",
+    linkText: "Take me home",
+  },
+  lastUpdated: {
+    text: "Last updated",
+    formatOptions: {
+      forceLocale: true,
+      dateStyle: "short",
+      timeStyle: "short",
+    },
+  },
+} as const;
+
+const zhThemeI18n = {
+  outline: { label: "本页目录" },
+  docFooter: { prev: "上一页", next: "下一页" },
+  darkModeSwitchLabel: "外观",
+  lightModeSwitchTitle: "切换到浅色模式",
+  darkModeSwitchTitle: "切换到深色模式",
+  sidebarMenuLabel: "菜单",
+  returnToTopLabel: "回到顶部",
+  langMenuLabel: "选择语言",
+  skipToContentLabel: "跳转到主要内容",
+  notFound: {
+    title: "页面未找到",
+    quote: "找不到你要打开的页面，但也许换个方向就能找到路。",
+    linkLabel: "返回首页",
+    linkText: "返回首页",
+  },
+  lastUpdated: {
+    text: "最后更新于",
+    formatOptions: {
+      forceLocale: true,
+      dateStyle: "short",
+      timeStyle: "short",
+    },
+  },
+} as const;
+
 const socialLinks = [
   { icon: "github", link: "https://github.com/dongguacute/SpinDeck" },
   {
@@ -63,6 +116,29 @@ export default defineConfig({
       provider: "local",
       options: {
         locales: {
+          en: {
+            translations: {
+              button: {
+                buttonText: "Search",
+                buttonAriaLabel: "Search",
+              },
+              modal: {
+                displayDetails: "Display detailed list",
+                resetButtonTitle: "Reset search",
+                backButtonTitle: "Close search",
+                noResultsText: "No results found",
+                footer: {
+                  selectText: "Select",
+                  selectKeyAriaLabel: "Enter key",
+                  navigateText: "Navigate",
+                  navigateUpKeyAriaLabel: "Up arrow",
+                  navigateDownKeyAriaLabel: "Down arrow",
+                  closeText: "Close",
+                  closeKeyAriaLabel: "Escape key",
+                },
+              },
+            },
+          },
           zh: {
             translations: {
               button: {
@@ -117,6 +193,7 @@ export default defineConfig({
             "https://github.com/dongguacute/SpinDeck/edit/main/docs/:path",
           text: "Edit this page on GitHub",
         },
+        ...enThemeI18n,
       },
     },
     zh: {
@@ -145,6 +222,7 @@ export default defineConfig({
             "https://github.com/dongguacute/SpinDeck/edit/main/docs/:path",
           text: "在 GitHub 上编辑此页",
         },
+        ...zhThemeI18n,
       },
     },
   },
