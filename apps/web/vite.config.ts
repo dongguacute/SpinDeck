@@ -13,13 +13,9 @@ export default defineConfig({
   },
   ssr: {
     external: ["@react-router/node"],
-    noExternal: [
-      "@spindeck/core",
-      "@spindeck/picker",
-      "@spindeck/player",
-      "@spindeck/ui",
-      "@spindeck/vinyl-ui",
-    ],
+    // Bundle all app dependencies into the server build so the desktop
+    // runtime never resolves duplicate React copies from parent node_modules.
+    noExternal: true,
   },
   server: {
     host: '0.0.0.0',

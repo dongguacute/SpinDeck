@@ -93,6 +93,21 @@ function copyResolvedEntry(src, dest, copiedDirs = new Set()) {
   fs.copyFileSync(resolvedSrc, dest);
 }
 
+function assertServerRuntimeDeps(deployDir) {
+  const required = [
+    "@react-router/serve",
+    "@react-router/node",
+    "use-sync-external-store",
+  ];
+
+  for (const pkg of required) {
+    const pkgDir = path.join(deployDir, "node_modules", pkg);
+    if (!fs.existsSync(pkgDir)) {
+      throw new Error(`Missing runtime dependency after deploy: ${pkg}`);
+    }
+  }
+}
+
 function assertFlatNodeModules(nodeModulesDir) {
   const pnpmStoreDir = path.join(nodeModulesDir, ".pnpm");
   if (fs.existsSync(pnpmStoreDir)) {
@@ -163,6 +178,7 @@ execSync(`pnpm --filter @spindeck/web deploy --prod ${cacheDir}`, {
 copyDir(path.join(webBuildDir, "client"), path.join(cacheDir, "build/client"));
 copyDir(path.join(webBuildDir, "server"), path.join(cacheDir, "build/server"));
 pruneDeployOutput(cacheDir);
+assertServerRuntimeDeps(cacheDir);
 
 fs.rmSync(resourcesDir, { recursive: true, force: true });
 fs.mkdirSync(resourcesDir, { recursive: true });

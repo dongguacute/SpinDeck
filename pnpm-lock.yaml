@@ -108,6 +108,9 @@ importers:
       three:
         specifier: ^0.184.0
         version: 0.184.0
+      use-sync-external-store:
+        specifier: ^1.6.0
+        version: 1.6.0(react@19.2.7)
     devDependencies:
       '@react-router/dev':
         specifier: 7.16.0
