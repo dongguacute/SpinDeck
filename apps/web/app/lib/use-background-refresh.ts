@@ -37,6 +37,9 @@ export function useBackgroundRefresh() {
           const formData = new FormData();
           formData.append("url", playlist.importUrl);
           formData.append("platform", playlist.platform);
+          formData.append("metaOnly", "true");
+          formData.append("offset", "0");
+          formData.append("limit", "0");
 
           const response = await fetch("/api/import", {
             method: "POST",
@@ -46,19 +49,20 @@ export function useBackgroundRefresh() {
           if (!response.ok) throw new Error("刷新失败");
 
           const data = await response.json();
-          
-          // 只有当信息确实发生变化时才更新 store，避免不必要的重绘
-          const hasChanged = 
-            data.name !== playlist.name || 
-            data.cover !== playlist.coverUrl || 
-            data.songCount !== playlist.songCount;
+          const result = data.results?.[0];
+          if (!result) return;
+
+          const hasChanged =
+            result.name !== playlist.name ||
+            result.cover !== playlist.coverUrl ||
+            result.songCount !== playlist.songCount;
 
           if (hasChanged) {
             console.log(`[BackgroundRefresh] 歌单信息已更新: ${playlist.name}`);
             updatePlaylist(playlist.id, {
-              name: data.name,
-              coverUrl: data.cover,
-              songCount: data.songCount,
+              name: result.name || playlist.name,
+              coverUrl: result.cover || playlist.coverUrl,
+              songCount: result.songCount ?? playlist.songCount,
             });
           }
         } catch (err) {

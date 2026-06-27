@@ -174,7 +174,7 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
   const handleImport = () => {
     if (!importUrl.trim()) return;
     importFetcher.submit(
-      { url: importUrl.trim(), platform: importPlatform },
+      { url: importUrl.trim(), platform: importPlatform, metaOnly: "true", offset: "0", limit: "0" },
       { method: "POST", action: "/api/import" },
     );
   };

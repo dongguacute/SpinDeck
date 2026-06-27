@@ -8,6 +8,7 @@ export * from './input.js'
 export * from './components/getQQMusicList.js'
 export * from './components/getNeteaseMusicList.js'
 export * from './components/getKugouMusicList.js'
+export * from './components/getPlaylistPage.js'
 
 // 工具函数
 export * from './utils/decodeHtmlEntities.js'

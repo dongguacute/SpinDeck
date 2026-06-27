@@ -1,6 +1,7 @@
 import ky from "ky";
 import { decodeHtmlEntities } from '../utils/decodeHtmlEntities';
-import type { SongInfo, PlaylistResult } from './getQQMusicList';
+import type { SongInfo, PlaylistResult, PlaylistMeta } from './getQQMusicList';
+import { getCachedPlaylist, playlistCacheKey, setCachedPlaylist } from '../utils/playlistCache';
 
 interface KugouSong {
   filename?: string;
@@ -554,16 +555,49 @@ function parseKugouSongs(songs: KugouSong[], playlistCover?: string): SongInfo[]
     });
 }
 
-export async function getKugouMusicPlaylistSongs(url: string): Promise<PlaylistResult> {
+async function getKugouMusicPlaylistResult(url: string): Promise<PlaylistResult> {
+    const cacheKey = playlistCacheKey('KugouMusic', url);
+    const cached = getCachedPlaylist(cacheKey);
+    if (cached) return cached;
+
     const { info, songs: rawSongs } = await getKugouMusicList(url);
     const playlistCover = info.imgurl ? info.imgurl.replace('{size}', '400') : '';
     const songs = parseKugouSongs(rawSongs, playlistCover);
 
-    return {
+    const result: PlaylistResult = {
         platform: 'KugouMusic',
         name: decodeHtmlEntities(info.specialname ?? ''),
         cover: playlistCover,
         creator: decodeHtmlEntities(info.nickname ?? ''),
         songs,
     };
+
+    setCachedPlaylist(cacheKey, result);
+    return result;
+}
+
+export async function getKugouMusicPlaylistMeta(url: string): Promise<PlaylistMeta> {
+    const result = await getKugouMusicPlaylistResult(url);
+    return {
+        platform: result.platform,
+        name: result.name,
+        cover: result.cover,
+        creator: result.creator,
+        songCount: result.songs.length,
+    };
+}
+
+export async function getKugouMusicPlaylistSongsPage(
+    url: string,
+    offset: number,
+    limit: number,
+): Promise<SongInfo[]> {
+    const result = await getKugouMusicPlaylistResult(url);
+    const safeOffset = Math.max(0, offset);
+    const safeLimit = Math.max(1, limit);
+    return result.songs.slice(safeOffset, safeOffset + safeLimit);
+}
+
+export async function getKugouMusicPlaylistSongs(url: string): Promise<PlaylistResult> {
+    return getKugouMusicPlaylistResult(url);
 }

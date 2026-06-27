@@ -1,6 +1,7 @@
 import ky from "ky";
 import type { Input } from '../types/url';
 import { decodeHtmlEntities } from '../utils/decodeHtmlEntities';
+import { getCachedPlaylist, playlistCacheKey, setCachedPlaylist } from '../utils/playlistCache';
 
 export interface SongInfo {
     name: string;
@@ -19,6 +20,15 @@ export interface PlaylistResult {
     cover: string;
     creator: string;
     songs: SongInfo[];
+}
+
+export interface PlaylistMeta {
+    platform: Input['provider'];
+    name: string;
+    cover: string;
+    creator: string;
+    songCount: number;
+    platformPlaylistId?: string;
 }
 
 interface QQMusicSong {
@@ -106,41 +116,106 @@ function parseSonglistToDetails(songlist: QQMusicSong[]): SongInfo[] {
                 : '',
             artist: decodeHtmlEntities(singers.join(' / ') || '未知歌手'),
             album: decodeHtmlEntities(item.albumname ?? item.album_name ?? ''),
-        platformSongId: item.songmid ?? item.media_mid ?? "",
-        platformNumericId:
-          typeof item.songid === "number"
-            ? item.songid
-            : typeof item.songid === "string" && item.songid
-              ? Number.parseInt(item.songid, 10)
-              : undefined,
-        platformSongType: typeof item.songtype === "number" ? item.songtype : 0,
-        duration: item.interval,
+            platformSongId: item.songmid ?? item.media_mid ?? "",
+            platformNumericId:
+              typeof item.songid === "number"
+                ? item.songid
+                : typeof item.songid === "string" && item.songid
+                  ? Number.parseInt(item.songid, 10)
+                  : undefined,
+            platformSongType: typeof item.songtype === "number" ? item.songtype : 0,
+            duration: item.interval,
         };
     });
 }
 
-export async function getQQMusicPlaylistSongs(url: string): Promise<PlaylistResult> {
+interface QQRawEntry {
+    expires: number;
+    cdInfo: QQMusicCD;
+    songlist: QQMusicSong[];
+}
+
+const qqRawCache = new Map<string, QQRawEntry>();
+const QQ_RAW_TTL_MS = 5 * 60 * 1000;
+
+async function getQQMusicRaw(url: string): Promise<QQRawEntry> {
+    const cacheKey = playlistCacheKey('QQMusic', url);
+    const cached = qqRawCache.get(cacheKey);
+    if (cached && Date.now() < cached.expires) return cached;
+
     const playlistData = await getQQMusicList(url);
     const cdInfo = playlistData?.cdlist?.[0] ?? {};
     const songlist = cdInfo.songlist ?? [];
+    const entry: QQRawEntry = { expires: Date.now() + QQ_RAW_TTL_MS, cdInfo, songlist };
+    qqRawCache.set(cacheKey, entry);
+    return entry;
+}
 
-    const songs = songlist.length > 0 ? parseSonglistToDetails(songlist) : [];
-
-    console.log(`[core] 解析结果: ${songs.length} 首`);
-    if (songs.length > 0) {
-        const withCover = songs.filter(s => !!s.cover).length;
-        console.log(`[core] 有封面的: ${withCover}/${songs.length}`);
-        console.log(`[core] 第一首: name="${songs[0].name}" artist="${songs[0].artist}" cover="${songs[0].cover}"`);
-        if (withCover === 0 && songs.length > 0) {
-            console.log(`[core] ⚠️ 没有一首歌有封面！albummid 字段可能不存在`);
-        }
-    }
-
+function metaFromQQRaw(raw: QQRawEntry): PlaylistMeta {
+    const { cdInfo, songlist } = raw;
     return {
         platform: 'QQMusic',
         name: decodeHtmlEntities(cdInfo.dissname ?? ''),
         cover: cdInfo.logo ?? cdInfo.diss_cover ?? '',
         creator: decodeHtmlEntities(cdInfo.nickname ?? cdInfo.nick ?? ''),
+        songCount: songlist.length,
+    };
+}
+
+/** 单次请求返回元数据 + 歌曲页（只解析当前页，加快首屏） */
+export async function getQQMusicPlaylistPage(
+    url: string,
+    offset: number,
+    limit: number,
+): Promise<{ meta: PlaylistMeta; songs: SongInfo[] }> {
+    const raw = await getQQMusicRaw(url);
+    const meta = metaFromQQRaw(raw);
+    const safeOffset = Math.max(0, offset);
+    const safeLimit = Math.max(1, limit);
+    const songs = parseSonglistToDetails(raw.songlist.slice(safeOffset, safeOffset + safeLimit));
+
+    console.log(`[core] QQ 分页: ${safeOffset}-${safeOffset + songs.length}/${meta.songCount}`);
+
+    return { meta, songs };
+}
+
+async function getQQMusicPlaylistResult(url: string): Promise<PlaylistResult> {
+    const cacheKey = playlistCacheKey('QQMusic', url);
+    const cached = getCachedPlaylist(cacheKey);
+    if (cached) return cached;
+
+    const raw = await getQQMusicRaw(url);
+    const meta = metaFromQQRaw(raw);
+    const songs = parseSonglistToDetails(raw.songlist);
+
+    console.log(`[core] 解析结果: ${songs.length} 首`);
+
+    const result: PlaylistResult = {
+        platform: meta.platform,
+        name: meta.name,
+        cover: meta.cover,
+        creator: meta.creator,
         songs,
     };
+
+    setCachedPlaylist(cacheKey, result);
+    return result;
+}
+
+export async function getQQMusicPlaylistMeta(url: string): Promise<PlaylistMeta> {
+    const raw = await getQQMusicRaw(url);
+    return metaFromQQRaw(raw);
+}
+
+export async function getQQMusicPlaylistSongsPage(
+    url: string,
+    offset: number,
+    limit: number,
+): Promise<SongInfo[]> {
+    const { songs } = await getQQMusicPlaylistPage(url, offset, limit);
+    return songs;
+}
+
+export async function getQQMusicPlaylistSongs(url: string): Promise<PlaylistResult> {
+    return getQQMusicPlaylistResult(url);
 }

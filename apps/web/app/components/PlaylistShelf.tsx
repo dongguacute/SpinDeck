@@ -276,6 +276,8 @@ function spineCanvas(
    ============================================================ */
 interface Props {
   songs: SongInfo[];
+  /** 歌单总歌曲数（用于书架长度与滚动范围） */
+  totalSongCount?: number;
   onSongSelect?: (song: SongInfo | null, index: number | null) => void;
   onSelectionAnimationComplete?: (index: number) => void;
   onCoverToggle?: () => void;
@@ -291,10 +293,29 @@ interface Props {
   initialScrollX?: number;
   /** 滚动位置变化回调 */
   onScrollXChange?: (x: number) => void;
+  /** 滚动到某区域时回调，用于按需加载歌曲 */
+  onScrollCenter?: (centerIndex: number) => void;
+}
+
+function placeholderSong(index: number): SongInfo {
+  return {
+    name: `#${index + 1}`,
+    artist: "",
+    cover: "",
+    album: "",
+    platformSongId: `placeholder-${index}`,
+  };
+}
+
+function scrollToCenterIndex(scrollX: number, totalW: number, count: number): number {
+  const bookStep = SPINE_THICK + GAP;
+  const raw = Math.round((scrollX + totalW / 2 - SPINE_THICK / 2) / bookStep);
+  return Math.max(0, Math.min(count - 1, raw));
 }
 
 export default function PlaylistShelf({
   songs,
+  totalSongCount,
   onSongSelect,
   onSelectionAnimationComplete,
   onCoverToggle,
@@ -305,6 +326,7 @@ export default function PlaylistShelf({
   onAllLoaded,
   initialScrollX = 0,
   onScrollXChange,
+  onScrollCenter,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<SceneState | null>(null);
@@ -317,7 +339,10 @@ export default function PlaylistShelf({
   const onSelectionAnimationCompleteRef = useRef(onSelectionAnimationComplete);
   const onAllLoadedRef = useRef(onAllLoaded);
   const onScrollXChangeRef = useRef(onScrollXChange);
+  const onScrollCenterRef = useRef(onScrollCenter);
   const scrollXRef = useRef(initialScrollX);
+  const songsRef = useRef(songs);
+  const coverLoadStartedRef = useRef(0);
   const animatingRef = useRef(false);
   const prevCoverOverlayRef = useRef(coverOverlay);
   const coverPivotWorldRef = useRef<THREE.Vector3 | null>(null);
@@ -359,6 +384,14 @@ export default function PlaylistShelf({
   }, [onScrollXChange]);
 
   useEffect(() => {
+    onScrollCenterRef.current = onScrollCenter;
+  }, [onScrollCenter]);
+
+  useEffect(() => {
+    songsRef.current = songs;
+  }, [songs]);
+
+  useEffect(() => {
     scrollXRef.current = initialScrollX;
   }, [initialScrollX]);
 
@@ -366,19 +399,20 @@ export default function PlaylistShelf({
     const container = containerRef.current;
     if (!container) return;
 
-    if (!songs.length) {
+    const count = totalSongCount ?? songs.length;
+    if (!count) {
       onAllLoadedRef.current?.();
       return;
     }
 
-    console.log(`[Shelf] 开始构建 ${songs.length} 本书`);
+    coverLoadStartedRef.current = 0;
+    console.log(`[Shelf] 开始构建 ${count} 本书（已加载 ${songsRef.current.length} 首）`);
 
     const w = container.clientWidth;
     const h = container.clientHeight;
     const isMobilePortrait = w < 768 && h > w;
     const isMobileLandscape = h < 500 && w > h;
     const isMobile = isMobilePortrait || isMobileLandscape;
-    const count = songs.length;
     const totalW = count * (SPINE_THICK + GAP) - GAP;
 
     // --- 场景 ---
@@ -425,6 +459,7 @@ export default function PlaylistShelf({
     const persistScroll = (val: number) => {
       scrollXRef.current = val;
       onScrollXChangeRef.current?.(val);
+      onScrollCenterRef.current?.(scrollToCenterIndex(val, totalW, count));
     };
     mainGroup.visible = true; // 立即显示，不再等待封面加载
     scene.add(mainGroup);
@@ -439,7 +474,7 @@ export default function PlaylistShelf({
     const groups: THREE.Group[] = [];
     const originalPositions: { x: number; y: number; z: number }[] = [];
     for (let i = 0; i < count; i++) {
-      const song = songs[i];
+      const song = songsRef.current[i] ?? placeholderSong(i);
       const color = "#222"; // 初始使用中性深色，避免彩色块闪烁
       const group = new THREE.Group();
       const posX = -totalW / 2 + i * (SPINE_THICK + GAP) + SPINE_THICK / 2;
@@ -585,8 +620,10 @@ export default function PlaylistShelf({
             onBookThemeColorRef.current?.(null);
           }
         } else {
+          const song = songsRef.current[idx];
+          if (!song || song.platformSongId.startsWith("placeholder-")) return;
           const bookColor = (groups[idx].userData.color as string) || COLORS[idx % COLORS.length];
-          onSongSelectRef.current?.(songs[idx], idx);
+          onSongSelectRef.current?.(song, idx);
           onBookThemeColorRef.current?.(bookColor);
         }
       } else if (cur !== null && cur !== undefined && !locked) {
@@ -832,7 +869,8 @@ export default function PlaylistShelf({
 
     // --- 异步加载封面 + picker ---
     async function loadOne(i: number) {
-      const song = songs[i];
+      const song = songsRef.current[i];
+      if (!song || song.platformSongId.startsWith("placeholder-")) return;
       const mesh = meshes[i];
       const fb = COLORS[i % COLORS.length];
       console.log(`[Shelf] #${i} 加载 "${song.name}" cover=${!!song.cover}`);
@@ -889,30 +927,36 @@ export default function PlaylistShelf({
       console.log(`[Shelf] #${i} 完成 cover=${!!coverTex} mainColor=${mainColor}`);
     }
 
-    const CONC = 2;
-    let idx = 0;
-    let done = 0;
-    const worker = async () => {
-      while (idx < songs.length) {
-        const i = idx++;
-        await loadOne(i);
-        done++;
-        console.log(`[Shelf] 进度 ${done}/${songs.length}`);
-        
-        // 当加载了前 5 个封面，或者全部加载完时，通知父组件关闭 Loading 遮罩
-        // 这样用户可以更早看到书架并开始交互，封面在后台继续加载
-        if (done === Math.min(5, songs.length)) {
-          onAllLoadedRef.current?.();
+    const startCoverLoad = (from: number, to: number) => {
+      const CONC = 2;
+      let idx = from;
+      let done = from;
+      const worker = async () => {
+        while (idx < to) {
+          const i = idx++;
+          await loadOne(i);
+          done++;
+          console.log(`[Shelf] 进度 ${done}/${to}`);
+
+          if (done === Math.min(from + 5, to)) {
+            onAllLoadedRef.current?.();
+          }
+          if (done === to) {
+            console.log(`[Shelf] 封面批次加载完成 (${from}-${to})`);
+            onAllLoadedRef.current?.();
+          }
         }
-        
-        if (done === songs.length) {
-          console.log(`[Shelf] 所有封面加载完成`);
-          // 确保最后一定调用一次，防止 songs.length < 5 的情况
-          onAllLoadedRef.current?.();
-        }
-      }
+      };
+      for (let n = 0; n < Math.min(CONC, to - from); n++) worker();
     };
-    for (let n = 0; n < Math.min(CONC, songs.length); n++) worker();
+
+    const initialCoverEnd = Math.min(songsRef.current.length, count);
+    coverLoadStartedRef.current = initialCoverEnd;
+    if (initialCoverEnd > 0) {
+      startCoverLoad(0, initialCoverEnd);
+    } else {
+      onAllLoadedRef.current?.();
+    }
 
     // --- 清理 ---
     return () => {
@@ -932,6 +976,98 @@ export default function PlaylistShelf({
       sceneRef.current = null;
       prevIndexRef.current = null;
     };
+    // 网易云：totalSongCount 确定书架长度；QQ/酷狗：随 songs.length 一次性构建
+  }, [totalSongCount ?? songs.length]);
+
+  // 按需加载的新歌曲到达后，更新书脊并加载封面
+  useEffect(() => {
+    const state = sceneRef.current;
+    if (!state || songs.length <= coverLoadStartedRef.current) return;
+
+    const start = coverLoadStartedRef.current;
+    const end = songs.length;
+
+    for (let i = start; i < end; i++) {
+      const song = songs[i];
+      if (!song) continue;
+      const group = state.groups[i];
+      if (!group) continue;
+
+      group.userData.song = song;
+      const color = (group.userData.color as string) || "#222";
+      const mesh = state.meshes[i];
+      const newSpine = spineCanvas(song.name, song.artist, color, null);
+      const mats = mesh.material as THREE.MeshBasicMaterial[];
+      if (Array.isArray(mats) && mats[4]) {
+        mats[4].map = newSpine;
+        mats[4].needsUpdate = true;
+      }
+    }
+
+    const CONC = 2;
+    let idx = start;
+    async function loadOneIncremental(i: number) {
+      const song = songs[i];
+      if (!song || song.platformSongId.startsWith("placeholder-")) return;
+      const mesh = state!.meshes[i];
+      const fb = COLORS[i % COLORS.length];
+      if (!song.cover) return;
+
+      const proxied = px(song.cover);
+      let coverTex: THREE.Texture | null = null;
+      let mainColor = fb;
+
+      const [texR, colR] = await Promise.allSettled([
+        new Promise<THREE.Texture>((res, rej) => {
+          new THREE.TextureLoader().load(proxied,
+            (t) => { t.colorSpace = THREE.SRGBColorSpace; res(t); },
+            undefined, () => rej(new Error("fail")),
+          );
+        }),
+        (async () => {
+          const toHex = (cl: RGBAColor) =>
+            `#${[cl.r, cl.g, cl.b].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+          const [{ pickEdgeColors }] = await Promise.all([
+            import("@spindeck/picker"),
+          ]);
+          const e = await pickEdgeColors({ content: proxied });
+          return toHex(e.top);
+        })(),
+      ]);
+
+      if (texR.status === "fulfilled") coverTex = texR.value;
+      if (colR.status === "fulfilled") mainColor = colR.value;
+
+      const group = state!.groups[i];
+      group.userData.color = mainColor;
+      if (selectedIndexRef.current === i) {
+        onBookThemeColorRef.current?.(mainColor);
+      }
+
+      const newSpine = spineCanvas(song.name, song.artist, mainColor, null);
+      const coverMat = coverTex
+        ? new THREE.MeshBasicMaterial({ map: coverTex })
+        : new THREE.MeshBasicMaterial({ color: mainColor });
+
+      mesh.material = [
+        coverMat,
+        coverMat,
+        new THREE.MeshBasicMaterial({ color: mainColor }),
+        new THREE.MeshBasicMaterial({ color: mainColor }),
+        new THREE.MeshBasicMaterial({ map: newSpine }),
+        coverMat,
+      ];
+    }
+
+    const worker = async () => {
+      while (idx < end) {
+        const i = idx++;
+        await loadOneIncremental(i);
+      }
+    };
+    for (let n = 0; n < Math.min(CONC, end - start); n++) worker();
+
+    coverLoadStartedRef.current = end;
   }, [songs]);
 
   // --- 响应选中状态变化，执行 3D 动画 ---

@@ -12,11 +12,21 @@ export async function loader({ request }: Route.LoaderArgs) {
     return new Response("missing url param", { status: 400 });
   }
 
+  let referer = "https://y.qq.com/";
+  try {
+    const host = new URL(target).hostname;
+    if (host.includes("126.net") || host.includes("163.com")) {
+      referer = "https://music.163.com/";
+    }
+  } catch {
+    // keep default referer
+  }
+
   let resp: Response;
   try {
     resp = await fetch(target, {
       headers: {
-        Referer: "https://y.qq.com/",
+        Referer: referer,
         "User-Agent":
           "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
       },

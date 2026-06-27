@@ -28,7 +28,17 @@ export default function ShelfPage() {
   const { resolvedMode, settings, updateSettings, resetSettings } = useThemeStore();
   
   // Data fetching hook
-  const { playlist, loading, error, songs, retry } = usePlaylistFetch(playlistId);
+  const {
+    playlist,
+    paginated: isPaginatedShelf,
+    loading,
+    error,
+    songs,
+    totalCount,
+    ensureLoadedUpTo,
+    handleScrollCenter,
+    retry,
+  } = usePlaylistFetch(playlistId);
 
   const [showSettings, setShowSettings] = useState(false);
   const tonearmPortalRef = useRef<HTMLDivElement>(null);
@@ -45,7 +55,9 @@ export default function ShelfPage() {
   const playbackWrapperRef = useRef<HTMLDivElement>(null);
 
   const [showLoadingMsg, setShowLoadingMsg] = useState(false);
-  const isSyncing = loading || coversLoading;
+  const isSyncing = isPaginatedShelf
+    ? loading || (coversLoading && songs.length > 0)
+    : loading || coversLoading;
 
   useEffect(() => {
     if (isSyncing) {
@@ -69,6 +81,22 @@ export default function ShelfPage() {
     localStorage.setItem(`spindeck_shelf_scroll_${playlistId}`, x.toString());
   }, [playlistId]);
 
+  const BOOK_STEP = 0.98; // SPINE_THICK + GAP
+
+  // 恢复滚动位置时，预加载该区域的歌曲（仅网易云）
+  useEffect(() => {
+    if (!isPaginatedShelf || !totalCount || !initialScrollX) return;
+    const totalW = totalCount * BOOK_STEP - 0.8;
+    const centerIndex = Math.max(
+      0,
+      Math.min(
+        totalCount - 1,
+        Math.round((initialScrollX + totalW / 2 - 0.09) / BOOK_STEP),
+      ),
+    );
+    ensureLoadedUpTo(centerIndex + 20);
+  }, [isPaginatedShelf, totalCount, initialScrollX, ensureLoadedUpTo]);
+
   const inPlayback = selectedIndex !== null;
 
   useEffect(() => {
@@ -80,12 +108,11 @@ export default function ShelfPage() {
     return () => cancelAnimationFrame(handle);
   }, [inPlayback]);
 
-  // 当 playlistId 改变时，确保重新进入加载状态
+  // 切换歌单时重置封面加载状态
   useEffect(() => {
     setCoversLoading(true);
   }, [playlistId]);
 
-  // 当 loading 状态改变时同步 coversLoading
   useEffect(() => {
     if (loading) {
       setCoversLoading(true);
@@ -135,16 +162,26 @@ export default function ShelfPage() {
   }, [selectedIndex, playlist?.platform, setBookThemeColor]);
 
   const playNextSong = useCallback(() => {
-    if (songs.length === 0 || selectedIndex === null) return;
-    const nextIndex = (selectedIndex + 1) % songs.length;
-    handleSongSelect(songs[nextIndex], nextIndex, true);
-  }, [songs, selectedIndex, handleSongSelect]);
+    if (totalCount === 0 || selectedIndex === null) return;
+    const nextIndex = (selectedIndex + 1) % totalCount;
+    if (nextIndex >= songs.length) {
+      ensureLoadedUpTo(nextIndex);
+    }
+    const nextSong = songs[nextIndex];
+    if (!nextSong) return;
+    handleSongSelect(nextSong, nextIndex, true);
+  }, [totalCount, songs, selectedIndex, handleSongSelect, ensureLoadedUpTo]);
 
   const playPrevSong = useCallback(() => {
-    if (songs.length === 0 || selectedIndex === null) return;
-    const prevIndex = (selectedIndex - 1 + songs.length) % songs.length;
-    handleSongSelect(songs[prevIndex], prevIndex, true);
-  }, [songs, selectedIndex, handleSongSelect]);
+    if (totalCount === 0 || selectedIndex === null) return;
+    const prevIndex = (selectedIndex - 1 + totalCount) % totalCount;
+    if (prevIndex >= songs.length) {
+      ensureLoadedUpTo(prevIndex);
+    }
+    const prevSong = songs[prevIndex];
+    if (!prevSong) return;
+    handleSongSelect(prevSong, prevIndex, true);
+  }, [totalCount, songs, selectedIndex, handleSongSelect, ensureLoadedUpTo]);
 
   const handleBookAnimationComplete = useCallback((_index: number) => {
     setShowVinyl(true);
@@ -330,6 +367,7 @@ export default function ShelfPage() {
 
         <PlaylistShelf
           songs={songs}
+          totalSongCount={isPaginatedShelf ? totalCount : undefined}
           onSongSelect={handleSongSelect}
           onSelectionAnimationComplete={handleBookAnimationComplete}
           onCoverToggle={() => setCoverOverlay((v) => !v)}
@@ -340,6 +378,7 @@ export default function ShelfPage() {
           lockDeselect={inPlayback}
           initialScrollX={initialScrollX}
           onScrollXChange={handleScrollXChange}
+          onScrollCenter={isPaginatedShelf ? handleScrollCenter : undefined}
         />
       </div>
 
