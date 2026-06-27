@@ -6,7 +6,6 @@ export async function action({ request }: Route.ActionArgs) {
   const formData = await request.formData();
   const url = (formData.get("url") as string)?.trim();
   const platform = (formData.get("platform") as PlatformType)?.trim();
-  const cookie = (formData.get("cookie") as string)?.trim();
 
   if (!url || !platform) {
     return Response.json(
@@ -66,7 +65,7 @@ export async function action({ request }: Route.ActionArgs) {
           };
         }
         if (platform === "KugouMusic") {
-          const result = await getKugouMusicPlaylistSongs(u, { cookie });
+          const result = await getKugouMusicPlaylistSongs(u);
           const songs: SongInfo[] = result.songs.slice(0, 300).map((s) => ({
             name: s.name,
             artist: s.artist,

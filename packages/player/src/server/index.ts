@@ -1,7 +1,6 @@
 import * as qqMusicMac from "../platforms/qqmusic/macos/server";
 import * as neteaseMac from "../platforms/netease/macos/server";
 import * as kugouMac from "../platforms/kugou/macos/server";
-import { getKugouLocalAuthOnMac, buildKugouCookie } from "../platforms/kugou/macos/auth";
 import type {
   ExecFileAsync,
   PlatformType,
@@ -144,19 +143,6 @@ export async function serverGetPlaybackStatus(
   }
 
   return { playing: false, paused: false, idle: true };
-}
-
-/** 服务端：尝试获取本地酷狗 Cookie */
-export async function serverGetKugouLocalCookie(exec?: ExecFileAsync): Promise<string | null> {
-  if (nodePlatform() !== "darwin") return null;
-  try {
-    const auth = await getKugouLocalAuthOnMac(await getExec(exec));
-    if (!auth.userId || !auth.token) return null;
-    return buildKugouCookie(auth);
-  } catch (e) {
-    console.warn("[server] Failed to get local Kugou auth:", e);
-    return null;
-  }
 }
 
 export { createNodeExec, nodePlatform } from "./node";

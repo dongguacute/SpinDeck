@@ -30,14 +30,11 @@ interface KugouPlaylistInfo {
 }
 
 // 获取酷狗音乐歌单列表
-export async function getKugouMusicList(url: string, options?: { cookie?: string }): Promise<{ info: KugouPlaylistInfo; songs: KugouSong[] }> {
+export async function getKugouMusicList(url: string): Promise<{ info: KugouPlaylistInfo; songs: KugouSong[] }> {
     let specialid: string | null = null;
     const headers: Record<string, string> = {
         'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1'
     };
-    if (options?.cookie) {
-        headers['Cookie'] = options.cookie;
-    }
     
     // 处理短链或移动端分享链
     if (url && (url.includes('kugou.com/share/') || /t\d*\.kugou\.com/.test(url))) {
@@ -299,26 +296,6 @@ export async function getKugouMusicList(url: string, options?: { cookie?: string
         }
     }
 
-    // 如果输入的是“我喜欢”或个人主页链接且有 Cookie，尝试获取用户的第一个歌单（通常是我喜欢）
-    const isMyLike = url && (url.trim() === '我喜欢' || url.trim().toLowerCase() === 'mylike' || url.includes('kugou.com/m/index.html'));
-    if (isMyLike && options?.cookie) {
-        const userIdMatch = options.cookie.match(/kg_userid=(\d+)/);
-        if (userIdMatch) {
-            const userId = userIdMatch[1];
-            console.log(`[core] Detected "My Like" request for userId: ${userId}`);
-            try {
-                const userPlaylistsUrl = `http://mobilecdn.kugou.com/api/v3/special/list?userid=${userId}&page=1&pagesize=10`;
-                const userPlaylistsRes = await ky.get(userPlaylistsUrl, { headers }).json<{ status: number; data?: { info?: Array<{ specialid: number | string }> } }>();
-                if (userPlaylistsRes.status === 1 && userPlaylistsRes.data?.info?.[0]) {
-                    specialid = String(userPlaylistsRes.data.info[0].specialid);
-                    console.log(`[core] Detected "My Like" request for userId: ${userId}, found ID: ${specialid}`);
-                }
-            } catch {
-                console.warn('[core] Failed to fetch user playlists');
-            }
-        }
-    }
-
     // 如果输入的是纯数字（酷狗码或直接 ID）
     if (!specialid && url && /^\d+$/.test(url.trim())) {
         specialid = url.trim();
@@ -362,24 +339,6 @@ export async function getKugouMusicList(url: string, options?: { cookie?: string
         const matchAny = url.match(/\/(\d{5,})(\.html)?$/) || url.match(/(\d{5,})$/);
         if (matchAny) {
             specialid = matchAny[1];
-        }
-    }
-
-    // 如果还是没找到且有 Cookie，尝试获取用户自己的歌单列表
-    if (!specialid && options?.cookie) {
-        const userIdMatch = options.cookie.match(/kg_userid=(\d+)/);
-        if (userIdMatch) {
-            const userId = userIdMatch[1];
-            try {
-                const userPlaylistsUrl = `http://mobilecdn.kugou.com/api/v3/special/list?userid=${userId}&page=1&pagesize=10`;
-                const userPlaylistsRes = await ky.get(userPlaylistsUrl, { headers }).json<{ status: number; data?: { info?: Array<{ specialid: number | string }> } }>();
-                if (userPlaylistsRes.status === 1 && userPlaylistsRes.data?.info?.[0]) {
-                    specialid = String(userPlaylistsRes.data.info[0].specialid);
-                    console.log(`[core] Found user playlist ID as fallback: ${specialid}`);
-                }
-            } catch {
-                // ignore
-            }
         }
     }
 
@@ -595,8 +554,8 @@ function parseKugouSongs(songs: KugouSong[], playlistCover?: string): SongInfo[]
     });
 }
 
-export async function getKugouMusicPlaylistSongs(url: string, options?: { cookie?: string }): Promise<PlaylistResult> {
-    const { info, songs: rawSongs } = await getKugouMusicList(url, options);
+export async function getKugouMusicPlaylistSongs(url: string): Promise<PlaylistResult> {
+    const { info, songs: rawSongs } = await getKugouMusicList(url);
     const playlistCover = info.imgurl ? info.imgurl.replace('{size}', '400') : '';
     const songs = parseKugouSongs(rawSongs, playlistCover);
 
