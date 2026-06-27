@@ -11,7 +11,7 @@ SpinDeck ships a [Tauri 2](https://v2.tauri.app/) desktop shell for macOS, Windo
 
 Download pre-built desktop installers from GitHub Releases:
 
-**[v1.0.0-beta.1](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.1)**
+**[v1.0.0-beta.2](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.2)**
 
 Pick the asset for your platform (`.dmg` / `.app` on macOS, `.msi` / `.exe` on Windows, etc.). Release builds currently require **Node.js** on the user's machine to run the embedded server.
 

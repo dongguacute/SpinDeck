@@ -11,7 +11,7 @@ SpinDeck 提供适用于 macOS、Windows 和 Linux 的 [Tauri 2](https://v2.taur
 
 从 GitHub Releases 下载预构建的桌面安装包：
 
-**[v1.0.0-beta.1](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.1)**
+**[v1.0.0-beta.2](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.2)**
 
 按平台选择对应资源（macOS 为 `.dmg` / `.app`，Windows 为 `.msi` / `.exe` 等）。发布构建目前要求用户机器上安装 **Node.js** 以运行内嵌服务器。
 

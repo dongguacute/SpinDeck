@@ -137,7 +137,7 @@ const socialLinks = [
 const GITHUB_RELEASES_URL = "https://github.com/dongguacute/SpinDeck/releases";
 
 /** Newest first — add new tags here when publishing releases. */
-const RELEASE_VERSIONS = ["v1.0.0-beta.1"] as const;
+const RELEASE_VERSIONS = ["v1.0.0-beta.2", "v1.0.0-beta.1"] as const;
 
 function releaseTagUrl(tag: string) {
   return `${GITHUB_RELEASES_URL}/tag/${tag}`;
