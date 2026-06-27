@@ -119,7 +119,7 @@ jobs:
       - name: Map short drive on Windows
         if: matrix.platform == 'windows'
         shell: cmd
-        run: subst X: ${{ github.workspace }}
+        run: 'subst X: ${{ github.workspace }}'
 
       - name: Build desktop bundle
         run: pnpm --filter @spindeck/desktop build --target ${{ matrix.target }}
@@ -130,7 +130,7 @@ jobs:
       - name: Unmap short drive on Windows
         if: always() && matrix.platform == 'windows'
         shell: cmd
-        run: subst X: /d
+        run: "subst X: /d"
 
       - name: Collect release assets
         shell: bash
