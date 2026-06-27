@@ -58,7 +58,7 @@ export function SettingsModal({
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between p-6 md:p-8 pb-0 mb-4 md:mb-6">
+        <div className="flex items-center justify-between p-6 md:p-8 pb-0">
           <h3 className="text-lg md:text-xl font-bold flex items-center gap-2.5">
             <Settings2 className="w-5 h-5 opacity-60" /> {t('shelf.visual_settings')}
           </h3>
