@@ -14,18 +14,51 @@ function copyDir(from, to) {
   fs.cpSync(from, to, { recursive: true });
 }
 
+function removeBrokenSymlinks(dir) {
+  if (!fs.existsSync(dir)) {
+    return;
+  }
+
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const fullPath = path.join(dir, entry.name);
+
+    if (entry.isSymbolicLink()) {
+      try {
+        fs.statSync(fullPath);
+      } catch {
+        fs.unlinkSync(fullPath);
+      }
+      continue;
+    }
+
+    if (entry.isDirectory()) {
+      removeBrokenSymlinks(fullPath);
+    }
+  }
+}
+
+function pruneDeployOutput(deployDir) {
+  const binDir = path.join(deployDir, "node_modules/.bin");
+  if (fs.existsSync(binDir)) {
+    fs.rmSync(binDir, { recursive: true, force: true });
+  }
+
+  removeBrokenSymlinks(path.join(deployDir, "node_modules"));
+}
+
 if (!fs.existsSync(path.join(webBuildDir, "server/index.js"))) {
   throw new Error("Missing web build output. Run `pnpm --filter @spindeck/web build` first.");
 }
 
 fs.rmSync(cacheDir, { recursive: true, force: true });
-execSync(`pnpm --filter @spindeck/web deploy ${cacheDir}`, {
+execSync(`pnpm --filter @spindeck/web deploy --prod ${cacheDir}`, {
   cwd: monorepoRoot,
   stdio: "inherit",
 });
 
 copyDir(path.join(webBuildDir, "client"), path.join(cacheDir, "build/client"));
 copyDir(path.join(webBuildDir, "server"), path.join(cacheDir, "build/server"));
+pruneDeployOutput(cacheDir);
 
 fs.rmSync(resourcesDir, { recursive: true, force: true });
 fs.mkdirSync(resourcesDir, { recursive: true });

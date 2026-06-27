@@ -107,7 +107,8 @@ jobs:
             libxdo-dev \
             libssl-dev \
             libayatana-appindicator3-dev \
-            librsvg2-dev
+            librsvg2-dev \
+            libfuse2
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

@@ -4,12 +4,12 @@ mod server;
 use tauri::Manager;
 
 fn configure_window(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error::Error>> {
-  let Some(window) = app.get_webview_window("main") else {
-    return Ok(());
-  };
-
   #[cfg(target_os = "macos")]
   {
+    let Some(window) = app.get_webview_window("main") else {
+      return Ok(());
+    };
+
     use tauri::TitleBarStyle;
     window.set_title("SpinDeck")?;
     window.set_title_bar_style(TitleBarStyle::Overlay)?;
