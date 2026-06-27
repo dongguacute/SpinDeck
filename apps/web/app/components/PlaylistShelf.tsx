@@ -758,15 +758,23 @@ export default function PlaylistShelf({
       const cw = container.clientWidth, ch = container.clientHeight;
       const isMobilePortrait = cw < 768 && ch > cw;
 
-      // 统一处理 delta
-      const dx = e.deltaX;
-      const dy = e.deltaY;
+      // 统一处理 delta，抹平不同浏览器的 deltaMode 差异
+      let dx = e.deltaX;
+      let dy = e.deltaY;
+      if (e.deltaMode === 1) { // 行模式
+        dx *= 20;
+        dy *= 20;
+      } else if (e.deltaMode === 2) { // 页模式
+        dx *= cw;
+        dy *= ch;
+      }
       
       // 手机竖屏模式下，deltaY 对应纵向滚动
-      const delta = isMobilePortrait ? dy : (Math.abs(dx) > Math.abs(dy) ? dx : dy);
+      // 桌面模式下，横向和纵向滚动都映射到横向移动，但方向需要取反（因为 scrollX 增加是向右移）
+      const delta = isMobilePortrait ? dy : (Math.abs(dx) > Math.abs(dy) ? -dx : -dy);
 
-      // 灵敏度适配
-      const sensitivity = 0.008;
+      // 灵敏度适配：触控板通常 delta 较小但频率高，0.008 在桌面端可能略快，调至 0.006
+      const sensitivity = isMobilePortrait ? 0.008 : 0.006;
       let nScroll = scrollXRef.current + delta * sensitivity;
       
       const m = Math.max(0, totalW / 2 + 2);
@@ -783,7 +791,7 @@ export default function PlaylistShelf({
       persistScroll(nScroll);
 
       // 如果滑动距离足够，标记为已拖拽，防止误触发点击
-      if (Math.abs(delta) > 5) wasDragged = true;
+      if (Math.abs(dx) > 2 || Math.abs(dy) > 2) wasDragged = true;
     };
     renderer.domElement.addEventListener("wheel", onWheel, { passive: false });
 

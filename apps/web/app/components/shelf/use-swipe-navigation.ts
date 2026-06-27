@@ -91,8 +91,17 @@ export function useSwipeNavigation(
     const isForceLandscape = window.innerWidth < 768 && window.innerHeight > window.innerWidth;
 
     // 关注横向滚动，或者纵向滚动（如果 deltaX 为 0）
-    const dx = e.deltaX;
-    const dy = e.deltaY;
+    let dx = e.deltaX;
+    let dy = e.deltaY;
+
+    // 抹平不同浏览器的 deltaMode 差异
+    if (e.deltaMode === 1) { // 行模式
+      dx *= 20;
+      dy *= 20;
+    } else if (e.deltaMode === 2) { // 页模式
+      dx *= window.innerWidth;
+      dy *= window.innerHeight;
+    }
     
     // 强制横屏下，物理 dy 对应逻辑 dx
     const delta = isForceLandscape ? dy : (Math.abs(dx) > Math.abs(dy) ? dx : dy);
