@@ -7,7 +7,7 @@ use server::ServerProcess;
 #[cfg(target_os = "macos")]
 mod accessibility;
 
-#[cfg(target_os = "macos")]
+// Manager trait 提供 try_state / get_webview_window 等方法，所有桌面平台都需要
 use tauri::Manager;
 
 #[cfg(target_os = "macos")]
