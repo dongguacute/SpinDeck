@@ -6,6 +6,7 @@ import PlaylistShelf from "../components/PlaylistShelf";
 import { SongVinylOverlay } from "@spindeck/vinyl-ui";
 import { beginShelfSession, stopSong, prepareSongSwitch } from "@spindeck/player";
 import type { SongInfo } from "@spindeck/player";
+import { proxiedCoverUrl } from "../lib/cover-url";
 import {
   getDefaultChrome,
   themePaletteToChrome,
@@ -389,6 +390,7 @@ export default function ShelfPage() {
             tonearmTitle={t('vinyl.tonearm_title')}
             playLabel={t('vinyl.play')}
             pauseLabel={t('vinyl.pause')}
+            resolveCoverUrl={proxiedCoverUrl}
           />
         )}
 

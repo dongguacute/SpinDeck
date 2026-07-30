@@ -5,19 +5,19 @@ weight: 20
 
 # 桌面应用
 
-SpinDeck 提供适用于 macOS、Windows 和 Linux 的 [Tauri 2](https://v2.tauri.app/) 桌面壳。桌面版捆绑 Web SPA 与内嵌 **Rust** HTTP 服务 — 在 macOS 上推荐用于完整播放控制。
+SpinDeck 提供适用于 macOS、Windows 和 Linux 的 [Tauri 2](https://v2.tauri.app/) 桌面壳。桌面版通过原生 WebView 加载 SPA，并以 Tauri `invoke` / `cover://` 提供歌单导入与播放控制 — 在 macOS 上推荐用于完整播放控制。
 
 ## 架构（桌面端）
 
 | 部分 | 职责 |
 | --- | --- |
-| Tauri WebView | 托管 SPA |
-| Rust `server/` | 绑定 `127.0.0.1:17345`，生产环境提供静态 UI |
-| Rust `api/` | `/api/import`、`/api/image`、播放相关路由 |
+| Tauri WebView | 托管 SPA（`frontendDist` / 开发时 Vite） |
+| Rust `commands/` | `invoke`：导入与播放控制 |
+| Rust `cover` | `cover://` 封面代理 |
 | Rust `playlist/` | QQ / 网易云 / 酷狗导入 |
 | Rust `playback/` | 本地音乐应用控制（macOS AppleScript / `open`） |
 
-完整 monorepo 图示与 `/api` 表见 [架构](./architecture)。应用包说明：[`apps/desktop/README.md`](https://github.com/dongguacute/SpinDeck/blob/main/apps/desktop/README.md)。
+完整 monorepo 图示与 IPC 表见 [架构](./architecture)。应用包说明：[`apps/desktop/README.md`](https://github.com/dongguacute/SpinDeck/blob/main/apps/desktop/README.md)。
 
 ## 下载
 
@@ -25,11 +25,11 @@ SpinDeck 提供适用于 macOS、Windows 和 Linux 的 [Tauri 2](https://v2.taur
 
 **[v1.0.0-beta.6](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.6)**（最新）
 
-按平台选择对应资源（macOS 为 `.dmg` / `.app`，Windows 为 `.msi` / `.exe` 等）。发布构建内嵌 Rust HTTP 服务与前端静态资源，**不再依赖本机 Node.js**。
+按平台选择对应资源（macOS 为 `.dmg` / `.app`，Windows 为 `.msi` / `.exe` 等）。发布构建打包 SPA 与 Rust 桌面能力，**不再依赖本机 Node.js**。
 
 ### v1.0.0-beta.6 更新内容
 
-- **内嵌 Rust API** — 以 Tauri 内嵌 Axum 服务（`127.0.0.1:17345`）替代原先的 Node.js SSR/API 层；歌单导入、图片代理与播放控制均由桌面端 Rust 运行时处理
+- **内嵌 Rust 能力** — 歌单导入、封面代理与播放控制由桌面端 Rust 通过 Tauri `invoke` / `cover://` 提供
 - **移除 Node SSR 依赖** — 删除 Web / 桌面侧 Node API 路由与 `@spindeck/core`；用户机器不再需要 Node.js 即可运行完整桌面版
 - **3D 书架按需加载** — 按视口可见性动态加载 3D 资源，降低首屏成本与内存占用
 - **文档与工具链** — 同步架构/开发文档，更新 lint-staged、`.gitignore` 与仓库清理规则
@@ -51,7 +51,7 @@ SpinDeck 桌面版目前**未经过 Apple / Microsoft 官方签名**。不同系
 
 | 现象 | 原因 | 处理方式 |
 |------|------|----------|
-| 打开后白屏或闪退 | 内嵌本地服务启动失败 | 重新打开；仍失败请查看下方日志路径 |
+| 打开后白屏或闪退 | WebView / 前端资源加载失败 | 重新打开；仍失败请查看下方日志路径 |
 
 **日志位置（启动失败时排查）：**
 
@@ -100,7 +100,7 @@ SpinDeck 在 macOS 上通过 AppleScript 控制本地音乐客户端（QQ 音乐
 | 现象 | 原因 | 处理方式 |
 |------|------|----------|
 | SmartScreen：「Windows 已保护你的电脑」 | 安装包未购买 Extended Validation 签名 | 点 **更多信息** → **仍要运行** |
-| 杀毒软件拦截 | 本地应用会监听本机端口提供 API | 将 SpinDeck 安装目录或 `.exe` 加入白名单 |
+| 杀毒软件拦截 | 未签名桌面程序 / WebView 进程 | 将 SpinDeck 安装目录或 `.exe` 加入白名单 |
 
 ### Linux
 
@@ -119,7 +119,7 @@ SpinDeck 在 macOS 上通过 AppleScript 控制本地音乐客户端（QQ 音乐
 
 ### 开发
 
-Tauri 会启动 Web Vite 服务与 `:17345` 上的 Rust API。Vite 将 `/api` 代理到该端口：
+Tauri 会启动 Web Vite 服务并在 WebView 中加载。桌面能力通过 Tauri `invoke` 调用：
 
 ```bash
 pnpm --filter @spindeck/desktop dev
@@ -133,7 +133,7 @@ pnpm --filter @spindeck/desktop dev
 pnpm --filter @spindeck/desktop build
 ```
 
-构建 SPA，将 `apps/web/build/client` 复制到 Tauri `resources/web`，再执行 `tauri build`。打包后的应用由内嵌 Rust 服务提供静态 UI 与 `/api/*` — **用户机器不需要 Node.js**。
+构建 SPA 到 Tauri `frontendDist`，再执行 `tauri build`。打包后的应用通过 Tauri 原生资源协议加载 SPA，并以 `invoke` / `cover://` 提供桌面能力 — **用户机器不需要 Node.js**。
 
 产物输出至 `apps/desktop/src-tauri/target/release/bundle/`（macOS 为 `.app`，Windows 为 `.msi` / `.exe` 等）。
 

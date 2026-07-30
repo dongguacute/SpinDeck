@@ -7,13 +7,13 @@ weight: 10
 
 SpinDeck is a cross-platform vinyl visualization player. It organizes playlists in the UI, displays them on a 3D album shelf, and controls playback in third-party music apps.
 
-**Architecture in one line:** SPA frontend (`apps/web`) + desktop-only Rust local API (`apps/desktop`). See [Architecture](./architecture) for the full diagram and `/api` list.
+**Architecture in one line:** SPA frontend (`apps/web`) + desktop-only Tauri shell (`apps/desktop`). See [Architecture](./architecture) for the full diagram and IPC list.
 
 ## Requirements
 
 - [Node.js](https://nodejs.org/) ≥ 18 (web / docs development and frontend builds)
 - [pnpm](https://pnpm.io/) 9.x
-- [Rust](https://rustup.rs/) (stable) — required for desktop (Tauri) and the local `/api` server
+- [Rust](https://rustup.rs/) (stable) — required for desktop (Tauri)
 
 ## Install
 
@@ -25,13 +25,13 @@ pnpm install
 
 ## Recommended: Desktop Development
 
-For the full experience (import + playback APIs + native window):
+For the full experience (import + playback + native window):
 
 ```bash
 pnpm --filter @spindeck/desktop dev
 ```
 
-Tauri starts the web Vite server and the Rust API on `:17345`. Vite proxies `/api` to that port.
+Tauri starts the web Vite server and loads it in the WebView. Desktop features use `invoke`.
 
 ## Web Development (UI only)
 
@@ -47,7 +47,7 @@ Or run only the web app:
 pnpm --filter @spindeck/web dev
 ```
 
-Open the local URL printed in your terminal. Vite proxies `/api` to `127.0.0.1:17345`. Playlist import and playback need the Rust server — run desktop `dev` as above (or alongside web).
+Open the local URL printed in your terminal. Playlist import and playback require the desktop app — run desktop `dev` as above.
 
 ## Build Web SPA
 
@@ -55,7 +55,7 @@ Open the local URL printed in your terminal. Vite proxies `/api` to `127.0.0.1:1
 pnpm --filter @spindeck/web build
 ```
 
-Static output: `apps/web/build/client` (consumed by the desktop bundle).
+Static output: `apps/web/build/client` (Tauri `frontendDist` for the desktop app).
 
 ## Other Commands
 

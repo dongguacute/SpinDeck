@@ -2,6 +2,7 @@
  * 从封面提取主色，生成播放页极淡纯色背景（参考示例图效果）。
  */
 import type { RGBAColor } from "@spindeck/picker";
+import { proxiedCoverUrl } from "./cover-url";
 import {
   derivePlaybackPalette,
   hexToRgb,
@@ -66,10 +67,6 @@ export function pickCoverAccentColor(hexes: string[]): string {
     }
   }
   return best;
-}
-
-function proxiedCoverUrl(coverUrl: string): string {
-  return `/api/image?url=${encodeURIComponent(coverUrl)}`;
 }
 
 /** 从封面采样代表色 */

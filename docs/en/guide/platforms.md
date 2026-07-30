@@ -20,8 +20,8 @@ Only **QQ Music** is fully supported end to end. Other integrations vary by plat
 
 | Environment | Notes |
 | --- | --- |
-| Browser | Modern browsers — UI preview. Playlist import / local playback APIs need the desktop Rust server on `127.0.0.1:17345` |
-| **Desktop (Tauri)** | macOS / Windows / Linux; bundles the SPA and an embedded **Rust** HTTP server. No Node.js on the user’s machine |
+| Browser | Modern browsers — UI preview. Playlist import / local playback need the desktop app |
+| **Desktop (Tauri)** | macOS / Windows / Linux; native WebView + `invoke` / `cover://`. No Node.js on the user’s machine |
 | Desktop (macOS / Windows) | Full QQ Music experience; NetEase playback control available |
 | Mobile (iOS / Android) | QQ Music via deep links; NetEase playback control not supported |
 
@@ -29,4 +29,4 @@ Only **QQ Music** is fully supported end to end. Other integrations vary by plat
 QQ Music offers the most complete integration: playlist import, playback control, and cross-device deep links.
 :::
 
-For how the SPA and Rust API connect, see [Architecture](./architecture).
+For how the SPA and desktop shell connect (`invoke` / `cover://`), see [Architecture](./architecture).

@@ -7,13 +7,13 @@ weight: 10
 
 SpinDeck 是一款跨平台黑胶可视化播放器。它在界面中整理歌单，在 3D 专辑架上展示封面，并控制第三方音乐应用的播放。
 
-**一句话架构：** SPA 前端（`apps/web`）+ 仅桌面端的 Rust 本地 API（`apps/desktop`）。完整图示与 `/api` 列表见 [架构](./architecture)。
+**一句话架构：** SPA 前端（`apps/web`）+ 仅桌面端的 Tauri 壳（`apps/desktop`）。完整图示与 IPC 列表见 [架构](./architecture)。
 
 ## 环境要求
 
 - [Node.js](https://nodejs.org/) ≥ 18（Web / 文档开发与前端构建）
 - [pnpm](https://pnpm.io/) 9.x
-- [Rust](https://rustup.rs/)（stable）— 桌面端（Tauri）与本地 `/api` 服务需要
+- [Rust](https://rustup.rs/)（stable）— 桌面端（Tauri）需要
 
 ## 安装
 
@@ -25,13 +25,13 @@ pnpm install
 
 ## 推荐：桌面端开发
 
-完整体验（导入 + 播放 API + 原生窗口）：
+完整体验（导入 + 播放 + 原生窗口）：
 
 ```bash
 pnpm --filter @spindeck/desktop dev
 ```
 
-Tauri 会启动 Web Vite 服务与 `:17345` 上的 Rust API；Vite 将 `/api` 代理到该端口。
+Tauri 会启动 Web Vite 服务并在 WebView 中加载。桌面能力通过 `invoke` 调用。
 
 ## Web 开发（仅 UI）
 
@@ -47,7 +47,7 @@ pnpm dev
 pnpm --filter @spindeck/web dev
 ```
 
-在终端输出的本地地址打开应用。Vite 会将 `/api` 代理到 `127.0.0.1:17345`。歌单导入与播放需要 Rust 服务 — 请按上方方式运行桌面 `dev`（或与 Web 并行）。
+在终端输出的本地地址打开应用。歌单导入与播放需要桌面应用 — 请按上方方式运行桌面 `dev`。
 
 ## 构建 Web SPA
 
@@ -55,7 +55,7 @@ pnpm --filter @spindeck/web dev
 pnpm --filter @spindeck/web build
 ```
 
-静态产物：`apps/web/build/client`（供桌面打包使用）。
+静态产物：`apps/web/build/client`（桌面端 Tauri `frontendDist`）。
 
 ## 其他命令
 

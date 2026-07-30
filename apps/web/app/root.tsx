@@ -13,6 +13,7 @@ import { isTauri } from "./lib/is-tauri";
 import { bootstrapNativeDeviceOS } from "./lib/system-info";
 import { ensureExternalOpenersReady } from "./lib/open-external";
 import { bootstrapAccessibilityHandler } from "./lib/accessibility";
+import { bootstrapDesktopBridge } from "./lib/desktop-bridge";
 import { DesktopDragRegion } from "./components/DesktopDragRegion";
 import i18n from "./i18n";
 import spinDeckLogo from "./assets/icons/SpinDeckLogo.svg?url";
@@ -38,6 +39,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     void ensureExternalOpenersReady();
     void (async () => {
+      await bootstrapDesktopBridge();
       await bootstrapNativeDeviceOS();
       await ensureExternalOpenersReady();
       void bootstrapAccessibilityHandler();

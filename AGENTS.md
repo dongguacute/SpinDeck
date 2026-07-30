@@ -28,15 +28,15 @@ This project is a monorepo managed with `pnpm` and `turborepo`. To ensure consis
   - **i18n**: Translation files MUST be placed in `apps/web/app/locales`.
   - **Assets**: Images and other static assets that are part of the source code should be placed in `apps/web/app/assets`.
   - **App icon source**: `apps/web/app/assets/icons/SpinDeckLogo.svg` is the canonical logo for web favicon and desktop (Tauri) icons.
-  - **API**: The web app calls `/api/*` only; there is no Node SSR API. Playlist import / playback require the desktop Rust server.
+  - **Desktop IPC**: The web app talks to the desktop shell via Tauri `invoke` (and `cover://` for cover art). There is no Node SSR API and no local HTTP API. Playlist import / playback require the desktop app.
 - `apps/desktop`: Tauri 2 desktop shell for macOS / Windows / Linux. See [README.md](apps/desktop/README.md). The Tauri project lives at `apps/desktop/src-tauri` only — do NOT create a root-level `src-tauri` directory.
-  - **Dev**: `pnpm --filter @spindeck/desktop dev` (loads `@spindeck/web` via `http://localhost:5173` with Vite proxy to Rust API on `:17345`; the web dev server must be running or started by Tauri’s `beforeDevCommand`).
-  - **Build**: `pnpm --filter @spindeck/desktop build` (builds web SPA, copies `build/client` into Tauri `resources/web`, then runs `tauri build`). The embedded Rust HTTP server serves static UI + `/api/*` — no Node.js runtime on the user machine.
-  - **Rust layout** (`apps/desktop/src-tauri/src`): `app/` (Tauri shell), `server/` (HTTP lifecycle + SPA), `api/` (route handlers), `playlist/` (import providers), `playback/` (local music-app control), `util/` (shared helpers), `types.rs` (DTOs).
+  - **Dev**: `pnpm --filter @spindeck/desktop dev` (loads `@spindeck/web` via `http://localhost:5173`; the web dev server must be running or started by Tauri’s `beforeDevCommand`).
+  - **Build**: `pnpm --filter @spindeck/desktop build` (builds web SPA into `frontendDist`, then runs `tauri build`). The packaged app loads the SPA via Tauri’s native asset protocol and uses `invoke` for desktop features — no Node.js runtime on the user machine.
+  - **Rust layout** (`apps/desktop/src-tauri/src`): `app/` (Tauri shell), `commands/` (invoke handlers), `cover` (`cover://` proxy), `playlist/` (import providers), `playback/` (local music-app control), `util/` (shared helpers), `types.rs` (DTOs).
   - **Icons**: Desktop icons reuse `SpinDeckLogo.svg` with transparent padding (`CONTENT_RATIO` in `apps/desktop/scripts/generate-icons.mjs`, default `0.78`). Run `pnpm desktop:icons` after logo or ratio changes.
-  - **Generated output**: `apps/desktop/src-tauri/resources/` and `apps/desktop/.cache/` are build artifacts — do not commit.
+  - **Generated output**: `apps/desktop/.cache/` are build artifacts — do not commit.
 - `packages/`: Shared libraries and components. There is **no** `@spindeck/core` — import/providers live in desktop Rust.
-  - `packages/player`: Browser playback client (deep links, session, calls `/api`). See [README.md](packages/player/README.md)
+  - `packages/player`: Browser playback client (deep links, session, Tauri desktop bridge). See [README.md](packages/player/README.md)
   - `packages/vinyl-ui`: Specialized UI components for the vinyl player. See [README.md](packages/vinyl-ui/README.md)
   - `packages/ui`: General-purpose UI components. See [README.md](packages/ui/README.md)
   - `packages/picker`: Cover color extraction. See [README.md](packages/picker/README.md)

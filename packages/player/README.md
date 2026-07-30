@@ -1,6 +1,6 @@
 # `@spindeck/player`
 
-Browser-side playback client for SpinDeck. It builds deep links / play URLs, tracks session state for the tonearm UI, and calls the **desktop Rust** `/api/*` endpoints when local control is available.
+Browser-side playback client for SpinDeck. It builds deep links / play URLs, tracks session state for the tonearm UI, and talks to the **desktop shell** through `setDesktopBridge` (Tauri `invoke`) when local control is available.
 
 ## Scope
 
@@ -9,6 +9,7 @@ Browser-side playback client for SpinDeck. It builds deep links / play URLs, tra
 | Client helpers: `playSong`, `pauseSong`, `resumeSong`, `stopSong`, `getPlaybackStatus`, … | Server-side AppleScript / Node playback (moved to `apps/desktop` Rust) |
 | Deep links & app pre-launch helpers | Playlist import (Rust `playlist/` providers) |
 | Session / shelf session state | UI components (see `@spindeck/vinyl-ui`) |
+| `setDesktopBridge` for Tauri IPC | HTTP `/api` endpoints (removed) |
 
 Supported control depth still varies by platform — see the [Supported Platforms](../../docs/en/guide/platforms.md) guide. QQ Music is the most complete today; NetEase local control is desktop-oriented; Kugou is import-only at the product level.
 
@@ -29,25 +30,32 @@ import {
   getPlaybackStatus,
   beginShelfSession,
   buildSongPlayUrls,
+  setDesktopBridge,
 } from "@spindeck/player";
 
-await beginShelfSession({ platform: "QQMusic" });
-
-await playSong({
-  platform: "QQMusic",
-  song: {
-    name: "Example",
-    artist: "Artist",
-    cover: "",
-    album: "",
-    platformSongId: "…",
-  },
+// In the Tauri desktop app, wire invoke once at startup:
+setDesktopBridge({
+  playSong: (input) => invoke("play_song", input),
+  pauseSong: (input) => invoke("pause_song", input),
+  resumeSong: (input) => invoke("resume_song", input),
+  playbackStatus: (input) => invoke("playback_status", input),
+  setPlayMode: (input) => invoke("set_play_mode", input),
 });
 
-const status = await getPlaybackStatus({ platform: "QQMusic" });
-await pauseSong({ platform: "QQMusic" });
+await beginShelfSession("QQMusic");
 
-const urls = buildSongPlayUrls(songInfo, "QQMusic");
+await playSong("QQMusic", {
+  name: "Example",
+  artist: "Artist",
+  cover: "",
+  album: "",
+  platformSongId: "…",
+});
+
+const status = await getPlaybackStatus("QQMusic", song);
+await pauseSong("QQMusic");
+
+const urls = buildSongPlayUrls("QQMusic", song, "macos");
 ```
 
 Configure native openers / accessibility hooks from the desktop shell when needed (`setAppUrlOpener`, `setAccessibilityMissingHandler`, …).

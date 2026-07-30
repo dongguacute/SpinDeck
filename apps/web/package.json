@@ -1,7 +1,7 @@
 {
   "name": "@spindeck/web",
   "version": "0.1.0",
-  "description": "SpinDeck SPA frontend (React Router). Uses the desktop Rust /api for import and playback.",
+  "description": "SpinDeck SPA frontend (React Router). Uses Tauri invoke for import and playback in the desktop app.",
   "author": "Cherry Fu <https://github.com/dongguacute>",
   "license": "Apache-2.0",
   "repository": {

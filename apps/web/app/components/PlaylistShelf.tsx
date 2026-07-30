@@ -4,6 +4,7 @@ import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeom
 import gsap from "gsap";
 import type { SongInfo } from "../lib/types";
 import type { RGBAColor } from "@spindeck/picker";
+import { proxiedCoverUrl } from "../lib/cover-url";
 import {
   computeCoverSelectedWorldX,
   SHELF_CAM_Z,
@@ -215,7 +216,7 @@ function compactCoverUrl(url: string): string {
 }
 
 function px(url: string) {
-  return `/api/image?url=${encodeURIComponent(compactCoverUrl(url))}`;
+  return proxiedCoverUrl(compactCoverUrl(url));
 }
 
 function disposeMeshMaterials(mesh: THREE.Mesh) {

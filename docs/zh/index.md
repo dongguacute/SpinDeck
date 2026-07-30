@@ -18,13 +18,13 @@ hero:
 
 features:
   - title: 歌单管理
-    details: 创建、导入并自动刷新来自 QQ 音乐、网易云音乐、酷狗音乐的歌单。数据保存在浏览器本地；导入由桌面端 Rust API 完成。
+    details: 创建、导入并自动刷新来自 QQ 音乐、网易云音乐、酷狗音乐的歌单。数据保存在浏览器本地；导入由桌面应用通过 Tauri invoke 完成。
   - title: 3D 专辑架
     details: 在 Three.js 渲染的专辑架上浏览封面，并按视口按需加载。点击唱片播放，滑动切换曲目。
   - title: 黑胶唱臂
     details: 放下唱针播放、抬起唱针暂停——与音乐应用同步的拟真转盘交互。
   - title: 桌面优先运行时
-    details: 完整体验请使用 Tauri 桌面应用（本机内嵌 Rust HTTP）。浏览器模式适合 UI 预览。
+    details: 完整体验请使用 Tauri 桌面应用（`invoke` + 原生 WebView）。浏览器模式适合 UI 预览。
 ---
 
 ::: warning 免责声明

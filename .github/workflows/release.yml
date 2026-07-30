@@ -138,7 +138,6 @@ jobs:
       - name: Clean stale desktop build artifacts
         shell: bash
         run: |
-          rm -rf apps/desktop/src-tauri/resources
           rm -rf apps/desktop/.cache
           rm -rf apps/web/build
           rm -rf node_modules/.cache/turbo
@@ -154,7 +153,7 @@ jobs:
         env:
           CI: true
           TURBO_FORCE: true
-          # Bust rust-cache bundling when only web/resources changed
+          # Bust rust-cache bundling when only web frontend changed
           RUSTFLAGS: -C metadata=${{ steps.rust-meta.outputs.metadata }}
 
       - name: Unmap short drive on Windows

@@ -23,7 +23,7 @@ const edges = await pickEdgeColors({ content: imageUrlOrDataUrl });
 const column = await pickLeftColumnColors({ content: imageUrlOrDataUrl });
 ```
 
-`content` accepts a normal image URL (use the desktop `/api/image` proxy when CORS matters) or a data URL.
+`content` accepts a normal image URL (use the desktop `cover://` proxy when CORS matters) or a data URL.
 
 ## Development
 

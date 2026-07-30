@@ -7,7 +7,7 @@
   "build": {
     "beforeDevCommand": "pnpm --filter @spindeck/web dev",
     "devUrl": "http://localhost:5173",
-    "beforeBuildCommand": "pnpm turbo run build --filter=@spindeck/web && pnpm --filter @spindeck/desktop prepare:resources",
+    "beforeBuildCommand": "pnpm turbo run build --filter=@spindeck/web",
     "frontendDist": "../../web/build/client"
   },
   "app": {
@@ -49,9 +49,6 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": {
-      "resources/web/": "web/"
-    },
     "macOS": {
       "minimumSystemVersion": "10.15",
       "bundleName": "SpinDeck",

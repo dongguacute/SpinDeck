@@ -1,11 +1,10 @@
-use axum::{extract::Multipart, http::StatusCode, response::IntoResponse, Json};
 use futures::future::join_all;
 use serde_json::json;
 use std::sync::Arc;
 use tokio::sync::Semaphore;
 
 use crate::playlist::{self, FULL_LOAD_MAX};
-use crate::types::{json_error, SongInfo};
+use crate::types::SongInfo;
 
 /// Cap parallel playlist fetches when importing multiple URLs at once.
 const IMPORT_CONCURRENCY: usize = 3;
@@ -125,49 +124,26 @@ async fn import_one_url(
   }
 }
 
-async fn read_form(
-  mut multipart: Multipart,
-) -> Result<std::collections::HashMap<String, String>, String> {
-  let mut map = std::collections::HashMap::new();
-  while let Some(field) = multipart
-    .next_field()
-    .await
-    .map_err(|_| "INVALID_JSON".to_string())?
-  {
-    let name = field.name().unwrap_or("").to_string();
-    let text = field.text().await.map_err(|_| "INVALID_JSON".to_string())?;
-    if !name.is_empty() {
-      map.insert(name, text);
-    }
-  }
-  Ok(map)
-}
-
-pub async fn import_playlist(multipart: Multipart) -> impl IntoResponse {
-  let form = match read_form(multipart).await {
-    Ok(f) => f,
-    Err(code) => {
-      return (StatusCode::BAD_REQUEST, Json(json_error(&code))).into_response();
-    }
-  };
-
-  let url = form
-    .get("url")
-    .map(|s| s.trim().to_string())
-    .unwrap_or_default();
-  let platform = form
-    .get("platform")
-    .map(|s| s.trim().to_string())
-    .unwrap_or_default();
-  let meta_only = form.get("metaOnly").map(|s| s.as_str()) == Some("true");
-  let force_refresh = form.get("forceRefresh").map(|s| s.as_str()) == Some("true");
-  let platform_playlist_id = form
-    .get("platformPlaylistId")
+#[tauri::command]
+pub async fn import_playlist(
+  url: String,
+  platform: String,
+  meta_only: Option<bool>,
+  force_refresh: Option<bool>,
+  offset: Option<u32>,
+  limit: Option<u32>,
+  platform_playlist_id: Option<String>,
+) -> Result<serde_json::Value, String> {
+  let url = url.trim().to_string();
+  let platform = platform.trim().to_string();
+  let meta_only = meta_only.unwrap_or(false);
+  let force_refresh = force_refresh.unwrap_or(false);
+  let platform_playlist_id = platform_playlist_id
     .map(|s| s.trim().to_string())
     .filter(|s| !s.is_empty());
 
   if url.is_empty() || platform.is_empty() {
-    return (StatusCode::BAD_REQUEST, Json(json_error("MISSING_PARAMS"))).into_response();
+    return Err("MISSING_PARAMS".to_string());
   }
 
   let urls: Vec<String> = url
@@ -177,23 +153,15 @@ pub async fn import_playlist(multipart: Multipart) -> impl IntoResponse {
     .collect();
 
   if urls.is_empty() {
-    return (StatusCode::BAD_REQUEST, Json(json_error("INVALID_URL"))).into_response();
+    return Err("INVALID_URL".to_string());
   }
 
-  let offset = form
-    .get("offset")
-    .and_then(|s| s.parse::<i64>().ok())
-    .map(|n| n.max(0) as u32)
-    .unwrap_or(0);
-  let limit = form
-    .get("limit")
-    .and_then(|s| s.parse::<i64>().ok())
-    .map(|n| n.max(1) as u32)
-    .unwrap_or(if meta_only {
-      0
-    } else {
-      playlist::DEFAULT_PAGE_SIZE
-    });
+  let offset = offset.unwrap_or(0);
+  let limit = limit.unwrap_or(if meta_only {
+    0
+  } else {
+    playlist::DEFAULT_PAGE_SIZE
+  });
 
   let semaphore = Arc::new(Semaphore::new(IMPORT_CONCURRENCY));
   let results = join_all(urls.iter().cloned().map(|u| {
@@ -220,5 +188,5 @@ pub async fn import_playlist(multipart: Multipart) -> impl IntoResponse {
   }))
   .await;
 
-  (StatusCode::OK, Json(json!({ "results": results }))).into_response()
+  Ok(json!({ "results": results }))
 }

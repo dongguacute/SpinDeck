@@ -2,18 +2,18 @@
 //!
 //! Module layout:
 //! - [`app`] — Tauri shell / window / IPC
-//! - [`server`] — embedded HTTP lifecycle + static SPA
-//! - [`api`] — `/api/*` route handlers
+//! - [`commands`] — Tauri `invoke` handlers (import + playback)
+//! - [`cover`] — custom `cover://` URI scheme for cover-art proxy
 //! - [`playlist`] — playlist import providers (QQ / NetEase / Kugou)
 //! - [`playback`] — local music-app control (macOS AppleScript)
 //! - [`util`] — shared HTTP / HTML helpers
 //! - [`types`] — shared request/response DTOs
 
-mod api;
 mod app;
+mod commands;
+mod cover;
 mod playback;
 mod playlist;
-mod server;
 mod types;
 mod util;
 

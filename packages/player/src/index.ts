@@ -34,8 +34,15 @@ export {
   prepareSongSwitch,
   resumeSong,
   stopSong,
+  setDesktopBridge,
+  getDesktopBridge,
 } from "./client/index";
 
-export type { PauseSongOptions, BeginShelfSessionOptions, PlayerApiConfig } from "./client/index";
+export type {
+  PauseSongOptions,
+  BeginShelfSessionOptions,
+  PlayerApiConfig,
+  DesktopBridge,
+} from "./client/index";
 
 export * as platforms from "./platforms/index";

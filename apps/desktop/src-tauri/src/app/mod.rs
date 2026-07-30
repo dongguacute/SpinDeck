@@ -5,7 +5,8 @@ mod accessibility;
 
 use tauri::Manager;
 
-use crate::server;
+use crate::commands;
+use crate::cover;
 
 #[cfg(target_os = "macos")]
 fn configure_window(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error::Error>> {
@@ -34,32 +35,35 @@ fn open_accessibility_settings() -> Result<(), String> {
   accessibility::open_accessibility_settings()
 }
 
-fn start_local_backend(app: &tauri::AppHandle) {
-  if let Err(error) = server::start(app) {
-    eprintln!("Failed to start local API server: {error}");
-    #[cfg(not(dev))]
-    server::show_startup_error(app, &error);
-  } else {
-    #[cfg(not(dev))]
-    if let Err(error) = server::navigate_to_local(app) {
-      server::show_startup_error(app, &error);
-    }
-  }
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-  let mut builder = tauri::Builder::default()
+  let builder = tauri::Builder::default()
     .plugin(tauri_plugin_os::init())
     .plugin(tauri_plugin_shell::init());
 
+  let builder = cover::register_protocol(builder);
+
   #[cfg(target_os = "macos")]
-  {
-    builder = builder.invoke_handler(tauri::generate_handler![
-      check_accessibility_permission,
-      open_accessibility_settings,
-    ]);
-  }
+  let builder = builder.invoke_handler(tauri::generate_handler![
+    check_accessibility_permission,
+    open_accessibility_settings,
+    commands::import::import_playlist,
+    commands::playback::play_song,
+    commands::playback::pause_song,
+    commands::playback::resume_song,
+    commands::playback::playback_status,
+    commands::playback::set_play_mode,
+  ]);
+
+  #[cfg(not(target_os = "macos"))]
+  let builder = builder.invoke_handler(tauri::generate_handler![
+    commands::import::import_playlist,
+    commands::playback::play_song,
+    commands::playback::pause_song,
+    commands::playback::resume_song,
+    commands::playback::playback_status,
+    commands::playback::set_play_mode,
+  ]);
 
   builder
     .setup(|app| {
@@ -67,17 +71,8 @@ pub fn run() {
       if let Err(error) = configure_window(app.handle()) {
         eprintln!("Window configuration failed: {error}");
       }
-
-      // Always start Rust HTTP API (dev uses Vite proxy → :17345).
-      start_local_backend(app.handle());
-
       Ok(())
     })
-    .build(tauri::generate_context!())
-    .expect("error while building tauri application")
-    .run(|app_handle, event| {
-      if let tauri::RunEvent::Exit = event {
-        server::shutdown(app_handle);
-      }
-    });
+    .run(tauri::generate_context!())
+    .expect("error while building tauri application");
 }

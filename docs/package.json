@@ -1,7 +1,7 @@
 {
   "name": "@spindeck/docs",
   "version": "0.1.0",
-  "description": "SpinDeck documentation site",
+  "description": "SpinDeck documentation site (VitePress) — SPA + Tauri desktop architecture guides",
   "author": "Cherry Fu <https://github.com/dongguacute>",
   "license": "Apache-2.0",
   "repository": {

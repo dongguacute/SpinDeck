@@ -27,7 +27,12 @@ import {
 } from "./deep-link";
 import { prelaunchApp } from "./prelaunch";
 import { dispatchAccessibilityMissing } from "./accessibility";
+import { getDesktopBridge } from "./desktop-bridge";
 
+export type { DesktopBridge } from "./desktop-bridge";
+export { setDesktopBridge, getDesktopBridge } from "./desktop-bridge";
+
+/** @deprecated Prefer setDesktopBridge — kept for call-site compatibility. */
 export interface PlayerApiConfig {
   playUrl?: string;
   pauseUrl?: string;
@@ -35,14 +40,6 @@ export interface PlayerApiConfig {
   statusUrl?: string;
   setPlayModeUrl?: string;
 }
-
-const DEFAULT_API: Required<PlayerApiConfig> = {
-  playUrl: "/api/play-song",
-  pauseUrl: "/api/stop-song",
-  resumeUrl: "/api/resume-song",
-  statusUrl: "/api/playback-status",
-  setPlayModeUrl: "/api/set-play-mode",
-};
 
 /** QQ 固定单曲循环，列表循环由 SpinDeck 计时到点后切歌 */
 const SHELF_QQ_PLAY_MODE: PlayMode = "single";
@@ -102,18 +99,12 @@ export interface BeginShelfSessionOptions {
   api?: PlayerApiConfig;
 }
 
-async function syncQQPlayMode(
-  platform: PlatformType,
-  mode: PlayMode,
-  api: PlayerApiConfig,
-): Promise<void> {
+async function syncQQPlayMode(platform: PlatformType, mode: PlayMode): Promise<void> {
   if (!usesMacServer(platform)) return;
+  const bridge = getDesktopBridge();
+  if (!bridge) return;
   try {
-    await fetch(api.setPlayModeUrl ?? DEFAULT_API.setPlayModeUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ platform, mode }),
-    });
+    await bridge.setPlayMode({ platform, mode });
   } catch {
     // 非关键路径
   }
@@ -122,12 +113,11 @@ async function syncQQPlayMode(
 /** 进入书架页：暂停、设为单曲循环并重置页面会话 */
 export async function beginShelfSession(
   platform: PlatformType,
-  options?: BeginShelfSessionOptions,
+  _options?: BeginShelfSessionOptions,
 ): Promise<string> {
-  const api = { ...DEFAULT_API, ...options?.api };
   beginPageSession();
-  await pauseSong(platform, api);
-  await syncQQPlayMode(platform, SHELF_QQ_PLAY_MODE, api);
+  await pauseSong(platform);
+  await syncQQPlayMode(platform, SHELF_QQ_PLAY_MODE);
   return getPageSessionId();
 }
 
@@ -143,22 +133,18 @@ export {
 export async function getPlaybackStatus(
   platform: PlatformType,
   song: SongInfo,
-  api: PlayerApiConfig = DEFAULT_API,
+  _api?: PlayerApiConfig,
 ): Promise<PlaybackStatus> {
   if (!usesMacServer(platform)) {
     return buildSessionPlaybackStatus(song);
   }
 
   const sessionFallback: PlaybackStatus = buildSessionPlaybackStatus(song);
+  const bridge = getDesktopBridge();
+  if (!bridge) return sessionFallback;
 
   try {
-    const res = await fetch(api.statusUrl ?? DEFAULT_API.statusUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ platform, song }),
-    });
-    if (!res.ok) throw new Error("status failed");
-    const system = (await res.json()) as Omit<PlaybackStatus, "sameSongInSession" | "canResume">;
+    const system = await bridge.playbackStatus({ platform });
     return {
       ...system,
       sameSongInSession: isSameSongInSession(song),
@@ -172,7 +158,7 @@ export async function getPlaybackStatus(
 /** 继续播放（抬臂后再落针，同一页面会话） */
 export async function resumeSong(
   platform: PlatformType,
-  api: PlayerApiConfig = DEFAULT_API,
+  _api?: PlayerApiConfig,
 ): Promise<PlayResult> {
   if (usesQQMusicClientDeepLink(platform)) {
     const os = getDeviceOS();
@@ -199,14 +185,14 @@ export async function resumeSong(
     return { ok: false, playing: false, error: "unsupported" };
   }
 
+  const bridge = getDesktopBridge();
+  if (!bridge) {
+    return { ok: false, playing: false, error: "desktop bridge unavailable" };
+  }
+
   try {
-    const res = await fetch(api.resumeUrl ?? DEFAULT_API.resumeUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ platform }),
-    });
-    const data = (await res.json()) as PlayResult & { ok?: boolean };
-    if (res.ok && data.ok) {
+    const data = await bridge.resumeSong({ platform });
+    if (data.ok) {
       console.log(`[Resume] playing=${data.playing} confirmed=${data.confirmed ?? "?"}`);
       return {
         ok: true,
@@ -217,7 +203,7 @@ export async function resumeSong(
     }
     return { ok: false, playing: false, error: "resume failed" };
   } catch {
-    return { ok: false, playing: false, error: "network error" };
+    return { ok: false, playing: false, error: "invoke error" };
   }
 }
 
@@ -225,7 +211,7 @@ export async function resumeSong(
 export async function playSong(
   platform: PlatformType,
   song: SongInfo,
-  api: PlayerApiConfig = DEFAULT_API,
+  _api?: PlayerApiConfig,
 ): Promise<PlayResult> {
   const key = `${platform}:${song.platformSongId ?? song.name}:${song.platformNumericId ?? ""}`;
   const now = Date.now();
@@ -245,24 +231,24 @@ export async function playSong(
   );
 
   if (usesMacServer(platform)) {
-    const hasRequiredId = platform === "KugouMusic" 
-      ? song.platformSongId != null 
-      : song.platformNumericId != null;
+    const hasRequiredId =
+      platform === "KugouMusic" ? song.platformSongId != null : song.platformNumericId != null;
 
     if (!hasRequiredId) {
       console.warn(`[Play] 缺少必要的 ID — ${song.name} (platform: ${platform})`);
       return { ok: false, playing: false, error: "missing required id" };
     }
+
+    const bridge = getDesktopBridge();
+    if (!bridge) {
+      return { ok: false, playing: false, error: "desktop bridge unavailable" };
+    }
+
     try {
-      const res = await fetch(api.playUrl ?? DEFAULT_API.playUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ platform, song, fresh: true }),
-      });
-      const data = (await res.json()) as PlayResult & { ok?: boolean };
-      if (res.ok && data.ok) {
+      const data = await bridge.playSong({ platform, song, fresh: true });
+      if (data.ok) {
         console.log(
-          `[Play] server ok — playing=${data.playing} confirmed=${data.confirmed ?? "?"} method=${data.method ?? "?"}`,
+          `[Play] desktop ok — playing=${data.playing} confirmed=${data.confirmed ?? "?"} method=${data.method ?? "?"}`,
         );
         return {
           ok: true,
@@ -272,7 +258,7 @@ export async function playSong(
       }
       return { ok: false, playing: false, error: "play failed" };
     } catch {
-      return { ok: false, playing: false, error: "network error" };
+      return { ok: false, playing: false, error: "invoke error" };
     }
   }
 
@@ -284,19 +270,17 @@ export async function playSong(
     return await clientFallbackPlay(platform, song, urls);
   }
 
-  if (os === "macos" && urls.length > 0) {
-    try {
-      const res = await fetch(api.playUrl ?? DEFAULT_API.playUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ platform, song, fresh: true }),
-      });
-      if (res.ok) {
-        const data = (await res.json()) as { playing?: boolean };
-        return { ok: true, playing: Boolean(data.playing) };
+  if (os === "macos") {
+    const bridge = getDesktopBridge();
+    if (bridge) {
+      try {
+        const data = await bridge.playSong({ platform, song, fresh: true });
+        if (data.ok) {
+          return { ok: true, playing: Boolean(data.playing) };
+        }
+      } catch {
+        // fall through
       }
-    } catch {
-      // fall through
     }
   }
 
@@ -306,7 +290,7 @@ export async function playSong(
 /** 切歌前：取消进行中的播放；仅在本地认为「正在播」时才 toggle 暂停 */
 export async function prepareSongSwitch(
   platform: PlatformType,
-  api: PlayerApiConfig = DEFAULT_API,
+  _api?: PlayerApiConfig,
 ): Promise<void> {
   lastPlayKey = "";
   lastPlayAt = 0;
@@ -321,12 +305,11 @@ export async function prepareSongSwitch(
 
   if (!usesMacServer(platform)) return;
 
+  const bridge = getDesktopBridge();
+  if (!bridge) return;
+
   try {
-    await fetch(api.pauseUrl ?? DEFAULT_API.pauseUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ platform, cancelOnly }),
-    });
+    await bridge.pauseSong({ platform, cancelOnly });
   } catch (err) {
     console.warn("[PrepareSwitch] failed:", err);
   }
@@ -335,7 +318,7 @@ export async function prepareSongSwitch(
 /** 暂停（保留页面会话，供同页抬臂后再继续） */
 export async function pauseSong(
   platform: PlatformType,
-  api: PlayerApiConfig = DEFAULT_API,
+  _api?: PlayerApiConfig,
   options?: PauseSongOptions,
 ): Promise<void> {
   lastPlayKey = "";
@@ -348,24 +331,14 @@ export async function pauseSong(
 
   if (!usesMacServer(platform)) return;
 
-  try {
-    const response = await fetch(api.pauseUrl ?? DEFAULT_API.pauseUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ platform }),
-    });
+  const bridge = getDesktopBridge();
+  if (!bridge) return;
 
-    // macOS 辅助功能权限缺失：server 端 osascript 失败时返回 403
-    if (response.status === 403) {
-      try {
-        const body = await response.json();
-        if (body?.needsAccessibility) {
-          console.warn("[Pause] macOS accessibility permission missing");
-          void dispatchAccessibilityMissing();
-        }
-      } catch {
-        // 响应体解析失败忽略
-      }
+  try {
+    const data = await bridge.pauseSong({ platform });
+    if (data.needsAccessibility) {
+      console.warn("[Pause] macOS accessibility permission missing");
+      void dispatchAccessibilityMissing();
     }
   } catch (err) {
     console.warn("[Pause] failed:", err);
@@ -375,7 +348,7 @@ export async function pauseSong(
 /** 离开页面：暂停并重置会话 */
 export async function stopSong(
   platform: PlatformType,
-  api: PlayerApiConfig = DEFAULT_API,
+  api?: PlayerApiConfig,
 ): Promise<void> {
   const wasActivelyPlaying = isArmActivelyPlaying();
   resetArmSession();

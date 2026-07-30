@@ -5,10 +5,10 @@ src-tauri/target/
 src-tauri/gen/
 **/*.rs.bk
 
-# Bundled web runtime (prepare-resources.mjs / prepare-dev-resources.mjs)
+# Leftover from the old HTTP resources bundle (no longer used; SPA is frontendDist)
 src-tauri/resources/
 
-# pnpm deploy / prepare cache for desktop bundle
+# Local desktop tooling cache
 .cache/
 
 # Generated from SpinDeckLogo.svg (pnpm desktop:icons)

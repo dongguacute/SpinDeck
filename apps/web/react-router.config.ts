@@ -1,7 +1,7 @@
 import type { Config } from "@react-router/dev/config";
 
 export default {
-  // SPA only — backend APIs live in the Tauri Rust server
+  // SPA only — desktop features use Tauri invoke / cover://
   ssr: false,
   future: {
     v8_middleware: true,

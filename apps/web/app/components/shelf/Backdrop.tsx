@@ -1,15 +1,12 @@
 import type { SongInfo } from "@spindeck/player";
 import type { VisualSettings } from "../../lib/theme-store";
+import { proxiedCoverUrl } from "../../lib/cover-url";
 
 interface BackdropProps {
   showThemeBackdrop: boolean;
   settings: VisualSettings;
   selectedSong: SongInfo | null;
   glassBackground: string | null;
-}
-
-function proxiedCover(coverUrl: string) {
-  return `/api/image?url=${encodeURIComponent(coverUrl)}`;
 }
 
 export function Backdrop({ showThemeBackdrop, settings, selectedSong, glassBackground }: BackdropProps) {
@@ -22,7 +19,7 @@ export function Backdrop({ showThemeBackdrop, settings, selectedSong, glassBackg
         <div
           className="playback-backdrop__cover"
           style={{ 
-            backgroundImage: `url(${settings.customBackground || (selectedSong?.cover ? proxiedCover(selectedSong.cover) : '')})`,
+            backgroundImage: `url(${settings.customBackground || (selectedSong?.cover ? proxiedCoverUrl(selectedSong.cover) : '')})`,
             filter: `blur(${settings.backgroundBlur}px) saturate(1.4)`,
             opacity: settings.customBackground ? 0.8 : 0.62
           }}

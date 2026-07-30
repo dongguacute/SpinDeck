@@ -96,12 +96,12 @@ Progress varies by platform. Only **QQ Music** is fully supported end to end tod
 
 ## 💻 Runtime
 
-SpinDeck is a **SPA frontend** plus a **desktop-only Rust local API**. Run the UI in a browser for preview, or use the **Tauri desktop app** for the full experience (recommended on macOS for playback control).
+SpinDeck is a **SPA frontend** plus a **desktop-only Tauri shell** (native WebView + `invoke` / `cover://`). Run the UI in a browser for preview, or use the **Tauri desktop app** for the full experience (recommended on macOS for playback control).
 
 | Environment | Notes |
 |-------------|-------|
-| Browser | Any modern browser — UI preview. Playlist import and local playback APIs need the desktop Rust server on `127.0.0.1:17345` (e.g. run desktop dev alongside web) |
-| **Desktop (Tauri)** | macOS / Windows / Linux; release builds bundle the SPA and an embedded **Rust** HTTP server (`/api/*` + static UI). **No Node.js on the user’s machine** |
+| Browser | Any modern browser — UI preview. Playlist import and local playback need the desktop app |
+| **Desktop (Tauri)** | macOS / Windows / Linux; native WebView + Tauri `invoke` / `cover://`. **No Node.js on the user’s machine** |
 | Desktop (macOS / Windows) | Full QQ Music experience; NetEase playback control here too |
 | Mobile (iOS / Android) | QQ Music via deep links; NetEase playback control not supported |
 
@@ -125,7 +125,7 @@ node -p "require('./package.json').version"
 |------|---------|--------------|
 | [Node.js](https://nodejs.org/) | **≥ 18** | Web / docs development and frontend builds only |
 | [pnpm](https://pnpm.io/) | **9.x** (repo pins `9.0.0`) | Installing dependencies and all `pnpm` scripts |
-| [Rust](https://rustup.rs/) | stable | Desktop (Tauri) dev & release builds (embedded HTTP API) |
+| [Rust](https://rustup.rs/) | stable | Desktop (Tauri) dev & release builds |
 | Platform toolchain | — | e.g. Xcode Command Line Tools on macOS |
 
 These are declared in root [`package.json`](package.json) (`engines.node`, `packageManager`). CI uses **Node 20** and **pnpm 9**.
@@ -156,11 +156,11 @@ cd SpinDeck
 # Install dependencies
 pnpm install
 
-# Start the web SPA dev server (UI only; Vite proxies /api → :17345)
+# Start the web SPA dev server (UI only)
 pnpm dev
 ```
 
-Open the local URL printed in your terminal. For playlist import and playback APIs, also run the desktop app (below) so the Rust server is listening.
+Open the local URL printed in your terminal. Playlist import and playback require the desktop app (below).
 
 ### Desktop App (Tauri)
 
@@ -169,15 +169,15 @@ You'll also need:
 - [Rust](https://rustup.rs/) (stable)
 - Platform toolchain (e.g. Xcode Command Line Tools on macOS)
 
-**Development** — Tauri starts the web Vite server and the Rust API on `:17345`:
+**Development** — Tauri starts the web Vite server and loads it in the WebView:
 
 ```bash
 pnpm --filter @spindeck/desktop dev
 ```
 
-Loads `@spindeck/web` via `http://localhost:5173` (Vite proxies `/api` to the Rust server) and opens the SpinDeck window. App icon matches `apps/web/app/assets/icons/SpinDeckLogo.svg`.
+Loads `@spindeck/web` via `http://localhost:5173` and opens the SpinDeck window. Desktop features use `invoke` / `cover://`. App icon matches `apps/web/app/assets/icons/SpinDeckLogo.svg`.
 
-**Production build** — builds the SPA, copies it into Tauri `resources/web`, then runs `tauri build`. The packaged app serves static UI + `/api/*` from the embedded Rust server:
+**Production build** — builds the SPA into Tauri `frontendDist`, then runs `tauri build`. The packaged app loads the SPA via Tauri’s native asset protocol:
 
 ```bash
 pnpm --filter @spindeck/desktop build
@@ -218,17 +218,17 @@ pnpm + Turborepo monorepo. **UI lives in TypeScript; playlist import and local p
 
 | Path | Role |
 |------|------|
-| [`apps/web`](apps/web) | SPA frontend (React Router, `ssr: false`). Talks to `/api/*` via `fetch` |
-| [`apps/desktop`](apps/desktop) | Tauri 2 shell; Rust code in `src-tauri/` (`app/`, `server/`, `api/`, `playlist/`, `playback/`, `util/`) |
-| [`packages/player`](packages/player) | Client playback strategy, deep links, session (calls desktop `/api`) |
+| [`apps/web`](apps/web) | SPA frontend (React Router, `ssr: false`). Talks to desktop via `invoke` |
+| [`apps/desktop`](apps/desktop) | Tauri shell + Rust (`commands/`, `cover`, `playlist/`, `playback/`) |
+| [`packages/player`](packages/player) | Client playback strategy, deep links, session (Tauri desktop bridge) |
 | [`packages/vinyl-ui`](packages/vinyl-ui) | Vinyl tonearm UI components |
 | [`packages/ui`](packages/ui) | Shared UI components & themes |
 | [`packages/picker`](packages/picker) | Cover art color extraction & backgrounds |
 | [`docs`](docs) | VitePress documentation site |
 
-**Dev flow:** Vite (`apps/web`) proxies `/api` → `127.0.0.1:17345`. **Prod desktop:** same-origin Rust server serves the SPA and `/api/*`.
+**Dev / prod desktop:** SPA via Tauri WebView; features via `invoke` and `cover://`.
 
-**Local API (desktop):** `POST /api/import`, `GET /api/image`, `POST /api/play-song` / `stop-song` / `resume-song` / `playback-status` / `set-play-mode`.
+**Desktop IPC:** `import_playlist`, `play_song`, `pause_song`, `resume_song`, `playback_status`, `set_play_mode`.
 
 Longer write-up: [Architecture](docs/en/guide/architecture.md) (中文：[架构](docs/zh/guide/architecture.md)). Each app and shared package also has its own README.
 

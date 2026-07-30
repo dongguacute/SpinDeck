@@ -1,3 +1,5 @@
+//! Shared request/response DTOs for IPC.
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -75,8 +77,4 @@ pub struct SystemPlaybackStatus {
   pub current_song_name: Option<String>,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub current_artist_name: Option<String>,
-}
-
-pub fn json_error(code: &str) -> serde_json::Value {
-  serde_json::json!({ "error": code, "code": code })
 }

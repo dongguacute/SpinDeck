@@ -5,19 +5,19 @@ weight: 20
 
 # Desktop App
 
-SpinDeck ships a [Tauri 2](https://v2.tauri.app/) desktop shell for macOS, Windows, and Linux. The desktop build bundles the web SPA and an embedded **Rust** HTTP server — recommended on macOS for full playback control.
+SpinDeck ships a [Tauri 2](https://v2.tauri.app/) desktop shell for macOS, Windows, and Linux. The desktop build loads the web SPA in a native WebView and exposes playlist import / playback via Tauri `invoke` and `cover://` — recommended on macOS for full playback control.
 
 ## Architecture (desktop)
 
 | Piece | Responsibility |
 | --- | --- |
-| Tauri WebView | Hosts the SPA |
-| Rust `server/` | Binds `127.0.0.1:17345`, serves static UI in production |
-| Rust `api/` | `/api/import`, `/api/image`, playback routes |
+| Tauri WebView | Hosts the SPA (`frontendDist` / Vite in dev) |
+| Rust `commands/` | `invoke` handlers for import and playback |
+| Rust `cover` | `cover://` cover-art proxy |
 | Rust `playlist/` | QQ / NetEase / Kugou import providers |
 | Rust `playback/` | Local music-app control (macOS AppleScript / `open`) |
 
-See [Architecture](./architecture) for the monorepo diagram and full `/api` table. App package notes: [`apps/desktop/README.md`](https://github.com/dongguacute/SpinDeck/blob/main/apps/desktop/README.md).
+See [Architecture](./architecture) for the monorepo diagram and IPC table. App package notes: [`apps/desktop/README.md`](https://github.com/dongguacute/SpinDeck/blob/main/apps/desktop/README.md).
 
 ## Download
 
@@ -25,11 +25,11 @@ Download pre-built desktop installers from GitHub Releases:
 
 **[v1.0.0-beta.6](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.6)** (latest)
 
-Pick the asset for your platform (`.dmg` / `.app` on macOS, `.msi` / `.exe` on Windows, etc.). Release builds embed a Rust HTTP server and static frontend assets — **Node.js is no longer required** on the user's machine.
+Pick the asset for your platform (`.dmg` / `.app` on macOS, `.msi` / `.exe` on Windows, etc.). Release builds bundle the SPA and Rust desktop features — **Node.js is no longer required** on the user's machine.
 
 ### What's new in v1.0.0-beta.6
 
-- **Embedded Rust API** — Replaces the Node.js SSR/API layer with a Tauri-managed Axum server on `127.0.0.1:17345`; playlist import, image proxy, and playback control run in the desktop Rust runtime
+- **Embedded Rust capabilities** — Playlist import, cover proxy, and playback control run in the desktop Rust runtime via Tauri `invoke` / `cover://`
 - **Node SSR removed** — Drops web/desktop Node API routes and `@spindeck/core`; full desktop builds no longer need Node.js on the user's machine
 - **Viewport-based 3D shelf loading** — Loads 3D assets by viewport visibility to cut initial cost and memory use
 - **Docs & tooling** — Syncs architecture/dev docs; updates lint-staged, `.gitignore`, and repository cleanup rules
@@ -51,7 +51,7 @@ SpinDeck desktop builds are **not yet signed** with Apple or Microsoft certifica
 
 | Symptom | Cause | What to do |
 |---------|-------|------------|
-| White screen or immediate quit | Embedded local server failed to start | Relaunch; if it persists, check the log paths below |
+| White screen or immediate quit | WebView / frontend assets failed to load | Relaunch; if it persists, check the log paths below |
 
 **Log locations (when startup fails):**
 
@@ -100,7 +100,7 @@ If the app still won’t open, do not run it directly from the mounted DMG. Copy
 | Symptom | Cause | What to do |
 |---------|-------|------------|
 | SmartScreen: “Windows protected your PC” | Installer is not EV-signed | Click **More info** → **Run anyway** |
-| Blocked by antivirus | The app listens on a local port for its API | Add the SpinDeck install folder or `.exe` to your allowlist |
+| Blocked by antivirus | Unsigned desktop binary / WebView process | Add the SpinDeck install folder or `.exe` to your allowlist |
 
 ### Linux
 
@@ -119,7 +119,7 @@ If the app still won’t open, do not run it directly from the mounted DMG. Copy
 
 ### Development
 
-Tauri starts the web Vite server and the Rust API on `:17345`. Vite proxies `/api` to that port:
+Tauri starts the web Vite server and loads it in the WebView. Desktop features use Tauri `invoke`:
 
 ```bash
 pnpm --filter @spindeck/desktop dev
@@ -133,7 +133,7 @@ This runs `@spindeck/web` and opens the SpinDeck window.
 pnpm --filter @spindeck/desktop build
 ```
 
-Builds the SPA, copies `apps/web/build/client` into Tauri `resources/web`, then runs `tauri build`. The packaged app serves static UI + `/api/*` from the embedded Rust server — **no Node.js on the user’s machine**.
+Builds the SPA into Tauri `frontendDist`, then runs `tauri build`. The packaged app loads the SPA via Tauri’s native asset protocol and uses `invoke` / `cover://` for desktop features — **no Node.js on the user’s machine**.
 
 Output is written to `apps/desktop/src-tauri/target/release/bundle/` (`.app` on macOS, `.msi` / `.exe` on Windows, etc.).
 

@@ -1,7 +1,7 @@
 {
   "name": "spindeck",
   "version": "0.1.0",
-  "description": "Cross-platform vinyl visualization player — SPA UI + desktop Rust local API for playlist import and playback control",
+  "description": "Cross-platform vinyl visualization player — SPA UI + Tauri desktop shell for playlist import and playback control",
   "author": "Cherry Fu <https://github.com/dongguacute>",
   "license": "Apache-2.0",
   "repository": {
@@ -28,7 +28,6 @@
     "dev": "turbo run dev",
     "dev:desktop": "pnpm --filter @spindeck/desktop dev",
     "desktop:icons": "pnpm --filter @spindeck/desktop generate:icons",
-    "desktop:prepare": "pnpm --filter @spindeck/desktop prepare:resources",
     "dev:docs": "pnpm --filter @spindeck/docs dev",
     "build:docs": "pnpm --filter @spindeck/docs build",
     "preview:docs": "pnpm --filter @spindeck/docs preview",

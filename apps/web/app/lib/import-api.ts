@@ -1,4 +1,5 @@
 import type { PlatformType, SongInfo } from "./types";
+import { isTauri } from "./is-tauri";
 
 export type ImportResult = {
   url?: string;
@@ -37,25 +38,26 @@ export function isPaginatedPlaylistPlatform(platform: PlatformType | undefined):
 }
 
 export async function importPlaylist(params: ImportParams): Promise<ImportResponse> {
-  const body = new FormData();
-  body.set("url", params.url);
-  body.set("platform", params.platform);
-  if (params.metaOnly) body.set("metaOnly", "true");
-  if (params.forceRefresh) body.set("forceRefresh", "true");
-  if (params.offset != null) body.set("offset", String(params.offset));
-  if (params.limit != null) body.set("limit", String(params.limit));
-  if (params.platformPlaylistId) body.set("platformPlaylistId", params.platformPlaylistId);
-
-  const res = await fetch("/api/import", { method: "POST", body });
-  const data = (await res.json().catch(() => ({}))) as ImportResponse;
-
-  if (!res.ok) {
+  if (!isTauri()) {
     return {
-      ...data,
-      error: data.error || data.code || `HTTP_${res.status}`,
-      code: data.code || `HTTP_${res.status}`,
+      error: "DESKTOP_REQUIRED",
+      code: "DESKTOP_REQUIRED",
     };
   }
 
-  return data;
+  try {
+    const { invoke } = await import("@tauri-apps/api/core");
+    return await invoke<ImportResponse>("import_playlist", {
+      url: params.url,
+      platform: params.platform,
+      metaOnly: params.metaOnly ?? null,
+      forceRefresh: params.forceRefresh ?? null,
+      offset: params.offset ?? null,
+      limit: params.limit ?? null,
+      platformPlaylistId: params.platformPlaylistId ?? null,
+    });
+  } catch (err) {
+    const code = typeof err === "string" ? err : "IMPORT_FAILED";
+    return { error: code, code };
+  }
 }

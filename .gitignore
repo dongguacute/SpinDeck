@@ -84,9 +84,10 @@ apps/desktop/src-tauri/gen/
 *.pdb
 
 # ----- Tauri desktop -----
-# Bundled SPA + prepared resources (prepare-resources / prepare-dev-resources)
-apps/desktop/src-tauri/resources/
+# Local desktop tooling cache
 apps/desktop/.cache/
+# Leftover from the old HTTP resources bundle (SPA is frontendDist now)
+apps/desktop/src-tauri/resources/
 # Generated icon intermediate (pnpm desktop:icons)
 apps/desktop/assets/app-icon.png
 # Do not invent a root-level src-tauri

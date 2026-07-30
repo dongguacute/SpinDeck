@@ -1,7 +1,7 @@
 {
   "name": "@spindeck/player",
   "version": "0.0.1",
-  "description": "Browser playback client for SpinDeck — deep links, session state, and desktop /api bridge",
+  "description": "Browser playback client for SpinDeck — deep links, session state, and Tauri desktop bridge",
   "author": "Cherry Fu <https://github.com/dongguacute>",
   "license": "Apache-2.0",
   "repository": {

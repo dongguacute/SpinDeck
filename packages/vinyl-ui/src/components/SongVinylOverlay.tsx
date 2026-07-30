@@ -40,6 +40,8 @@ interface Props {
   tonearmTitle?: string;
   playLabel?: string;
   pauseLabel?: string;
+  /** Resolve remote cover URLs for WebView (e.g. Tauri cover:// proxy). */
+  resolveCoverUrl?: (url: string) => string;
 }
 
 const FALLBACK_COLOR = "#6eb5d4";
@@ -50,10 +52,6 @@ const ARM_REST_DEG = -28;
 const ARM_PLAY_DEG = 18;
 const PLAY_SYNC_GRACE_MS = 2800;
 const STATUS_POLL_MS = 800;
-
-function px(url: string) {
-  return `/api/image?url=${encodeURIComponent(url)}`;
-}
 
 function clamp(v: number, min: number, max: number) {
   return Math.min(max, Math.max(min, v));
@@ -76,6 +74,7 @@ export default function SongVinylOverlay({
   tonearmTitle = "拖动唱臂到唱片上，松手播放",
   playLabel = "播放",
   pauseLabel = "暂停",
+  resolveCoverUrl,
 }: Props) {
   const [internalVinylColor, setInternalVinylColor] = useState(FALLBACK_COLOR);
 
@@ -229,7 +228,8 @@ export default function SongVinylOverlay({
     (async () => {
       try {
         const { pickEdgeColors } = await import("@spindeck/picker");
-        const edge = await pickEdgeColors({ content: px(song.cover) });
+        const coverSrc = resolveCoverUrl ? resolveCoverUrl(song.cover) : song.cover;
+        const edge = await pickEdgeColors({ content: coverSrc });
         const main = rgbToHex(edge.top.r, edge.top.g, edge.top.b);
         if (!cancelled) {
           setInternalVinylColor(main);
@@ -244,7 +244,7 @@ export default function SongVinylOverlay({
     return () => {
       cancelled = true;
     };
-  }, [song.cover]);
+  }, [song.cover, resolveCoverUrl]);
 
   function rgbToHex(r: number, g: number, b: number) {
     const toByte = (v: number) => Math.round(v).toString(16).padStart(2, "0");
