@@ -23,19 +23,19 @@ See [Architecture](./architecture) for the monorepo diagram and IPC table, [Perf
 
 Download pre-built desktop installers from GitHub Releases:
 
-**[v1.0.0-beta.6](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.6)** (latest)
+**[v1.0.0-beta.7](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.7)** (latest)
 
 Pick the asset for your platform (`.dmg` / `.app` on macOS, `.msi` / `.exe` on Windows, etc.). Release builds bundle the SPA and Rust desktop features — **Node.js is no longer required** on the user's machine.
 
-### What's new in v1.0.0-beta.6
+### What's new in v1.0.0-beta.7
 
-- **Embedded Rust capabilities** — Playlist import, cover proxy, and playback control run in the desktop Rust runtime via Tauri `invoke` / `cover://`
-- **Node SSR removed** — Drops web/desktop Node API routes and `@spindeck/core`; full desktop builds no longer need Node.js on the user's machine
-- **Viewport-based 3D shelf loading** — Browse mode mounts a viewport window; after playback settles only the selected cover stays in 3D (see [Performance & Visuals](./performance))
+- **Pure invoke desktop shell** — Remove the local HTTP `server/` and legacy HTTP API wrappers; cover art via `cover://`, import / playback via Tauri `invoke` only
 - **Session logs** — Native layer and critical frontend errors write per-launch session logs for white-screen / crash triage
-- **Docs & tooling** — Syncs architecture/dev docs; updates lint-staged, `.gitignore`, and repository cleanup rules
+- **NetEase import cache** — Fuller playlist detail and track request caching
+- **Shelf playback layer** — Fix cover-overlay / tonearm portal stacking; unify header exit and navigation controls
+- **Docs & tooling** — Add [Performance & Visuals](./performance) and [System Requirements](./system-requirements); developers need Node.js ≥ 22.13 / pnpm 11.x
 
-Previous release: [v1.0.0-beta.5](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.5)
+Previous release: [v1.0.0-beta.6](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.6)
 
 ::: warning Unavailable releases
 The following builds are **not recommended** due to a white-screen issue in packaged desktop apps:

@@ -23,19 +23,19 @@ SpinDeck 提供适用于 macOS、Windows 和 Linux 的 [Tauri 2](https://v2.taur
 
 从 GitHub Releases 下载预构建的桌面安装包：
 
-**[v1.0.0-beta.6](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.6)**（最新）
+**[v1.0.0-beta.7](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.7)**（最新）
 
 按平台选择对应资源（macOS 为 `.dmg` / `.app`，Windows 为 `.msi` / `.exe` 等）。发布构建打包 SPA 与 Rust 桌面能力，**不再依赖本机 Node.js**。
 
-### v1.0.0-beta.6 更新内容
+### v1.0.0-beta.7 更新内容
 
-- **内嵌 Rust 能力** — 歌单导入、封面代理与播放控制由桌面端 Rust 通过 Tauri `invoke` / `cover://` 提供
-- **移除 Node SSR 依赖** — 删除 Web / 桌面侧 Node API 路由与 `@spindeck/core`；用户机器不再需要 Node.js 即可运行完整桌面版
-- **3D 书架按需加载** — 浏览态按视口窗口挂载；播放态在动画结束后只保留当前封面的 3D 资源（详见 [性能与观感](./performance)）
+- **纯 invoke 桌面壳** — 移除本地 HTTP `server/` 与旧 HTTP API 封装；封面走 `cover://`，导入 / 播放只走 Tauri `invoke`
 - **会话日志** — 原生层与前端关键错误写入按次启动的会话日志，便于白屏 / 闪退排查
-- **文档与工具链** — 同步架构/开发文档，更新 lint-staged、`.gitignore` 与仓库清理规则
+- **网易云导入缓存** — 完善歌单详情与曲目请求缓存，减少重复拉取
+- **书架播放层** — 修正封面叠层 / 唱臂 portal 层级；统一顶栏退出与导航按钮交互
+- **文档与工具链** — 新增 [性能与观感](./performance)、[系统要求](./system-requirements)；开发需 Node.js ≥ 22.13 / pnpm 11.x
 
-上一版本：[v1.0.0-beta.5](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.5)
+上一版本：[v1.0.0-beta.6](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.6)
 
 ::: warning 不可用版本
 以下版本因打包后存在**白屏问题**，**不建议使用**：
