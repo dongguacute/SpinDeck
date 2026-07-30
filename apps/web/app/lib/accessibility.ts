@@ -1,5 +1,6 @@
 import { setAccessibilityMissingHandler } from "@spindeck/player";
 import { isTauri } from "./is-tauri";
+import { logger } from "./logger";
 
 /** 检测当前进程是否拥有 macOS 辅助功能权限（非 Tauri 环境返回 true） */
 export async function checkAccessibilityPermission(): Promise<boolean> {
@@ -8,7 +9,7 @@ export async function checkAccessibilityPermission(): Promise<boolean> {
     const { invoke } = await import("@tauri-apps/api/core");
     return await invoke<boolean>("check_accessibility_permission");
   } catch (err) {
-    console.warn("[Accessibility] check permission failed:", err);
+    logger.warn("[Accessibility] check permission failed:", err);
     return true; // 检测失败不阻塞流程
   }
 }
@@ -20,7 +21,7 @@ export async function openAccessibilitySettings(): Promise<void> {
     const { invoke } = await import("@tauri-apps/api/core");
     await invoke("open_accessibility_settings");
   } catch (err) {
-    console.warn("[Accessibility] open settings failed:", err);
+    logger.warn("[Accessibility] open settings failed:", err);
   }
 }
 
@@ -49,7 +50,7 @@ export async function bootstrapAccessibilityHandler(): Promise<void> {
   // 启动时主动检测：权限缺失则立即打开系统设置引导用户授权
   const granted = await checkAccessibilityPermission();
   if (!granted) {
-    console.warn("[Accessibility] Permission missing on startup, opening settings");
+    logger.warn("[Accessibility] Permission missing on startup, opening settings");
     await openAccessibilitySettings();
   }
 }

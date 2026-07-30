@@ -53,11 +53,13 @@ SpinDeck 桌面版目前**未经过 Apple / Microsoft 官方签名**。不同系
 |------|------|----------|
 | 打开后白屏或闪退 | WebView / 前端资源加载失败 | 重新打开；仍失败请查看下方日志路径 |
 
-**日志位置（启动失败时排查）：**
+**日志位置（启动失败 / 闪退排查）：**
 
 - **macOS**：`~/Library/Logs/com.spindeck.app/`
 - **Windows**：`%LOCALAPPDATA%\com.spindeck.app\logs\`
 - **Linux**：`~/.local/share/com.spindeck.app/logs/`（具体路径因发行版而异）
+
+每次启动会新建一个按本地时间命名的会话日志，例如 `spindeck-2026-07-31_01-50-45.log`，目录中可保留多份历史记录（最多约 50 个会话）。日志含 Rust 原生层（IPC / 封面代理 / panic）与前端关键错误。
 
 ### macOS
 

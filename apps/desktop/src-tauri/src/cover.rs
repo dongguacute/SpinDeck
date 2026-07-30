@@ -132,6 +132,7 @@ async fn fetch_cover_bytes(target: &str) -> Result<(String, Vec<u8>), StatusCode
 
 pub async fn handle_cover_request(request: Request<Vec<u8>>) -> Response<Vec<u8>> {
   let Some(target) = parse_target_url(&request) else {
+    log::warn!("cover:// request missing url param");
     return error_response(StatusCode::BAD_REQUEST, "missing url param");
   };
 
@@ -145,12 +146,22 @@ pub async fn handle_cover_request(request: Request<Vec<u8>>) -> Response<Vec<u8>
       .header(header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")
       .header(header::CACHE_CONTROL, "public, max-age=86400")
       .body(bytes)
-      .unwrap_or_else(|_| error_response(StatusCode::INTERNAL_SERVER_ERROR, "build failed")),
+      .unwrap_or_else(|_| {
+        log::error!("cover:// response build failed");
+        error_response(StatusCode::INTERNAL_SERVER_ERROR, "build failed")
+      }),
     Err(StatusCode::PAYLOAD_TOO_LARGE) => {
+      log::warn!("cover:// image too large");
       error_response(StatusCode::PAYLOAD_TOO_LARGE, "image too large")
     }
-    Err(StatusCode::SERVICE_UNAVAILABLE) => error_response(StatusCode::SERVICE_UNAVAILABLE, "busy"),
-    Err(_) => error_response(StatusCode::BAD_GATEWAY, "fetch failed"),
+    Err(StatusCode::SERVICE_UNAVAILABLE) => {
+      log::warn!("cover:// busy (concurrency limit)");
+      error_response(StatusCode::SERVICE_UNAVAILABLE, "busy")
+    }
+    Err(status) => {
+      log::warn!("cover:// fetch failed status={status}");
+      error_response(StatusCode::BAD_GATEWAY, "fetch failed")
+    }
   }
 }
 

@@ -1,3 +1,5 @@
+import { getLogger } from "./logger";
+
 export type UrlOpener = (url: string) => void | Promise<void>;
 
 let appUrlOpener: UrlOpener | null = null;
@@ -19,7 +21,7 @@ export async function dispatchAppUrl(url: string): Promise<boolean> {
     await appUrlOpener(url);
     return true;
   } catch (err) {
-    console.warn("[AppUrl] open failed:", url, err);
+    getLogger().warn("[AppUrl] open failed:", url, err);
     return false;
   }
 }
@@ -30,7 +32,7 @@ export async function dispatchExternalUrl(url: string): Promise<boolean> {
     await externalUrlOpener(url);
     return true;
   } catch (err) {
-    console.warn("[ExternalUrl] open failed:", url, err);
+    getLogger().warn("[ExternalUrl] open failed:", url, err);
     return false;
   }
 }

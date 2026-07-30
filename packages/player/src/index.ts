@@ -36,6 +36,7 @@ export {
   stopSong,
   setDesktopBridge,
   getDesktopBridge,
+  setLogger,
 } from "./client/index";
 
 export type {
@@ -43,6 +44,7 @@ export type {
   BeginShelfSessionOptions,
   PlayerApiConfig,
   DesktopBridge,
+  PlayerLogger,
 } from "./client/index";
 
 export * as platforms from "./platforms/index";

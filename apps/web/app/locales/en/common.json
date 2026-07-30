@@ -162,6 +162,11 @@
     "description": "Oops! The page you are looking for has spun away.",
     "back_home": "Back to Home"
   },
+  "error_boundary": {
+    "title": "Something went wrong",
+    "description": "An unexpected error occurred. Details have been written to the application log.",
+    "reload": "Reload"
+  },
   "api_errors": {
     "unknown": "Something went wrong",
     "MISSING_PARAMS": "Missing required parameters",

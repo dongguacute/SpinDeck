@@ -41,11 +41,12 @@ pub async fn play_song(platform: &str, song: &SongInfo) -> PlayResult {
   #[cfg(not(target_os = "macos"))]
   {
     let _ = (platform, song);
+    log::info!("play_song skipped: MACOS_ONLY platform={platform}");
     return macos_only();
   }
   #[cfg(target_os = "macos")]
   {
-    match platform {
+    let result = match platform {
       "QQMusic" => qq::play_song(song).await,
       "NetEaseMusic" => netease::play_song(song).await,
       "KugouMusic" => kugou::play_song(song).await,
@@ -62,7 +63,14 @@ pub async fn play_song(platform: &str, song: &SongInfo) -> PlayResult {
         stopped: None,
         needs_accessibility: None,
       },
+    };
+    if !result.ok {
+      log::warn!(
+        "playback play_song failed platform={platform} error={:?}",
+        result.error
+      );
     }
+    result
   }
 }
 

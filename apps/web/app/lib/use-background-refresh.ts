@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { usePlaylistStore } from "./playlist-store";
+import { logger } from "./logger";
 
 /**
  * 全局背景刷新 Hook
@@ -33,7 +34,7 @@ export function useBackgroundRefresh() {
       
       const performRefresh = async () => {
         try {
-          console.log(`[BackgroundRefresh] 正在刷新歌单: ${playlist.name} (${playlist.id})`);
+          logger.info(`[BackgroundRefresh] refreshing playlist: ${playlist.name} (${playlist.id})`);
           const { importPlaylist } = await import("./import-api");
           const data = await importPlaylist({
             url: playlist.importUrl,
@@ -54,7 +55,7 @@ export function useBackgroundRefresh() {
             result.songCount !== playlist.songCount;
 
           if (hasChanged) {
-            console.log(`[BackgroundRefresh] 歌单信息已更新: ${playlist.name}`);
+            logger.info(`[BackgroundRefresh] playlist meta updated: ${playlist.name}`);
             updatePlaylist(playlist.id, {
               name: result.name || playlist.name,
               coverUrl: result.cover || playlist.coverUrl,
@@ -62,7 +63,7 @@ export function useBackgroundRefresh() {
             });
           }
         } catch (err) {
-          console.error(`[BackgroundRefresh] 刷新歌单 ${playlist.name} 失败:`, err);
+          logger.error(`[BackgroundRefresh] refresh failed for ${playlist.name}:`, err);
         }
       };
 

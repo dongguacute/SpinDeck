@@ -28,9 +28,12 @@ import {
 import { prelaunchApp } from "./prelaunch";
 import { dispatchAccessibilityMissing } from "./accessibility";
 import { getDesktopBridge } from "./desktop-bridge";
+import { getLogger } from "./logger";
 
 export type { DesktopBridge } from "./desktop-bridge";
 export { setDesktopBridge, getDesktopBridge } from "./desktop-bridge";
+export { setLogger } from "./logger";
+export type { PlayerLogger } from "./logger";
 
 /** @deprecated Prefer setDesktopBridge — kept for call-site compatibility. */
 export interface PlayerApiConfig {
@@ -193,7 +196,7 @@ export async function resumeSong(
   try {
     const data = await bridge.resumeSong({ platform });
     if (data.ok) {
-      console.log(`[Resume] playing=${data.playing} confirmed=${data.confirmed ?? "?"}`);
+      getLogger().info(`[Resume] playing=${data.playing} confirmed=${data.confirmed ?? "?"}`);
       return {
         ok: true,
         playing: Boolean(data.playing),
@@ -216,7 +219,7 @@ export async function playSong(
   const key = `${platform}:${song.platformSongId ?? song.name}:${song.platformNumericId ?? ""}`;
   const now = Date.now();
   if (key === lastPlayKey && now - lastPlayAt < 2500) {
-    console.log(`[Play] skipped duplicate within 2.5s — ${song.name}`);
+    getLogger().info(`[Play] skipped duplicate within 2.5s — ${song.name}`);
     return { ok: true, playing: true, skipped: true };
   }
   lastPlayKey = key;
@@ -224,7 +227,7 @@ export async function playSong(
 
   const os = getDeviceOS();
   const urls = buildSongPlayUrls(platform, song, os);
-  console.log(
+  getLogger().info(
     `[Play] fresh ${song.name} — ${platform} (${os})`,
     urls[0] ?? "(fallback web)",
     song.platformNumericId ? `id=${song.platformNumericId}` : "",
@@ -235,7 +238,7 @@ export async function playSong(
       platform === "KugouMusic" ? song.platformSongId != null : song.platformNumericId != null;
 
     if (!hasRequiredId) {
-      console.warn(`[Play] 缺少必要的 ID — ${song.name} (platform: ${platform})`);
+      getLogger().warn(`[Play] 缺少必要的 ID — ${song.name} (platform: ${platform})`);
       return { ok: false, playing: false, error: "missing required id" };
     }
 
@@ -247,7 +250,7 @@ export async function playSong(
     try {
       const data = await bridge.playSong({ platform, song, fresh: true });
       if (data.ok) {
-        console.log(
+        getLogger().info(
           `[Play] desktop ok — playing=${data.playing} confirmed=${data.confirmed ?? "?"} method=${data.method ?? "?"}`,
         );
         return {
@@ -264,7 +267,7 @@ export async function playSong(
 
   if (usesQQMusicClientDeepLink(platform, os)) {
     if (!hasQQMusicPlayId(song)) {
-      console.warn(`[Play] 缺少 songmid/songid — ${song.name}`);
+      getLogger().warn(`[Play] 缺少 songmid/songid — ${song.name}`);
       return { ok: false, playing: false, error: "missing required id" };
     }
     return await clientFallbackPlay(platform, song, urls);
@@ -311,7 +314,7 @@ export async function prepareSongSwitch(
   try {
     await bridge.pauseSong({ platform, cancelOnly });
   } catch (err) {
-    console.warn("[PrepareSwitch] failed:", err);
+    getLogger().warn("[PrepareSwitch] failed:", err);
   }
 }
 
@@ -337,11 +340,11 @@ export async function pauseSong(
   try {
     const data = await bridge.pauseSong({ platform });
     if (data.needsAccessibility) {
-      console.warn("[Pause] macOS accessibility permission missing");
+      getLogger().warn("[Pause] macOS accessibility permission missing");
       void dispatchAccessibilityMissing();
     }
   } catch (err) {
-    console.warn("[Pause] failed:", err);
+    getLogger().warn("[Pause] failed:", err);
   }
 }
 

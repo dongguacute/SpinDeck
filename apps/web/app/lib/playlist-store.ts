@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import type { Playlist } from "./types";
+import { logger } from "./logger";
 
 const STORAGE_KEY = "spindeck_playlists";
 
@@ -17,7 +18,7 @@ function save(list: Playlist[]) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
   } catch (err) {
-    console.error("[PlaylistStore] Failed to save to localStorage:", err);
+    logger.error("[PlaylistStore] Failed to save to localStorage:", err);
     // 如果是由于空间不足，可以尝试清理旧数据或报错
   }
 }

@@ -9,6 +9,8 @@
  * 的 pause 调用产生竞态条件（被误判为播放行为）。
  */
 
+import { getLogger } from "./logger";
+
 export type AccessibilityMissingHandler = () => void | Promise<void>;
 
 let handler: AccessibilityMissingHandler | null = null;
@@ -25,6 +27,6 @@ export async function dispatchAccessibilityMissing(): Promise<void> {
   try {
     await handler();
   } catch (err) {
-    console.warn("[Accessibility] handler failed:", err);
+    getLogger().warn("[Accessibility] handler failed:", err);
   }
 }

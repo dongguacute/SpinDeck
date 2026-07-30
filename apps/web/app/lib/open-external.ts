@@ -1,6 +1,7 @@
 import type { MouseEvent } from "react";
 import { setAppUrlOpener, setExternalUrlOpener } from "@spindeck/player";
 import { isTauri } from "./is-tauri";
+import { logger } from "./logger";
 
 async function tauriShellOpen(url: string): Promise<void> {
   const { open } = await import("@tauri-apps/plugin-shell");
@@ -18,7 +19,7 @@ export async function bootstrapExternalOpeners(): Promise<void> {
     setAppUrlOpener(opener);
     setExternalUrlOpener(opener);
   } catch (err) {
-    console.warn("[ExternalOpen] Tauri shell unavailable:", err);
+    logger.warn("[ExternalOpen] Tauri shell unavailable:", err);
   }
 }
 
@@ -38,7 +39,7 @@ export async function openExternalUrl(url: string): Promise<void> {
       await tauriShellOpen(url);
       return;
     } catch (err) {
-      console.warn("[ExternalOpen] shell.open failed:", err);
+      logger.warn("[ExternalOpen] shell.open failed:", err);
       throw err;
     }
   }

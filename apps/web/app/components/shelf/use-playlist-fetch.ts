@@ -7,6 +7,7 @@ import {
   isPaginatedPlaylistPlatform,
   type ImportResult,
 } from "../../lib/import-api";
+import { logger } from "../../lib/logger";
 
 const PAGE_SIZE = 30;
 const LOAD_AHEAD = 20;
@@ -175,7 +176,7 @@ export function usePlaylistFetch(playlistId: string | undefined) {
       if (!next || !isResultForPlaylist(next, pl.importUrl)) return;
 
       if (next.error) {
-        console.warn("[Refresh] import error:", next.error);
+        logger.warn("[Refresh] import error:", next.error);
         return;
       }
 
@@ -202,7 +203,7 @@ export function usePlaylistFetch(playlistId: string | undefined) {
       setOverrideResult(next);
       setSongsRevision((revision) => revision + 1);
     } catch (err) {
-      console.warn("[Refresh] import error:", err);
+      logger.warn("[Refresh] import error:", err);
     } finally {
       setDirectFetching(false);
     }

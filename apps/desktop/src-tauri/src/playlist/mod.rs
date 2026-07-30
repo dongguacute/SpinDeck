@@ -29,12 +29,16 @@ pub fn is_paginated(platform: &str) -> bool {
 }
 
 pub async fn get_playlist_meta(platform: &str, url: &str) -> Result<PlaylistMeta, String> {
-  match platform {
+  let result = match platform {
     "QQMusic" => qq::get_meta(url).await,
     "NetEaseMusic" => netease::get_meta(url).await,
     "KugouMusic" => kugou::get_meta(url).await,
     _ => Err("UNSUPPORTED_PLATFORM".into()),
+  };
+  if let Err(ref code) = result {
+    log::warn!("get_playlist_meta failed platform={platform} code={code}");
   }
+  result
 }
 
 pub async fn get_full_playlist(
@@ -42,11 +46,15 @@ pub async fn get_full_playlist(
   url: &str,
   force_refresh: bool,
 ) -> Result<PlaylistResult, String> {
-  match platform {
+  let result = match platform {
     "QQMusic" => qq::get_songs(url, force_refresh).await,
     "KugouMusic" => kugou::get_songs(url, force_refresh).await,
     _ => Err("UNSUPPORTED_PLATFORM".into()),
+  };
+  if let Err(ref code) = result {
+    log::warn!("get_full_playlist failed platform={platform} code={code}");
   }
+  result
 }
 
 pub async fn get_playlist_page(

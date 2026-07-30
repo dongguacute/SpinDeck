@@ -53,11 +53,13 @@ SpinDeck desktop builds are **not yet signed** with Apple or Microsoft certifica
 |---------|-------|------------|
 | White screen or immediate quit | WebView / frontend assets failed to load | Relaunch; if it persists, check the log paths below |
 
-**Log locations (when startup fails):**
+**Log locations (startup failures / crashes):**
 
 - **macOS**: `~/Library/Logs/com.spindeck.app/`
 - **Windows**: `%LOCALAPPDATA%\com.spindeck.app\logs\`
 - **Linux**: `~/.local/share/com.spindeck.app/logs/` (may vary by distro)
+
+Each launch creates a new session log named with the local timestamp, e.g. `spindeck-2026-07-31_01-50-45.log`. Multiple historical session files are kept (about 50 most recent). Logs include the Rust native layer (IPC / cover proxy / panic) plus critical frontend errors.
 
 ### macOS
 

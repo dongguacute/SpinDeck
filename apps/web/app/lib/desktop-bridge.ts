@@ -1,9 +1,13 @@
 import type { PlayResult, SystemPlaybackStatus } from "@spindeck/player";
-import { setDesktopBridge } from "@spindeck/player";
+import { setDesktopBridge, setLogger } from "@spindeck/player";
 import { isTauri } from "./is-tauri";
+import { initLogger, logger } from "./logger";
 
 /** Wire @spindeck/player to Tauri invoke commands (desktop only). */
 export async function bootstrapDesktopBridge(): Promise<void> {
+  await initLogger();
+  setLogger(logger);
+
   if (!isTauri()) {
     setDesktopBridge(null);
     return;

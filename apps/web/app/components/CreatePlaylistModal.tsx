@@ -6,6 +6,7 @@ import type { PlatformType, SongInfo } from "../lib/types";
 import { PLATFORM_CONFIG } from "../lib/types";
 import { importPlaylist } from "../lib/import-api";
 import { translateApiError } from "../lib/api-errors";
+import { logger } from "../lib/logger";
 import QQMusicIcon from "../assets/icons/QQMusicIcon.svg?react";
 import NetEaseMusicIcon from "../assets/icons/NetEaseMusicIcon.svg?react";
 import KugouMusicIcon from "../assets/icons/KugouMusicIcon.svg?react";
@@ -208,7 +209,7 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
           refreshInterval,
         });
       } catch (err) {
-        console.error("[CreatePlaylistModal] Failed to create playlist:", err);
+        logger.error("[CreatePlaylistModal] Failed to create playlist:", err);
       }
     });
     

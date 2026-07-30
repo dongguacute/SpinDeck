@@ -115,6 +115,7 @@ async fn import_one_url(
       } else {
         &code
       };
+      log::warn!("import_playlist failed platform={platform} url={url} code={code}");
       json!({
         "url": url,
         "error": code,
@@ -143,6 +144,7 @@ pub async fn import_playlist(
     .filter(|s| !s.is_empty());
 
   if url.is_empty() || platform.is_empty() {
+    log::warn!("import_playlist rejected: MISSING_PARAMS");
     return Err("MISSING_PARAMS".to_string());
   }
 
@@ -153,6 +155,7 @@ pub async fn import_playlist(
     .collect();
 
   if urls.is_empty() {
+    log::warn!("import_playlist rejected: INVALID_URL");
     return Err("INVALID_URL".to_string());
   }
 
@@ -162,6 +165,11 @@ pub async fn import_playlist(
   } else {
     playlist::DEFAULT_PAGE_SIZE
   });
+
+  log::info!(
+    "import_playlist platform={platform} urls={} meta_only={meta_only} force_refresh={force_refresh} offset={offset} limit={limit}",
+    urls.len()
+  );
 
   let semaphore = Arc::new(Semaphore::new(IMPORT_CONCURRENCY));
   let results = join_all(urls.iter().cloned().map(|u| {

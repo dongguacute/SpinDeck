@@ -1,6 +1,7 @@
 import type { PlatformType } from "../types";
 import { getDeviceOS } from "../device";
 import { openDeepLink } from "./deep-link";
+import { getLogger } from "./logger";
 import { dispatchAppUrl, dispatchExternalUrl, waitForAppUrlOpener } from "./url-open";
 import { isMobileQQMusicTarget } from "./qqmusic-background";
 
@@ -67,7 +68,7 @@ export async function prelaunchApp(platform: PlatformType, options?: PrelaunchOp
   const silent = options?.silent ?? false;
   const mobileQQ = platform === "QQMusic" && isMobileQQMusicTarget();
 
-  console.log(`[Prelaunch] Platform: ${platform}, OS: ${deviceOS}`);
+  getLogger().info(`[Prelaunch] Platform: ${platform}, OS: ${deviceOS}`);
 
   if (!scheme) {
     if (!silent) {
@@ -86,7 +87,7 @@ export async function prelaunchApp(platform: PlatformType, options?: PrelaunchOp
   await waitForAppUrlOpener();
 
   if (await dispatchAppUrl(scheme)) {
-    console.log(`[Prelaunch] Launched via shell: ${scheme}`);
+    getLogger().info(`[Prelaunch] Launched via shell: ${scheme}`);
     return;
   }
 
@@ -98,7 +99,7 @@ export async function prelaunchApp(platform: PlatformType, options?: PrelaunchOp
     hasFallenBack = true;
     clearTimeout(fallbackTimer);
     window.removeEventListener("blur", handleBlur);
-    console.log(`[Prelaunch] Fallback to web (${reason})`);
+    getLogger().info(`[Prelaunch] Fallback to web (${reason})`);
     if (!(await dispatchExternalUrl(config.webFallback))) {
       window.open(config.webFallback, "_blank", "noopener,noreferrer");
     }
@@ -113,7 +114,7 @@ export async function prelaunchApp(platform: PlatformType, options?: PrelaunchOp
   try {
     await openDeepLink(scheme);
   } catch (e) {
-    console.warn("[Prelaunch] Direct launch failed:", e);
+    getLogger().warn("[Prelaunch] Direct launch failed:", e);
     await fallbackToWeb("exception thrown");
     return;
   }
