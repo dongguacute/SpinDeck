@@ -22,7 +22,7 @@
   visibility: hidden;
 }
 
-/* 唱臂 portal：默认叠在光碟之上，便于落针交互 */
+/* 唱臂 portal（播放层内）：默认叠在光碟之上，便于落针交互 */
 .sd-vinyl-portal {
   position: absolute;
   inset: 0;
@@ -33,9 +33,9 @@
   --tonearm-height-ratio: 0.96;
 }
 
-/* 封面遮盖态：降到播放层下方，让封面盖住指针 */
+/* 封面遮盖态：光碟(2) < 唱臂(3) < 封面(4)，避免指针穿出封面 */
 .sd-vinyl-portal--under-cover {
-  z-index: 2;
+  z-index: 3;
 }
 
 .sd-vinyl-portal-stage {

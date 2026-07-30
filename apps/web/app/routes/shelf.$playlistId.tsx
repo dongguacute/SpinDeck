@@ -372,10 +372,10 @@ export default function ShelfPage() {
         coverUrl={playlist?.coverUrl}
       />
 
-      {/* 播放核心区域（含动画容器） */}
+      {/* 播放核心区域：层内叠层为 光碟 < 唱臂 < 封面（遮盖态），避免与顶栏抢外层 z-index */}
       <div
         ref={playbackWrapperRef}
-        className={`shelf-playback-layer absolute inset-0 w-full h-full${coverOverlay ? " z-[4]" : ""}`}
+        className="shelf-playback-layer absolute inset-0 w-full h-full"
       >
         {selectedSong && playlist && (
           <SongVinylOverlay
@@ -397,6 +397,16 @@ export default function ShelfPage() {
           />
         )}
 
+        {/* 唱臂 portal：默认压在光碟上；封面遮盖态降到封面之下 */}
+        <div
+          ref={(el) => {
+            tonearmPortalRef.current = el;
+            setTonearmPortalReady(!!el);
+          }}
+          className={`sd-vinyl-portal${coverOverlay ? " sd-vinyl-portal--under-cover" : ""}`}
+          aria-hidden
+        />
+
         <PlaylistShelf
           songs={songs}
           songsRevision={songsRevision}
@@ -415,16 +425,6 @@ export default function ShelfPage() {
           onScrollCenter={isPaginatedShelf ? handleScrollCenter : undefined}
         />
       </div>
-
-      {/* 唱臂 portal：默认在光碟之上；封面遮盖态降到播放层下方，避免指针穿出封面 */}
-      <div
-        ref={(el) => {
-          tonearmPortalRef.current = el;
-          setTonearmPortalReady(!!el);
-        }}
-        className={`sd-vinyl-portal${coverOverlay ? " sd-vinyl-portal--under-cover" : ""}`}
-        aria-hidden
-      />
 
       <PlaybackControls 
         inPlayback={inPlayback}

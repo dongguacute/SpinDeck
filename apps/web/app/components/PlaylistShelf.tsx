@@ -1737,7 +1737,7 @@ export default function PlaylistShelf({
   return (
     <div
       ref={containerRef}
-      className={`absolute inset-0 ${coverOverlay ? "z-3" : "z-1"}`}
+      className={`absolute inset-0 ${coverOverlay ? "z-[4]" : "z-1"}`}
     />
   );
 }
