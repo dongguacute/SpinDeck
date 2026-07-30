@@ -373,7 +373,10 @@ export default function ShelfPage() {
       />
 
       {/* 播放核心区域（含动画容器） */}
-      <div ref={playbackWrapperRef} className="shelf-playback-layer absolute inset-0 w-full h-full">
+      <div
+        ref={playbackWrapperRef}
+        className={`shelf-playback-layer absolute inset-0 w-full h-full${coverOverlay ? " z-[4]" : ""}`}
+      >
         {selectedSong && playlist && (
           <SongVinylOverlay
             song={selectedSong}
@@ -413,13 +416,13 @@ export default function ShelfPage() {
         />
       </div>
 
-      {/* 唱臂 portal */}
+      {/* 唱臂 portal：默认在光碟之上；封面遮盖态降到播放层下方，避免指针穿出封面 */}
       <div
         ref={(el) => {
           tonearmPortalRef.current = el;
           setTonearmPortalReady(!!el);
         }}
-        className="sd-vinyl-portal"
+        className={`sd-vinyl-portal${coverOverlay ? " sd-vinyl-portal--under-cover" : ""}`}
         aria-hidden
       />
 

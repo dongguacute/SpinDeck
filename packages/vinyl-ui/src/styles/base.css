@@ -22,7 +22,7 @@
   visibility: hidden;
 }
 
-/* 遮盖态唱臂 portal：叠在书（z-3）上方 */
+/* 唱臂 portal：默认叠在光碟之上，便于落针交互 */
 .sd-vinyl-portal {
   position: absolute;
   inset: 0;
@@ -31,6 +31,11 @@
   --vinyl-size: 480px;
   --vinyl-offset-x: 32px;
   --tonearm-height-ratio: 0.96;
+}
+
+/* 封面遮盖态：降到播放层下方，让封面盖住指针 */
+.sd-vinyl-portal--under-cover {
+  z-index: 2;
 }
 
 .sd-vinyl-portal-stage {
