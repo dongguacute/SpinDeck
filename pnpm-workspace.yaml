@@ -2,3 +2,10 @@ packages:
   - "apps/*"
   - "packages/*"
   - "docs"
+
+allowBuilds:
+  esbuild: true
+
+overrides:
+  "@spindeck/docs>vite": "5.4.21"
+  "vitepress>vite": "5.4.21"

@@ -16,7 +16,7 @@
   <a href="https://github.com/dongguacute/SpinDeck/releases"><img src="https://img.shields.io/github/v/release/dongguacute/SpinDeck?label=latest%20release" alt="Latest release" /></a>
   <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/node-%3E%3D18-339933?logo=node.js&logoColor=white" alt="Node.js >= 18" /></a>
   <a href="https://www.rust-lang.org/"><img src="https://img.shields.io/badge/rust-stable-DEA584?logo=rust&logoColor=white" alt="Rust stable" /></a>
-  <a href="https://pnpm.io/"><img src="https://img.shields.io/badge/pnpm-9.x-F69220?logo=pnpm&logoColor=white" alt="pnpm 9.x" /></a>
+  <a href="https://pnpm.io/"><img src="https://img.shields.io/badge/pnpm-11.x-F69220?logo=pnpm&logoColor=white" alt="pnpm 11.x" /></a>
 </p>
 
 ---
@@ -126,17 +126,17 @@ node -p "require('./package.json').version"
 | Tool | Version | Required for |
 |------|---------|--------------|
 | [Node.js](https://nodejs.org/) | **≥ 18** | Web / docs development and frontend builds only |
-| [pnpm](https://pnpm.io/) | **9.x** (repo pins `9.0.0`) | Installing dependencies and all `pnpm` scripts |
+| [pnpm](https://pnpm.io/) | **11.x** (repo pins `11.18.0`) | Installing dependencies and all `pnpm` scripts |
 | [Rust](https://rustup.rs/) | stable | Desktop (Tauri) dev & release builds |
 | Platform toolchain | — | e.g. Xcode Command Line Tools on macOS |
 
-These are declared in root [`package.json`](package.json) (`engines.node`, `packageManager`). CI uses **Node 20** and **pnpm 9**. End users installing a Release build do **not** need Node.js.
+These are declared in root [`package.json`](package.json) (`engines.node`, `packageManager`). CI uses **Node 20** and **pnpm 11**. End users installing a Release build do **not** need Node.js.
 
 Enable the pinned pnpm via [Corepack](https://nodejs.org/api/corepack.html):
 
 ```bash
 corepack enable
-pnpm -v   # should report 9.x
+pnpm -v   # should report 11.x
 node -v   # should report v18 or newer
 ```
 
@@ -146,7 +146,7 @@ node -v   # should report v18 or newer
 
 ### Requirements
 
-See **[Version & Requirements](#-version--requirements)** above. In short: **Node.js ≥ 18**, **pnpm 9.x**; add **Rust (stable)** for desktop development.
+See **[Version & Requirements](#-version--requirements)** above. In short: **Node.js ≥ 18**, **pnpm 11.x**; add **Rust (stable)** for desktop development.
 
 ### Local Development (Web UI)
 

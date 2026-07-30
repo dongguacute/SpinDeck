@@ -16,7 +16,7 @@
   <a href="https://github.com/dongguacute/SpinDeck/releases"><img src="https://img.shields.io/github/v/release/dongguacute/SpinDeck?label=latest%20release" alt="Latest release" /></a>
   <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/node-%3E%3D18-339933?logo=node.js&logoColor=white" alt="Node.js >= 18" /></a>
   <a href="https://www.rust-lang.org/"><img src="https://img.shields.io/badge/rust-stable-DEA584?logo=rust&logoColor=white" alt="Rust stable" /></a>
-  <a href="https://pnpm.io/"><img src="https://img.shields.io/badge/pnpm-9.x-F69220?logo=pnpm&logoColor=white" alt="pnpm 9.x" /></a>
+  <a href="https://pnpm.io/"><img src="https://img.shields.io/badge/pnpm-11.x-F69220?logo=pnpm&logoColor=white" alt="pnpm 11.x" /></a>
 </p>
 
 ---
@@ -126,17 +126,17 @@ node -p "require('./package.json').version"
 | 工具 | 版本 | 用途 |
 |------|------|------|
 | [Node.js](https://nodejs.org/) | **≥ 18** | 仅 Web / 文档开发与前端构建 |
-| [pnpm](https://pnpm.io/) | **9.x**（仓库锁定 `9.0.0`） | 安装依赖及所有 `pnpm` 脚本 |
+| [pnpm](https://pnpm.io/) | **11.x**（仓库锁定 `11.18.0`） | 安装依赖及所有 `pnpm` 脚本 |
 | [Rust](https://rustup.rs/) | stable | 桌面端（Tauri）开发与发布构建 |
 | 平台工具链 | — | 如 macOS 上的 Xcode Command Line Tools |
 
-以上要求见根目录 [`package.json`](package.json)（`engines.node`、`packageManager`）。CI 使用 **Node 20** 与 **pnpm 9**。安装 Release 包的终端用户**不需要** Node.js。
+以上要求见根目录 [`package.json`](package.json)（`engines.node`、`packageManager`）。CI 使用 **Node 20** 与 **pnpm 11**。安装 Release 包的终端用户**不需要** Node.js。
 
 通过 [Corepack](https://nodejs.org/api/corepack.html) 启用锁定的 pnpm：
 
 ```bash
 corepack enable
-pnpm -v   # 应显示 9.x
+pnpm -v   # 应显示 11.x
 node -v   # 应显示 v18 或更高
 ```
 
@@ -146,7 +146,7 @@ node -v   # 应显示 v18 或更高
 
 ### 环境要求
 
-见上方 **[版本与依赖](#-版本与依赖)**。简要来说：**Node.js ≥ 18**、**pnpm 9.x**；桌面端开发还需 **Rust（stable）**。
+见上方 **[版本与依赖](#-版本与依赖)**。简要来说：**Node.js ≥ 18**、**pnpm 11.x**；桌面端开发还需 **Rust（stable）**。
 
 ### 本地开发（Web UI）
 

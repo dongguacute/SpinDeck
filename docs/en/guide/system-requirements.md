@@ -152,7 +152,7 @@ Toolchain for development / CI. **End users installing a Release build do not ne
 | Tool | Version | Purpose |
 | --- | --- | --- |
 | [Node.js](https://nodejs.org/) | **≥ 18** (CI often uses 20) | Web / docs and frontend builds |
-| [pnpm](https://pnpm.io/) | **9.x** (repo pins `9.0.0`) | Package manager |
+| [pnpm](https://pnpm.io/) | **11.x** (repo pins `11.18.0`) | Package manager |
 | [Rust](https://rustup.rs/) | **stable** | Desktop Tauri builds |
 | Platform toolchain | See below | Native link dependencies |
 
@@ -191,4 +191,4 @@ Combinations not listed (e.g. Windows ARM) have no official prebuilt package yet
 | Default window | same → `app.windows[0]` | `1280×800` |
 | Minimum window | same | `960×640` |
 | Node engines | root `package.json` | `>=18` |
-| Package manager | root `package.json` → `packageManager` | `pnpm@9.0.0` |
+| Package manager | root `package.json` → `packageManager` | `pnpm@11.18.0` |
