@@ -23,19 +23,18 @@ See [Architecture](./architecture) for the monorepo diagram and full `/api` tabl
 
 Download pre-built desktop installers from GitHub Releases:
 
-**[v1.0.0-beta.5](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.5)** (latest)
+**[v1.0.0-beta.6](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.6)** (latest)
 
 Pick the asset for your platform (`.dmg` / `.app` on macOS, `.msi` / `.exe` on Windows, etc.). Release builds embed a Rust HTTP server and static frontend assets — **Node.js is no longer required** on the user's machine.
 
-### What's new in v1.0.0-beta.5
+### What's new in v1.0.0-beta.6
 
-- **macOS Accessibility permission** — Pause/resume controls local clients via AppleScript and requires the Accessibility permission; the app auto-opens System Settings to guide authorization when missing
-- **macOS QQ Music control** — Fixed AppleScript pause/resume; keyboard fallback when menu control fails; idempotent pause avoids accidental resume when leaving the shelf; pause no longer triggers play when nothing is playing
-- **Pre-launch & external links** — Pre-launch opens local clients via Tauri `shell.open`; settings and playlist links open in the system browser
-- **Playlist refresh** — Manual refresh bypasses QQ Music server cache; 3D shelf rebuilds when song data changes
-- **Desktop dev & runtime** — Tauri dev resources, WebView capabilities, and Vite compatibility fixes
+- **Embedded Rust API** — Replaces the Node.js SSR/API layer with a Tauri-managed Axum server on `127.0.0.1:17345`; playlist import, image proxy, and playback control run in the desktop Rust runtime
+- **Node SSR removed** — Drops web/desktop Node API routes and `@spindeck/core`; full desktop builds no longer need Node.js on the user's machine
+- **Viewport-based 3D shelf loading** — Loads 3D assets by viewport visibility to cut initial cost and memory use
+- **Docs & tooling** — Syncs architecture/dev docs; updates lint-staged, `.gitignore`, and repository cleanup rules
 
-Previous release: [v1.0.0-beta.4](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.4)
+Previous release: [v1.0.0-beta.5](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.5)
 
 ::: warning Unavailable releases
 The following builds are **not recommended** due to a white-screen issue in packaged desktop apps:

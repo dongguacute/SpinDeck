@@ -23,19 +23,18 @@ SpinDeck 提供适用于 macOS、Windows 和 Linux 的 [Tauri 2](https://v2.taur
 
 从 GitHub Releases 下载预构建的桌面安装包：
 
-**[v1.0.0-beta.5](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.5)**（最新）
+**[v1.0.0-beta.6](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.6)**（最新）
 
 按平台选择对应资源（macOS 为 `.dmg` / `.app`，Windows 为 `.msi` / `.exe` 等）。发布构建内嵌 Rust HTTP 服务与前端静态资源，**不再依赖本机 Node.js**。
 
-### v1.0.0-beta.5 更新内容
+### v1.0.0-beta.6 更新内容
 
-- **macOS 辅助功能权限** — 暂停/继续通过 AppleScript 控制本地客户端，需要「辅助功能」权限；权限缺失时自动引导用户前往系统设置授权
-- **macOS QQ 音乐控制** — 修复 AppleScript 暂停/继续；菜单控制失败时空格键兜底；离开歌单页时不再误触播放；未播放时暂停不再误触播放
-- **预启动与外链** — 预启动通过 Tauri `shell.open` 唤起本地客户端；设置页与歌单外链在系统浏览器打开
-- **歌单刷新** — 手动刷新跳过 QQ 音乐服务端缓存；歌曲数据变化时重建 3D 书架
-- **桌面开发与运行** — Tauri 开发资源、WebView 权限与 Vite 兼容性修复
+- **内嵌 Rust API** — 以 Tauri 内嵌 Axum 服务（`127.0.0.1:17345`）替代原先的 Node.js SSR/API 层；歌单导入、图片代理与播放控制均由桌面端 Rust 运行时处理
+- **移除 Node SSR 依赖** — 删除 Web / 桌面侧 Node API 路由与 `@spindeck/core`；用户机器不再需要 Node.js 即可运行完整桌面版
+- **3D 书架按需加载** — 按视口可见性动态加载 3D 资源，降低首屏成本与内存占用
+- **文档与工具链** — 同步架构/开发文档，更新 lint-staged、`.gitignore` 与仓库清理规则
 
-上一版本：[v1.0.0-beta.4](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.4)
+上一版本：[v1.0.0-beta.5](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.5)
 
 ::: warning 不可用版本
 以下版本因打包后存在**白屏问题**，**不建议使用**：
