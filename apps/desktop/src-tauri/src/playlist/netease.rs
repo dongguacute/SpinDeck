@@ -12,6 +12,14 @@ use crate::util::decode_html_entities;
 
 static PLAYLIST_ID_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"id=(\d+)").unwrap());
 
+/// How many tracks to ask the detail API to embed. `trackIds` is always complete;
+/// `n` only caps the hydrated `tracks` array (not used as a page size).
+const DETAIL_TRACK_N: u32 = 1000;
+/// `s` is “recent collectors”, not an offset — keep a small fixed value.
+const DETAIL_COLLECTORS_S: u32 = 8;
+/// song/detail accepts large batches, but keep requests modest.
+const SONG_DETAIL_CHUNK: usize = 100;
+
 #[derive(Debug, Deserialize)]
 struct NeteaseResponse {
   code: i64,
@@ -75,22 +83,21 @@ struct SongDetailResponse {
   songs: Option<Vec<NeteaseTrack>>,
 }
 
-struct PageCacheEntry {
+struct PlaylistCacheEntry {
   expires: Instant,
   playlist: NeteasePlaylist,
 }
 
-static V6_CACHE: Lazy<Mutex<HashMap<String, PageCacheEntry>>> =
+static PLAYLIST_CACHE: Lazy<Mutex<HashMap<String, PlaylistCacheEntry>>> =
   Lazy::new(|| Mutex::new(HashMap::new()));
 
-const V6_TTL: Duration = Duration::from_secs(60);
-/// Pagination reuses a few offset/limit keys; keep this small — each entry holds track metadata.
-const V6_MAX_ENTRIES: usize = 8;
+const PLAYLIST_TTL: Duration = Duration::from_secs(60);
+const PLAYLIST_MAX_ENTRIES: usize = 8;
 
-fn prune_v6_cache(map: &mut HashMap<String, PageCacheEntry>) {
+fn prune_playlist_cache(map: &mut HashMap<String, PlaylistCacheEntry>) {
   let now = Instant::now();
   map.retain(|_, entry| now < entry.expires);
-  while map.len() > V6_MAX_ENTRIES {
+  while map.len() > PLAYLIST_MAX_ENTRIES {
     let victim = map
       .iter()
       .min_by_key(|(_, e)| e.expires)
@@ -214,23 +221,32 @@ fn meta_from_playlist(playlist: &NeteasePlaylist, id: &str) -> PlaylistMeta {
   }
 }
 
-async fn fetch_v6_raw(
-  playlist_id: &str,
-  offset: u32,
-  limit: u32,
-) -> Result<NeteasePlaylist, String> {
-  let cache_key = format!("{playlist_id}:{offset}:{limit}");
-  if let Ok(mut map) = V6_CACHE.lock() {
-    prune_v6_cache(&mut map);
-    if let Some(entry) = map.get(&cache_key) {
+fn all_track_ids(playlist: &NeteasePlaylist) -> Vec<i64> {
+  if let Some(ids) = playlist.track_ids.as_ref() {
+    if !ids.is_empty() {
+      return ids.iter().map(|t| t.id).collect();
+    }
+  }
+  playlist
+    .tracks
+    .as_ref()
+    .map(|tracks| tracks.iter().map(|t| t.id).collect())
+    .unwrap_or_default()
+}
+
+async fn fetch_playlist_detail(playlist_id: &str) -> Result<NeteasePlaylist, String> {
+  if let Ok(mut map) = PLAYLIST_CACHE.lock() {
+    prune_playlist_cache(&mut map);
+    if let Some(entry) = map.get(playlist_id) {
       if Instant::now() < entry.expires {
         return Ok(entry.playlist.clone());
       }
     }
   }
 
-  let api =
-    format!("https://music.163.com/api/v6/playlist/detail?id={playlist_id}&n={limit}&s={offset}");
+  let api = format!(
+    "https://music.163.com/api/v6/playlist/detail?id={playlist_id}&n={DETAIL_TRACK_N}&s={DETAIL_COLLECTORS_S}"
+  );
   let client = http_client()?;
   let mut req = client.get(&api);
   for (k, v) in netease_headers() {
@@ -247,32 +263,27 @@ async fn fetch_v6_raw(
   assert_code(res.code, res.msg.as_deref().or(res.message.as_deref()))?;
   let playlist = res.playlist.ok_or_else(|| "UPSTREAM_ERROR".to_string())?;
 
-  if let Ok(mut map) = V6_CACHE.lock() {
+  if let Ok(mut map) = PLAYLIST_CACHE.lock() {
     map.insert(
-      cache_key,
-      PageCacheEntry {
-        expires: Instant::now() + V6_TTL,
+      playlist_id.to_string(),
+      PlaylistCacheEntry {
+        expires: Instant::now() + PLAYLIST_TTL,
         playlist: playlist.clone(),
       },
     );
-    prune_v6_cache(&mut map);
+    prune_playlist_cache(&mut map);
   }
   Ok(playlist)
 }
 
-async fn fetch_tracks_by_ids(ids: &[i64]) -> Result<Vec<SongInfo>, String> {
-  if ids.is_empty() {
-    return Ok(vec![]);
-  }
-  let ids_json = serde_json::to_string(ids).unwrap_or_else(|_| "[]".into());
+async fn fetch_playlist_detail_v1(playlist_id: &str) -> Result<NeteasePlaylist, String> {
+  let api = format!("https://music.163.com/api/v1/playlist/detail?id={playlist_id}");
   let client = http_client()?;
-  let mut req = client
-    .get("https://music.163.com/api/song/detail")
-    .query(&[("ids", ids_json)]);
+  let mut req = client.get(&api);
   for (k, v) in netease_headers() {
     req = req.header(k, v);
   }
-  let res: SongDetailResponse = req
+  let res: NeteaseResponse = req
     .send()
     .await
     .map_err(|_| "UPSTREAM_ERROR".to_string())?
@@ -280,85 +291,45 @@ async fn fetch_tracks_by_ids(ids: &[i64]) -> Result<Vec<SongInfo>, String> {
     .await
     .map_err(|_| "UPSTREAM_ERROR".to_string())?;
   assert_code(res.code, res.msg.as_deref().or(res.message.as_deref()))?;
-  Ok(parse_tracks(res.songs.as_deref().unwrap_or(&[])))
+  res.playlist.ok_or_else(|| "UPSTREAM_ERROR".to_string())
 }
 
-fn should_fallback(playlist: &NeteasePlaylist, songs: &[SongInfo], limit: u32) -> bool {
-  let expected = playlist
-    .track_count
-    .or_else(|| playlist.track_ids.as_ref().map(|t| t.len() as u32))
-    .unwrap_or(0);
-  if songs.len() as u32 >= limit {
-    return false;
-  }
-  if expected > 0 && songs.is_empty() {
-    return true;
-  }
-  expected > 0 && (songs.len() as u32) < limit.min(expected)
-}
-
-async fn page_from_playlist(
-  playlist: &NeteasePlaylist,
-  id: &str,
-  offset: u32,
-  limit: u32,
-) -> Result<PlaylistPage, String> {
-  let meta = meta_from_playlist(playlist, id);
-  let page_ids: Vec<i64> = playlist
-    .track_ids
-    .as_ref()
-    .map(|ids| {
-      ids
-        .iter()
-        .skip(offset as usize)
-        .take(limit as usize)
-        .map(|t| t.id)
-        .collect()
-    })
-    .unwrap_or_default();
-
-  let v6_songs = parse_tracks(playlist.tracks.as_deref().unwrap_or(&[]));
-  let v6_by_id: HashMap<String, SongInfo> = v6_songs
-    .iter()
-    .cloned()
-    .map(|s| (s.platform_song_id.clone(), s))
-    .collect();
-  let covers_complete = !v6_songs.is_empty() && v6_songs.iter().all(|s| !s.cover.is_empty());
-  let needed = page_ids.len().max(1).min(limit as usize);
-
-  if v6_songs.len() >= needed && covers_complete {
-    let songs: Vec<_> = v6_songs.into_iter().take(limit as usize).collect();
-    return Ok(page_result(meta, songs, offset, limit));
+async fn fetch_tracks_by_ids(ids: &[i64]) -> Result<Vec<SongInfo>, String> {
+  if ids.is_empty() {
+    return Ok(vec![]);
   }
 
-  if !page_ids.is_empty() {
-    if let Ok(detail) = fetch_tracks_by_ids(&page_ids).await {
-      if !detail.is_empty() {
-        let songs = detail
-          .into_iter()
-          .map(|mut song| {
-            if song.cover.is_empty() {
-              if let Some(fb) = v6_by_id.get(&song.platform_song_id) {
-                song.cover = fb.cover.clone();
-                if song.album.is_empty() {
-                  song.album = fb.album.clone();
-                }
-              }
-            }
-            song
-          })
-          .collect();
-        return Ok(page_result(meta, songs, offset, limit));
+  let mut by_id: HashMap<i64, SongInfo> = HashMap::with_capacity(ids.len());
+  for chunk in ids.chunks(SONG_DETAIL_CHUNK) {
+    let ids_json = serde_json::to_string(chunk).unwrap_or_else(|_| "[]".into());
+    let client = http_client()?;
+    let mut req = client
+      .get("https://music.163.com/api/song/detail")
+      .query(&[("ids", ids_json)]);
+    for (k, v) in netease_headers() {
+      req = req.header(k, v);
+    }
+    let res: SongDetailResponse = req
+      .send()
+      .await
+      .map_err(|_| "UPSTREAM_ERROR".to_string())?
+      .json()
+      .await
+      .map_err(|_| "UPSTREAM_ERROR".to_string())?;
+    assert_code(res.code, res.msg.as_deref().or(res.message.as_deref()))?;
+    for song in parse_tracks(res.songs.as_deref().unwrap_or(&[])) {
+      if let Some(id) = song.platform_numeric_id {
+        by_id.insert(id, song);
       }
     }
   }
 
-  let songs: Vec<_> = v6_songs.into_iter().take(limit as usize).collect();
-  Ok(page_result(meta, songs, offset, limit))
+  // Preserve playlist order; song/detail does not guarantee request order.
+  Ok(ids.iter().filter_map(|id| by_id.remove(id)).collect())
 }
 
 fn page_result(meta: PlaylistMeta, songs: Vec<SongInfo>, offset: u32, limit: u32) -> PlaylistPage {
-  let has_more = offset + (songs.len() as u32) < meta.song_count;
+  let has_more = offset.saturating_add(limit) < meta.song_count;
   PlaylistPage {
     name: meta.name,
     cover: meta.cover,
@@ -372,30 +343,80 @@ fn page_result(meta: PlaylistMeta, songs: Vec<SongInfo>, offset: u32, limit: u32
   }
 }
 
-async fn fallback_v1(url: &str, offset: u32, limit: u32) -> Result<PlaylistPage, String> {
-  let id = resolve_playlist_id(url).await?;
-  let api = format!("https://music.163.com/api/v1/playlist/detail?id={id}");
-  let client = http_client()?;
-  let mut req = client.get(&api);
-  for (k, v) in netease_headers() {
-    req = req.header(k, v);
+async fn page_from_playlist(
+  playlist: &NeteasePlaylist,
+  id: &str,
+  offset: u32,
+  limit: u32,
+) -> Result<PlaylistPage, String> {
+  let mut meta = meta_from_playlist(playlist, id);
+  let track_ids = all_track_ids(playlist);
+  if meta.song_count == 0 {
+    meta.song_count = track_ids.len() as u32;
   }
-  let res: NeteaseResponse = req
-    .send()
-    .await
-    .map_err(|_| "UPSTREAM_ERROR".to_string())?
-    .json()
-    .await
-    .map_err(|_| "UPSTREAM_ERROR".to_string())?;
-  assert_code(res.code, res.msg.as_deref().or(res.message.as_deref()))?;
-  let playlist = res.playlist.ok_or_else(|| "UPSTREAM_ERROR".to_string())?;
-  let id = playlist.id.map(|i| i.to_string()).unwrap_or(id);
-  page_from_playlist(&playlist, &id, offset, limit).await
+
+  let start = (offset as usize).min(track_ids.len());
+  let end = (start + limit as usize).min(track_ids.len());
+  let page_ids = &track_ids[start..end];
+
+  if page_ids.is_empty() {
+    return Ok(page_result(meta, vec![], offset, limit));
+  }
+
+  let embedded_by_id: HashMap<i64, SongInfo> =
+    parse_tracks(playlist.tracks.as_deref().unwrap_or(&[]))
+      .into_iter()
+      .filter_map(|s| s.platform_numeric_id.map(|id| (id, s)))
+      .collect();
+
+  // Prefer song/detail for the page window so pagination is never tied to the
+  // truncated `tracks` array. Fall back to embedded metadata when detail misses.
+  let fetched = fetch_tracks_by_ids(page_ids).await.unwrap_or_default();
+  let mut fetched_by_id: HashMap<i64, SongInfo> = fetched
+    .into_iter()
+    .filter_map(|s| s.platform_numeric_id.map(|id| (id, s)))
+    .collect();
+
+  let mut songs = Vec::with_capacity(page_ids.len());
+  for &song_id in page_ids {
+    if let Some(mut song) = fetched_by_id.remove(&song_id) {
+      if song.cover.is_empty() {
+        if let Some(fb) = embedded_by_id.get(&song_id) {
+          song.cover = fb.cover.clone();
+          if song.album.is_empty() {
+            song.album = fb.album.clone();
+          }
+        }
+      }
+      songs.push(song);
+      continue;
+    }
+    if let Some(song) = embedded_by_id.get(&song_id) {
+      songs.push(song.clone());
+      continue;
+    }
+    // Keep slot aligned with trackIds so the client offset stays correct.
+    songs.push(SongInfo {
+      name: format!("Song {song_id}"),
+      artist: "Unknown".into(),
+      cover: String::new(),
+      album: String::new(),
+      platform_song_id: song_id.to_string(),
+      platform_numeric_id: Some(song_id),
+      platform_song_type: None,
+      duration: None,
+    });
+  }
+
+  Ok(page_result(meta, songs, offset, limit))
 }
 
 pub async fn get_meta(url: &str) -> Result<PlaylistMeta, String> {
   let id = resolve_playlist_id(url).await?;
-  let playlist = fetch_v6_raw(&id, 0, 1).await?;
+  let playlist = match fetch_playlist_detail(&id).await {
+    Ok(p) => p,
+    Err(_) => fetch_playlist_detail_v1(&id).await?,
+  };
   Ok(meta_from_playlist(&playlist, &id))
 }
 
@@ -411,19 +432,10 @@ pub async fn get_page(
   };
   let safe_limit = limit.max(1);
 
-  match fetch_v6_raw(&id, offset, safe_limit).await {
-    Ok(playlist) => {
-      let songs = parse_tracks(playlist.tracks.as_deref().unwrap_or(&[]));
-      if !should_fallback(&playlist, &songs, safe_limit) {
-        return Ok(page_result(
-          meta_from_playlist(&playlist, &id),
-          songs,
-          offset,
-          safe_limit,
-        ));
-      }
-      page_from_playlist(&playlist, &id, offset, safe_limit).await
-    }
-    Err(_) => fallback_v1(url, offset, safe_limit).await,
-  }
+  let playlist = match fetch_playlist_detail(&id).await {
+    Ok(p) => p,
+    Err(_) => fetch_playlist_detail_v1(&id).await?,
+  };
+  let id = playlist.id.map(|i| i.to_string()).unwrap_or(id);
+  page_from_playlist(&playlist, &id, offset, safe_limit).await
 }
