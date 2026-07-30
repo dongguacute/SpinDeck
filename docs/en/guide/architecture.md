@@ -60,12 +60,15 @@ Cover art is proxied through the custom protocol **`cover://localhost/?url=...`*
 
 ## Frontend notes
 
-- Playlists metadata stay in browser `localStorage`; song lists are fetched through `import_playlist`.
-- The 3D shelf mounts meshes and cover textures only near the scroll viewport to keep memory bounded; empty slots show a loading state until song data is ready.
-- `@spindeck/player` is a **browser client** — the desktop app wires Tauri via `setDesktopBridge`.
+- Playlist metadata stays in browser `localStorage`; song lists are fetched through `import_playlist`.
+- In browse mode the 3D shelf mounts meshes/covers in a scroll viewport window; after playback settle it unloads other books and keeps only the selected cover. See [Performance & Visuals](./performance) for the full policy.
+- Empty slots show a loading state until song metadata and covers are ready.
+- `@spindeck/player` is a **browser client** — the desktop app wires Tauri via `setDesktopBridge`; critical logs can land in the desktop session log (see [Desktop App](./desktop)).
 
 ## Related guides
 
 - [Getting Started](./getting-started)
+- [System Requirements](./system-requirements)
+- [Performance & Visuals](./performance)
 - [Desktop App](./desktop)
 - [Supported Platforms](./platforms)

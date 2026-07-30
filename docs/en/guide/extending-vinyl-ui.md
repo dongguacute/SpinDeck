@@ -208,4 +208,4 @@ CSS is exported via:
 - `@spindeck/vinyl-ui/styles/base.css`
 - `@spindeck/vinyl-ui/styles/<name>.css`
 
-See also [Extending `@spindeck/ui`](./extending-ui) for app-wide theme families and the Material Contract.
+See also [Extending `@spindeck/ui`](./extending-ui) for app-wide theme families and the Material Contract, and [Performance & Visuals](./performance) for atmosphere vs shelf GPU policy.

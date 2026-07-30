@@ -7,13 +7,17 @@ weight: 10
 
 SpinDeck 是一款跨平台黑胶可视化播放器。它在界面中整理歌单，在 3D 专辑架上展示封面，并控制第三方音乐应用的播放。
 
-**一句话架构：** SPA 前端（`apps/web`）+ 仅桌面端的 Tauri 壳（`apps/desktop`）。完整图示与 IPC 列表见 [架构](./architecture)。
+**一句话架构：** SPA 前端（`apps/web`）+ 仅桌面端的 Tauri 壳（`apps/desktop`）。完整图示与 IPC 列表见 [架构](./architecture)；3D 书架与观感策略见 [性能与观感](./performance)。运行最低 / 推荐配置见 [系统要求](./system-requirements)。
 
 ## 环境要求
+
+开发机工具链摘要（终端用户装 Release **不需要** Node / Rust）：
 
 - [Node.js](https://nodejs.org/) ≥ 18（Web / 文档开发与前端构建）
 - [pnpm](https://pnpm.io/) 9.x
 - [Rust](https://rustup.rs/)（stable）— 桌面端（Tauri）需要
+
+完整 OS / 硬件 / WebView 矩阵见 [系统要求](./system-requirements)。
 
 ## 安装
 
@@ -66,7 +70,7 @@ pnpm format        # 代码格式化
 pnpm dev:docs      # 文档站
 ```
 
-请参阅 [桌面应用](./desktop) 了解打包与安装排障，[架构](./architecture) 了解模块划分，或 [支持的平台](./platforms) 了解音乐服务兼容性。
+请参阅 [系统要求](./system-requirements) 了解最低 / 推荐配置，[桌面应用](./desktop) 了解打包与安装排障，[架构](./architecture) 了解模块划分，[性能与观感](./performance) 了解书架内存策略，或 [支持的平台](./platforms) 了解音乐服务兼容性。
 
 ## 扩展 UI
 

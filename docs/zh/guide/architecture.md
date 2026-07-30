@@ -62,11 +62,14 @@ flowchart LR
 ## 前端说明
 
 - 歌单元数据保存在浏览器 `localStorage`；曲目列表通过 `import_playlist` 拉取。
-- 3D 书架仅在滚动视口附近挂载 mesh 与封面纹理以控制内存；数据未就绪的槽位会显示加载状态。
-- `@spindeck/player` 是 **浏览器客户端** — 桌面端通过 `setDesktopBridge` 接入 Tauri。
+- 3D 书架在浏览态按滚动视口窗口挂载 mesh / 封面；进入播放并完成动画后，卸掉身后其余书的 3D 资源，只保留当前封面。细节与设计原则见 [性能与观感](./performance)。
+- 数据未就绪的槽位会显示加载状态，直至曲目元数据与封面就绪。
+- `@spindeck/player` 是 **浏览器客户端** — 桌面端通过 `setDesktopBridge` 接入 Tauri；关键日志可写入桌面会话日志（见 [桌面应用](./desktop)）。
 
 ## 相关指南
 
 - [快速开始](./getting-started)
+- [系统要求](./system-requirements)
+- [性能与观感](./performance)
 - [桌面应用](./desktop)
 - [支持的平台](./platforms)

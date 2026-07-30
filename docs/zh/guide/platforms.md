@@ -29,4 +29,4 @@ weight: 30
 QQ 音乐集成最完整：歌单导入、播放控制与跨设备深链接均可用。
 :::
 
-SPA 与桌面壳如何连接（`invoke` / `cover://`），见 [架构](./architecture)。
+SPA 与桌面壳如何连接（`invoke` / `cover://`），见 [架构](./architecture)。OS / 硬件最低与推荐配置见 [系统要求](./system-requirements)。

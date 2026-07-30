@@ -8,6 +8,7 @@ A modular, interactive vinyl record player UI component library for the SpinDeck
 - **Visual Feedback**: Real-time spinning animation and glowing effects synced with playback status.
 - **Adaptive Layout**: Automatically calculates optimal size and position based on viewport.
 - **Extensible Styling**: CSS-based style inheritance system for easy creation of new visual themes.
+- **Atmosphere-first**: Glow / blur / compositing are part of the playback mood; shelf GPU cull in `@spindeck/web` does **not** remove this layer (see [Performance & Visuals](../../docs/en/guide/performance.md)).
 
 ## Installation
 

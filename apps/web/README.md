@@ -26,11 +26,21 @@ pnpm --filter @spindeck/web lint
 | Path | Notes |
 | --- | --- |
 | `app/` | Routes, components, hooks |
+| `app/components/PlaylistShelf.tsx` | Three.js shelf (viewport window + playback cull) |
 | `app/locales/{lang}/common.json` | i18n strings (no hardcoded UI copy) |
 | `app/assets/` | Source assets (icons, images) |
-| `app/lib/` | Client helpers (`import-api`, theme, playlist store, …) |
+| `app/lib/` | Client helpers (`import-api`, theme, playlist store, logger, …) |
 
 Do not put editable source assets or translation files under `public/`.
+
+## Shelf performance (short)
+
+- **Browse**: mount meshes/covers near the scroll center only
+- **Playback (settled)**: keep only the selected book in 3D; vinyl + backdrop atmosphere stay
+- **Idle**: lower draw rate when the scene is settled; full rate during interaction/animation
+- **Leave route**: dispose WebGL and force context loss
+
+Product policy (atmosphere over legacy-device memory cuts): [Performance & Visuals](../../docs/en/guide/performance.md) / [性能与观感](../../docs/zh/guide/performance.md).
 
 ## Full experience
 

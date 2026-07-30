@@ -7,13 +7,17 @@ weight: 10
 
 SpinDeck is a cross-platform vinyl visualization player. It organizes playlists in the UI, displays them on a 3D album shelf, and controls playback in third-party music apps.
 
-**Architecture in one line:** SPA frontend (`apps/web`) + desktop-only Tauri shell (`apps/desktop`). See [Architecture](./architecture) for the full diagram and IPC list.
+**Architecture in one line:** SPA frontend (`apps/web`) + desktop-only Tauri shell (`apps/desktop`). See [Architecture](./architecture) for the diagram and IPC list, [Performance & Visuals](./performance) for the 3D shelf / atmosphere policy, and [System Requirements](./system-requirements) for minimum / recommended specs.
 
 ## Requirements
+
+Developer toolchain summary (Release end users do **not** need Node / Rust):
 
 - [Node.js](https://nodejs.org/) ≥ 18 (web / docs development and frontend builds)
 - [pnpm](https://pnpm.io/) 9.x
 - [Rust](https://rustup.rs/) (stable) — required for desktop (Tauri)
+
+Full OS / hardware / WebView matrix: [System Requirements](./system-requirements).
 
 ## Install
 
@@ -66,7 +70,7 @@ pnpm format        # Format code
 pnpm dev:docs      # Documentation site
 ```
 
-See [Desktop App](./desktop) for packaging and install troubleshooting, [Architecture](./architecture) for module layout, or [Supported Platforms](./platforms) for music service compatibility.
+See [System Requirements](./system-requirements) for minimum / recommended specs, [Desktop App](./desktop) for packaging and install troubleshooting, [Architecture](./architecture) for module layout, [Performance & Visuals](./performance) for shelf memory policy, or [Supported Platforms](./platforms) for music service compatibility.
 
 ## Extending the UI
 

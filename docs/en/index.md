@@ -20,7 +20,7 @@ features:
   - title: Playlist Management
     details: Create, import, and auto-refresh playlists from QQ Music, NetEase Cloud Music, and Kugou Music. Data stays in your browser; import runs through the desktop app via Tauri invoke.
   - title: 3D Album Shelf
-    details: Browse album artwork on a Three.js-rendered shelf with viewport-aware loading. Tap a record to play and swipe to skip tracks.
+    details: Three.js shelf with viewport-aware loading; after playback settles, only the selected cover stays in 3D alongside the vinyl atmosphere.
   - title: Vinyl Tonearm
     details: Drop the needle to play or lift it to pause — tactile turntable-style interaction synced with your music app.
   - title: Desktop-first Runtime

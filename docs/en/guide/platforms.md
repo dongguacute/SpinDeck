@@ -29,4 +29,4 @@ Only **QQ Music** is fully supported end to end. Other integrations vary by plat
 QQ Music offers the most complete integration: playlist import, playback control, and cross-device deep links.
 :::
 
-For how the SPA and desktop shell connect (`invoke` / `cover://`), see [Architecture](./architecture).
+For how the SPA and desktop shell connect (`invoke` / `cover://`), see [Architecture](./architecture). For OS / hardware floors, see [System Requirements](./system-requirements).

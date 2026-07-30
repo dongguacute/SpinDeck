@@ -46,7 +46,7 @@ This is SpinDeck's playback screen: a translucent vinyl record and draggable ton
 - A Three.js-rendered 3D shelf — flip through album covers like a real rack
 - Tap a record to play; skip tracks with prev/next controls or swipe gestures
 - Dynamic backgrounds from cover art; upload a custom background and tweak blur
-- Viewport-aware loading — meshes and covers mount near the scroll center to keep memory in check
+- Viewport-aware loading in browse mode; after playback settles, off-screen books are unloaded so only the selected cover stays in 3D (atmosphere effects stay)
 
 ### 🎛️ Vinyl Tonearm
 
@@ -109,6 +109,8 @@ SpinDeck is a **SPA frontend** plus a **desktop-only Tauri shell** (native WebVi
 
 ## 📦 Version & Requirements
 
+End-user OS / hardware / WebView floors and recommendations: **[System Requirements](docs/en/guide/system-requirements.md)** (中文：[系统要求](docs/zh/guide/system-requirements.md)).
+
 ### Latest release
 
 Download the newest desktop builds from **[GitHub Releases](https://github.com/dongguacute/SpinDeck/releases)** — the release title and tag show the current version (e.g. `v0.1.0`).
@@ -128,7 +130,7 @@ node -p "require('./package.json').version"
 | [Rust](https://rustup.rs/) | stable | Desktop (Tauri) dev & release builds |
 | Platform toolchain | — | e.g. Xcode Command Line Tools on macOS |
 
-These are declared in root [`package.json`](package.json) (`engines.node`, `packageManager`). CI uses **Node 20** and **pnpm 9**.
+These are declared in root [`package.json`](package.json) (`engines.node`, `packageManager`). CI uses **Node 20** and **pnpm 9**. End users installing a Release build do **not** need Node.js.
 
 Enable the pinned pnpm via [Corepack](https://nodejs.org/api/corepack.html):
 
@@ -230,7 +232,7 @@ pnpm + Turborepo monorepo. **UI lives in TypeScript; playlist import and local p
 
 **Desktop IPC:** `import_playlist`, `play_song`, `pause_song`, `resume_song`, `playback_status`, `set_play_mode`.
 
-Longer write-up: [Architecture](docs/en/guide/architecture.md) (中文：[架构](docs/zh/guide/architecture.md)). Each app and shared package also has its own README.
+Longer write-up: [Architecture](docs/en/guide/architecture.md) · [System Requirements](docs/en/guide/system-requirements.md) · [Performance & Visuals](docs/en/guide/performance.md) (中文：[架构](docs/zh/guide/architecture.md) · [系统要求](docs/zh/guide/system-requirements.md) · [性能与观感](docs/zh/guide/performance.md)). Each app and shared package also has its own README.
 
 ---
 

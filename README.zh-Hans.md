@@ -46,7 +46,7 @@
 - Three.js 渲染的 3D 专辑架 — 像真实唱片架一样翻阅封面
 - 点击唱片播放；通过上一首/下一首或滑动手势切歌
 - 封面驱动的动态背景；可上传自定义背景并调节模糊
-- 视口按需加载 — 仅在滚动中心附近挂载 mesh 与封面，控制内存占用
+- 浏览态按视口按需加载；进入播放并稳定后卸掉身后书本，只保留当前封面的 3D（氛围效果保留）
 
 ### 🎛️ 黑胶唱臂
 
@@ -109,6 +109,8 @@ SpinDeck 是 **SPA 前端** + **仅桌面端提供的 Tauri 壳**（原生 WebVi
 
 ## 📦 版本与依赖
 
+终端用户 OS / 硬件 / WebView 最低与推荐配置：**[系统要求](docs/zh/guide/system-requirements.md)**（English：[System Requirements](docs/en/guide/system-requirements.md)）。
+
 ### 最新发布版
 
 从 **[GitHub Releases](https://github.com/dongguacute/SpinDeck/releases)** 下载最新桌面构建 — 发布标题与标签显示当前版本（如 `v0.1.0`）。
@@ -128,7 +130,7 @@ node -p "require('./package.json').version"
 | [Rust](https://rustup.rs/) | stable | 桌面端（Tauri）开发与发布构建 |
 | 平台工具链 | — | 如 macOS 上的 Xcode Command Line Tools |
 
-以上要求见根目录 [`package.json`](package.json)（`engines.node`、`packageManager`）。CI 使用 **Node 20** 与 **pnpm 9**。
+以上要求见根目录 [`package.json`](package.json)（`engines.node`、`packageManager`）。CI 使用 **Node 20** 与 **pnpm 9**。安装 Release 包的终端用户**不需要** Node.js。
 
 通过 [Corepack](https://nodejs.org/api/corepack.html) 启用锁定的 pnpm：
 
@@ -230,7 +232,7 @@ pnpm + Turborepo 单体仓库。**UI 在 TypeScript；歌单导入与本地播�
 
 **桌面 IPC：** `import_playlist`、`play_song`、`pause_song`、`resume_song`、`playback_status`、`set_play_mode`。
 
-更完整的说明见 [架构](docs/zh/guide/architecture.md)（English：[Architecture](docs/en/guide/architecture.md)）。各 app 与共享 package 另有独立 README。
+更完整的说明见 [架构](docs/zh/guide/architecture.md) · [系统要求](docs/zh/guide/system-requirements.md) · [性能与观感](docs/zh/guide/performance.md)（English：[Architecture](docs/en/guide/architecture.md) · [System Requirements](docs/en/guide/system-requirements.md) · [Performance & Visuals](docs/en/guide/performance.md)）。各 app 与共享 package 另有独立 README。
 
 ---
 

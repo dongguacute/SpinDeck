@@ -45,14 +45,23 @@ const COVER_X = 0.95;
 const COVER_Z = 0.18;
 /**
  * Visible + preload band around scroll center.
- * ~12 on each side covers typical desktop FOV without mounting the whole shelf.
+ * ~8 on each side covers typical desktop FOV; narrower than before to cut resident textures.
  */
-const COVER_WINDOW = 24;
+const COVER_WINDOW = 16;
 /** Match typical platform CDN sizes; downscale only oversized originals */
 const COVER_TEX_MAX = 512;
 /** Spine canvas — same resolution as before (sharp spine text) */
 const SPINE_W = 40;
 const SPINE_H = 1024;
+/** Cap framebuffer scale: Retina 2x → 1.5x (~44% fewer pixels, still sharp enough) */
+const MAX_PIXEL_RATIO = 1.5;
+/** When the shelf is visually settled, draw at this Hz instead of every rAF */
+const IDLE_FPS = 12;
+/**
+ * After enter-playback lean finishes, wait for neighboring books to finish
+ * sliding off-screen before dropping their GPU meshes/textures.
+ */
+const PLAYBACK_CULL_DELAY_MS = 900;
 
 const _pivotEuler = new THREE.Euler();
 const _pivotQuat = new THREE.Quaternion();
@@ -433,6 +442,11 @@ export default function PlaylistShelf({
     [songs, songsRevision],
   );
   const animatingRef = useRef(false);
+  /** Playback settled: only keep the selected book's mesh/textures resident. */
+  const playbackCullRef = useRef(false);
+  /** Remount shelf books without pop-in (used when exiting playback). */
+  const suppressPopInRef = useRef(false);
+  const playbackCullTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevCoverOverlayRef = useRef(coverOverlay);
   const coverPivotWorldRef = useRef<THREE.Vector3 | null>(null);
 
@@ -517,10 +531,15 @@ export default function PlaylistShelf({
     const lookTarget = new THREE.Vector3(0, 0, 0);
     camera.lookAt(lookTarget);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: true,
+      powerPreference: "low-power",
+      stencil: false,
+    });
     renderer.setClearColor(0x000000, 0);
     renderer.setSize(w, h);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.1;
     container.appendChild(renderer.domElement);
@@ -891,14 +910,42 @@ export default function PlaylistShelf({
     };
     renderer.domElement.addEventListener("wheel", onWheel, { passive: false });
 
-    // --- 渲染循环（后台标签页跳过绘制，前台保持满帧以保证观感一致） ---
+    // --- 渲染循环（后台跳过；交互/动画时满帧，静止时降到 IDLE_FPS） ---
     let animId = 0;
+    let lastIdleDraw = 0;
+    const idleIntervalMs = 1000 / IDLE_FPS;
     const textureLoader = new THREE.TextureLoader();
     const coverLoaded = new Set<number>();
     let coverCenter = scrollToCenterIndex(scrollXRef.current, totalW, count);
     let syncGen = 0;
     let windowFrom = -1;
     let windowTo = -1;
+
+    const isShelfBusy = () => {
+      if (dragging || Math.abs(vel) > 0.0005) return true;
+      if (animatingRef.current) return true;
+      if (gsap.isTweening(mainGroup.position)) return true;
+      if (gsap.isTweening(camera.position) || gsap.isTweening(lookTarget)) return true;
+      for (const group of groups) {
+        if (
+          gsap.isTweening(group.position) ||
+          gsap.isTweening(group.rotation) ||
+          gsap.isTweening(group.scale)
+        ) {
+          return true;
+        }
+        if (selectedIndexRef.current === null || selectedIndexRef.current === undefined) {
+          if (
+            Math.abs(group.rotation.y) > 0.001 ||
+            Math.abs(group.rotation.x) > 0.001 ||
+            Math.abs(group.position.z) > 0.001
+          ) {
+            return true;
+          }
+        }
+      }
+      return false;
+    };
 
     const animate = () => {
       animId = requestAnimationFrame(animate);
@@ -922,6 +969,13 @@ export default function PlaylistShelf({
         if (Math.abs(vel) < 0.0005) vel = 0;
       }
 
+      const busy = isShelfBusy();
+      if (!busy) {
+        const now = performance.now();
+        if (now - lastIdleDraw < idleIntervalMs) return;
+        lastIdleDraw = now;
+      }
+
       renderer.render(scene, camera);
     };
     animate();
@@ -931,7 +985,7 @@ export default function PlaylistShelf({
       camera.aspect = cw / ch;
       camera.updateProjectionMatrix();
       renderer.setSize(cw, ch);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO));
       if (selectedIndexRef.current !== null && selectedIndexRef.current !== undefined) {
         camera.position.z = shelfCoverPlaybackCamZ(cw, ch);
         camera.lookAt(lookTarget);
@@ -958,7 +1012,10 @@ export default function PlaylistShelf({
     }
 
     function popInBook(group: THREE.Group, index: number) {
-      if (selectedIndexRef.current !== null && selectedIndexRef.current !== undefined) {
+      if (
+        suppressPopInRef.current ||
+        (selectedIndexRef.current !== null && selectedIndexRef.current !== undefined)
+      ) {
         group.visible = true;
         group.scale.set(1, 1, 1);
         return;
@@ -1142,9 +1199,23 @@ export default function PlaylistShelf({
 
     syncCovers = (center: number, force = false) => {
       coverCenter = center;
-      const half = Math.floor(COVER_WINDOW / 2);
-      const from = Math.max(0, center - half);
-      const to = Math.min(count, center + half + 1);
+      const sel = selectedIndexRef.current;
+      const playbackOnly =
+        playbackCullRef.current &&
+        sel !== null &&
+        sel !== undefined;
+
+      let from: number;
+      let to: number;
+      if (playbackOnly) {
+        // Settled playback: only the focused cover stays on the GPU.
+        from = sel;
+        to = sel + 1;
+      } else {
+        const half = Math.floor(COVER_WINDOW / 2);
+        from = Math.max(0, center - half);
+        to = Math.min(count, center + half + 1);
+      }
 
       // Skip only when the mounted window is unchanged and not forced.
       if (!force && from === windowFrom && to === windowTo) {
@@ -1156,11 +1227,10 @@ export default function PlaylistShelf({
       windowFrom = from;
       windowTo = to;
 
-      // Always keep the selected book mounted.
       const keep = new Set<number>();
       for (let i = from; i < to; i++) keep.add(i);
-      const sel = selectedIndexRef.current;
-      if (sel !== null && sel !== undefined) keep.add(sel);
+      // While enter/exit animates, still pin the selected book even if outside band.
+      if (!playbackOnly && sel !== null && sel !== undefined) keep.add(sel);
 
       for (let i = 0; i < count; i++) {
         if (!keep.has(i) && (meshes[i] || coverLoaded.has(i))) {
@@ -1216,6 +1286,11 @@ export default function PlaylistShelf({
     return () => {
       persistScroll(scrollXRef.current);
       cancelAnimationFrame(animId);
+      if (playbackCullTimerRef.current !== null) {
+        clearTimeout(playbackCullTimerRef.current);
+        playbackCullTimerRef.current = null;
+      }
+      playbackCullRef.current = false;
       renderer.domElement.removeEventListener("mousemove", handleMouseMove);
       renderer.domElement.removeEventListener("pointerdown", onDown);
       renderer.domElement.removeEventListener("wheel", onWheel);
@@ -1227,8 +1302,9 @@ export default function PlaylistShelf({
       }
       sharpGeo.dispose();
       roundedGeo.dispose();
-      renderer.dispose();
       scene.clear();
+      renderer.dispose();
+      renderer.forceContextLoss();
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }
@@ -1288,17 +1364,22 @@ export default function PlaylistShelf({
 
     prevCoverOverlayRef.current = false;
     coverPivotWorldRef.current = null;
+    if (playbackCullTimerRef.current !== null) {
+      clearTimeout(playbackCullTimerRef.current);
+      playbackCullTimerRef.current = null;
+    }
 
     const { groups, originalPositions, totalW } = state;
     // 确保书的边缘完全超出屏幕（书深 6.9，屏幕可见宽度约 14）
     const slideDist = Math.max(totalW + 8, 14);
 
     if (next !== null && next !== undefined) {
-      state.syncCovers(next, true);
       // 如果是切歌（已经在播放态），跳过大部分动画，直接定位
       const isSwitching = prev !== null && prev !== undefined;
 
       if (isSwitching) {
+        playbackCullRef.current = true;
+        state.syncCovers(next, true);
         // 立即重置旧书，定位新书
         const prevGroup = groups[prev];
         prevGroup.rotation.set(0, 0, 0);
@@ -1335,6 +1416,9 @@ export default function PlaylistShelf({
         return;
       }
 
+      // Enter playback: keep neighboring meshes for the slide-out, cull after they leave.
+      playbackCullRef.current = false;
+      state.syncCovers(next, true);
       animatingRef.current = true;
 
       gsap.killTweensOf(state.camera.position);
@@ -1444,6 +1528,14 @@ export default function PlaylistShelf({
               );
               if (selectedIndexRef.current === next) {
                 onSelectionAnimationCompleteRef.current?.(next);
+                playbackCullTimerRef.current = setTimeout(() => {
+                  playbackCullTimerRef.current = null;
+                  if (selectedIndexRef.current !== next) return;
+                  const live = sceneRef.current;
+                  if (!live) return;
+                  playbackCullRef.current = true;
+                  live.syncCovers(next, true);
+                }, PLAYBACK_CULL_DELAY_MS);
               }
             },
           });
@@ -1471,6 +1563,13 @@ export default function PlaylistShelf({
       }
     } else if (prev !== null && prev !== undefined) {
       animatingRef.current = true;
+      playbackCullRef.current = false;
+
+      // Remount the browse window before books slide back (no pop-in).
+      const center = scrollToCenterIndex(scrollXRef.current, totalW, groups.length);
+      suppressPopInRef.current = true;
+      state.syncCovers(center, true);
+      suppressPopInRef.current = false;
 
       gsap.killTweensOf(state.camera.position);
       gsap.killTweensOf(state.lookTarget);

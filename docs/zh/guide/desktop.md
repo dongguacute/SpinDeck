@@ -17,7 +17,7 @@ SpinDeck 提供适用于 macOS、Windows 和 Linux 的 [Tauri 2](https://v2.taur
 | Rust `playlist/` | QQ / 网易云 / 酷狗导入 |
 | Rust `playback/` | 本地音乐应用控制（macOS AppleScript / `open`） |
 
-完整 monorepo 图示与 IPC 表见 [架构](./architecture)。应用包说明：[`apps/desktop/README.md`](https://github.com/dongguacute/SpinDeck/blob/main/apps/desktop/README.md)。
+完整 monorepo 图示与 IPC 表见 [架构](./architecture)。3D 书架内存 / 观感策略见 [性能与观感](./performance)。OS / 硬件最低与推荐配置见 [系统要求](./system-requirements)。应用包说明：[`apps/desktop/README.md`](https://github.com/dongguacute/SpinDeck/blob/main/apps/desktop/README.md)。
 
 ## 下载
 
@@ -31,7 +31,8 @@ SpinDeck 提供适用于 macOS、Windows 和 Linux 的 [Tauri 2](https://v2.taur
 
 - **内嵌 Rust 能力** — 歌单导入、封面代理与播放控制由桌面端 Rust 通过 Tauri `invoke` / `cover://` 提供
 - **移除 Node SSR 依赖** — 删除 Web / 桌面侧 Node API 路由与 `@spindeck/core`；用户机器不再需要 Node.js 即可运行完整桌面版
-- **3D 书架按需加载** — 按视口可见性动态加载 3D 资源，降低首屏成本与内存占用
+- **3D 书架按需加载** — 浏览态按视口窗口挂载；播放态在动画结束后只保留当前封面的 3D 资源（详见 [性能与观感](./performance)）
+- **会话日志** — 原生层与前端关键错误写入按次启动的会话日志，便于白屏 / 闪退排查
 - **文档与工具链** — 同步架构/开发文档，更新 lint-staged、`.gitignore` 与仓库清理规则
 
 上一版本：[v1.0.0-beta.5](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.5)
@@ -114,6 +115,8 @@ SpinDeck 在 macOS 上通过 AppleScript 控制本地音乐客户端（QQ 音乐
 
 ## 从源码构建
 
+开发工具链与完整系统矩阵见 [系统要求](./system-requirements)。以下为速查。
+
 ### 额外要求
 
 - [Rust](https://rustup.rs/)（stable）
@@ -138,6 +141,15 @@ pnpm --filter @spindeck/desktop build
 构建 SPA 到 Tauri `frontendDist`，再执行 `tauri build`。打包后的应用通过 Tauri 原生资源协议加载 SPA，并以 `invoke` / `cover://` 提供桌面能力 — **用户机器不需要 Node.js**。
 
 产物输出至 `apps/desktop/src-tauri/target/release/bundle/`（macOS 为 `.app`，Windows 为 `.msi` / `.exe` 等）。
+
+::: tip 测内存请用正式包
+开发模式会额外跑 Vite（`http://localhost:5173`）与未压缩资源，活动监视器数字会偏高。对比 WebContent / Graphics 占用时，请使用本节的生产构建产物。
+:::
+
+### 运行时说明（简要）
+
+- **安装包很小**，常驻内存主要来自系统 WebView + 前端 3D / 合成层，而不是 Rust 二进制本身。
+- 产品默认 **保留氛围效果**（模糊背景、毛玻璃、黑胶光晕等）；通过卸掉屏外 3D 资源控制峰值，而不是降低可见画质。详见 [性能与观感](./performance)。
 
 ### 图标
 

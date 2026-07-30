@@ -10,6 +10,7 @@ Browser-side playback client for SpinDeck. It builds deep links / play URLs, tra
 | Deep links & app pre-launch helpers | Playlist import (Rust `playlist/` providers) |
 | Session / shelf session state | UI components (see `@spindeck/vinyl-ui`) |
 | `setDesktopBridge` for Tauri IPC | HTTP `/api` endpoints (removed) |
+| Shared client logger helpers | Desktop session log paths (see [Desktop guide](../../docs/en/guide/desktop.md)) |
 
 Supported control depth still varies by platform — see the [Supported Platforms](../../docs/en/guide/platforms.md) guide. QQ Music is the most complete today; NetEase local control is desktop-oriented; Kugou is import-only at the product level.
 

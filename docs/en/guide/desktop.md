@@ -17,7 +17,7 @@ SpinDeck ships a [Tauri 2](https://v2.tauri.app/) desktop shell for macOS, Windo
 | Rust `playlist/` | QQ / NetEase / Kugou import providers |
 | Rust `playback/` | Local music-app control (macOS AppleScript / `open`) |
 
-See [Architecture](./architecture) for the monorepo diagram and IPC table. App package notes: [`apps/desktop/README.md`](https://github.com/dongguacute/SpinDeck/blob/main/apps/desktop/README.md).
+See [Architecture](./architecture) for the monorepo diagram and IPC table, [Performance & Visuals](./performance) for the 3D shelf memory / atmosphere policy, and [System Requirements](./system-requirements) for OS / hardware floors. App package notes: [`apps/desktop/README.md`](https://github.com/dongguacute/SpinDeck/blob/main/apps/desktop/README.md).
 
 ## Download
 
@@ -31,7 +31,8 @@ Pick the asset for your platform (`.dmg` / `.app` on macOS, `.msi` / `.exe` on W
 
 - **Embedded Rust capabilities** — Playlist import, cover proxy, and playback control run in the desktop Rust runtime via Tauri `invoke` / `cover://`
 - **Node SSR removed** — Drops web/desktop Node API routes and `@spindeck/core`; full desktop builds no longer need Node.js on the user's machine
-- **Viewport-based 3D shelf loading** — Loads 3D assets by viewport visibility to cut initial cost and memory use
+- **Viewport-based 3D shelf loading** — Browse mode mounts a viewport window; after playback settles only the selected cover stays in 3D (see [Performance & Visuals](./performance))
+- **Session logs** — Native layer and critical frontend errors write per-launch session logs for white-screen / crash triage
 - **Docs & tooling** — Syncs architecture/dev docs; updates lint-staged, `.gitignore`, and repository cleanup rules
 
 Previous release: [v1.0.0-beta.5](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.5)
@@ -114,6 +115,8 @@ If the app still won’t open, do not run it directly from the mounted DMG. Copy
 
 ## Build from Source
 
+Full toolchain and OS matrix: [System Requirements](./system-requirements). Quick checklist below.
+
 ### Additional Requirements
 
 - [Rust](https://rustup.rs/) (stable)
@@ -138,6 +141,15 @@ pnpm --filter @spindeck/desktop build
 Builds the SPA into Tauri `frontendDist`, then runs `tauri build`. The packaged app loads the SPA via Tauri’s native asset protocol and uses `invoke` / `cover://` for desktop features — **no Node.js on the user’s machine**.
 
 Output is written to `apps/desktop/src-tauri/target/release/bundle/` (`.app` on macOS, `.msi` / `.exe` on Windows, etc.).
+
+::: tip Profile memory on release builds
+Dev mode also runs Vite (`http://localhost:5173`) with uncompressed assets, so Activity Monitor numbers run high. Compare WebContent / Graphics using the production artifacts from this section.
+:::
+
+### Runtime notes (short)
+
+- The **installer is small**; resident memory is dominated by the system WebView plus frontend 3D / compositing—not the Rust binary itself.
+- By default SpinDeck **keeps atmosphere effects** (blurred backdrop, glass, vinyl glow, etc.) and controls peaks by unloading off-screen 3D resources rather than softening the visible frame. See [Performance & Visuals](./performance).
 
 ### Icons
 

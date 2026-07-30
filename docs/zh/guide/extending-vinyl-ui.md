@@ -208,4 +208,4 @@ CSS 通过以下路径导出：
 - `@spindeck/vinyl-ui/styles/base.css`
 - `@spindeck/vinyl-ui/styles/<name>.css`
 
-另请参阅 [扩展 `@spindeck/ui`](./extending-ui)，了解应用级主题族与材质契约。
+另请参阅 [扩展 `@spindeck/ui`](./extending-ui)，了解应用级主题族与材质契约；氛围效果与书架 GPU 策略见 [性能与观感](./performance)。

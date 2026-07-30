@@ -41,7 +41,13 @@ This project is a monorepo managed with `pnpm` and `turborepo`. To ensure consis
   - `packages/ui`: General-purpose UI components. See [README.md](packages/ui/README.md)
   - `packages/picker`: Cover color extraction. See [README.md](packages/picker/README.md)
   - `packages/eslint-config`: Shared linting configurations. See [README.md](packages/eslint-config/README.md)
-- `docs/`: VitePress docs (en/zh), including [Architecture](docs/en/guide/architecture.md).
+- `docs/`: VitePress docs (en/zh), including [Architecture](docs/en/guide/architecture.md) and [Performance & Visuals](docs/en/guide/performance.md).
+
+## Performance & visuals
+
+- SpinDeck is an **atmosphere-first** product for modern devices. Do **not** strip blur, glass, vinyl glow, or antialiasing by default to chase lower Activity Monitor numbers.
+- Prefer unloading **off-screen** 3D resources (viewport window + playback cull of non-selected books). Keep the visible frame sharp.
+- Profile memory on **release** desktop builds, not Vite `localhost` dev.
 
 ## Coding Standards
 
