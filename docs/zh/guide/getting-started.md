@@ -13,7 +13,7 @@ SpinDeck 是一款跨平台黑胶可视化播放器。它在界面中整理歌�
 
 开发机工具链摘要（终端用户装 Release **不需要** Node / Rust）：
 
-- [Node.js](https://nodejs.org/) ≥ 18（Web / 文档开发与前端构建）
+- [Node.js](https://nodejs.org/) ≥ 22.13（Web / 文档开发与前端构建）
 - [pnpm](https://pnpm.io/) 11.x
 - [Rust](https://rustup.rs/)（stable）— 桌面端（Tauri）需要
 

@@ -13,7 +13,7 @@ SpinDeck is a cross-platform vinyl visualization player. It organizes playlists 
 
 Developer toolchain summary (Release end users do **not** need Node / Rust):
 
-- [Node.js](https://nodejs.org/) ≥ 18 (web / docs development and frontend builds)
+- [Node.js](https://nodejs.org/) ≥ 22.13 (web / docs development and frontend builds)
 - [pnpm](https://pnpm.io/) 11.x
 - [Rust](https://rustup.rs/) (stable) — required for desktop (Tauri)
 

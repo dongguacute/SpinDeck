@@ -151,7 +151,7 @@ SpinDeck 本身不播放音频文件。完整「唱臂控制」还需要本机�
 
 | 工具 | 版本 | 用途 |
 | --- | --- | --- |
-| [Node.js](https://nodejs.org/) | **≥ 18**（CI 常用 20） | Web / 文档与前端构建 |
+| [Node.js](https://nodejs.org/) | **≥ 22.13**（CI 用 22） | Web / 文档与前端构建 |
 | [pnpm](https://pnpm.io/) | **11.x**（仓库锁定 `11.18.0`） | 包管理 |
 | [Rust](https://rustup.rs/) | **stable** | 桌面 Tauri 构建 |
 | 平台工具链 | 见下 | 链接原生依赖 |
@@ -190,5 +190,5 @@ GitHub Release 工作流当前构建：
 | macOS 最低系统 | `apps/desktop/src-tauri/tauri.conf.json` → `bundle.macOS.minimumSystemVersion` | `10.15` |
 | 默认窗口 | 同上 → `app.windows[0]` | `1280×800` |
 | 最小窗口 | 同上 | `960×640` |
-| Node engines | 根目录 `package.json` | `>=18` |
+| Node engines | 根目录 `package.json` | `>=22.13` |
 | 包管理器 | 根目录 `package.json` → `packageManager` | `pnpm@11.18.0` |
