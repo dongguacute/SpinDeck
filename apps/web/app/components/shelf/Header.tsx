@@ -78,38 +78,34 @@ export function Header({
   if (inPlayback) {
     return (
       <div className="shelf-header-root">
-        <div className="shelf-header-bar">
-          <div
-            className="shelf-header-cluster"
+        <div className="shelf-header-bar shelf-header-bar--playback">
+          <button
+            type="button"
+            onClick={handleExitPlayback}
+            className="shelf-header-action shelf-header-exit flex items-center gap-1.5 px-2.5 py-1.5 md:px-3.5 md:py-2 rounded-xl border text-[10px] md:text-xs font-medium transition-all backdrop-blur-sm cursor-pointer"
             style={{
-              backgroundColor: "var(--surface-color)",
-              borderColor: "var(--border-color)",
-              boxShadow: "var(--shadow-card)",
+              backgroundColor: chrome.surface,
+              borderColor: chrome.border,
+              color: chrome.text,
+              opacity: chromeBtnIdleOpacity,
             }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = chrome.borderHover;
+              e.currentTarget.style.backgroundColor = chrome.surfaceHover;
+              e.currentTarget.style.opacity = "1";
+              e.currentTarget.style.transform = "scale(1.02)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = chrome.border;
+              e.currentTarget.style.backgroundColor = chrome.surface;
+              e.currentTarget.style.opacity = String(chromeBtnIdleOpacity);
+              e.currentTarget.style.transform = "scale(1)";
+            }}
+            title={t("shelf.exit_playback_title")}
           >
-            <button
-              type="button"
-              onClick={handleExitPlayback}
-              className="shelf-header-seg shelf-header-seg--action"
-              style={{
-                backgroundColor: chrome.surface,
-                color: chrome.text,
-                opacity: chromeBtnIdleOpacity,
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = chrome.surfaceHover;
-                e.currentTarget.style.opacity = "1";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = chrome.surface;
-                e.currentTarget.style.opacity = String(chromeBtnIdleOpacity);
-              }}
-              title={t("shelf.exit_playback_title")}
-            >
-              <LogOut className="w-3.5 h-3.5 shrink-0" />
-              <span className="shelf-header-seg-label">{t("shelf.exit_playback")}</span>
-            </button>
-          </div>
+            <LogOut className="w-3.5 h-3.5" />
+            <span className="hidden md:inline">{t("shelf.exit_playback")}</span>
+          </button>
         </div>
       </div>
     );
