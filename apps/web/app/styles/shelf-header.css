@@ -1,5 +1,5 @@
 /* ============================================================
-   Shelf page header — web vs desktop overlay
+   Shelf page header — unified center cluster (web + desktop)
    ============================================================ */
 .shelf-header-root {
   position: absolute;
@@ -11,57 +11,210 @@
 
 .shelf-header-bar {
   position: relative;
-}
-
-.shelf-header-back,
-.shelf-header-action {
-  position: absolute;
-  top: 1rem;
-  pointer-events: auto;
-}
-
-.shelf-header-back {
-  left: 1rem;
-}
-
-.shelf-header-action {
-  right: 1rem;
-}
-
-.shelf-header-exit {
-  left: 1rem;
-  right: auto;
+  display: flex;
+  justify-content: center;
+  padding: 1rem 1rem 0;
+  box-sizing: border-box;
 }
 
 @media (min-width: 768px) {
-  .shelf-header-exit {
-    left: auto;
-    right: 1.5rem;
+  .shelf-header-bar {
+    padding-top: 1.5rem;
   }
 }
 
-.shelf-header-center {
-  position: absolute;
-  top: 1rem;
-  left: 50%;
-  transform: translateX(-50%);
+/* 一体胶囊：左操作 | 歌单元数据 | 右操作 */
+.shelf-header-cluster {
+  display: flex;
+  align-items: stretch;
+  max-width: min(640px, calc(100% - 2rem));
+  border: 1px solid;
+  border-radius: 1rem;
   pointer-events: auto;
-  max-width: calc(100% - 12rem);
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: opacity 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.shelf-header-seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: none;
+  background: transparent;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.2;
+  transition: background-color 0.15s ease, opacity 0.15s ease, color 0.15s ease;
 }
 
 @media (min-width: 768px) {
-  .shelf-header-back,
-  .shelf-header-action,
-  .shelf-header-center {
-    top: 1.5rem;
+  .shelf-header-seg {
+    gap: 0.45rem;
+    font-size: 12px;
   }
+}
 
-  .shelf-header-back {
-    left: 1.5rem;
+.shelf-header-seg--action {
+  padding: 0.45rem 0.7rem;
+  flex-shrink: 0;
+}
+
+.shelf-header-seg--action:hover {
+  background-color: var(--surface-hover);
+}
+
+@media (min-width: 768px) {
+  .shelf-header-seg--action {
+    padding: 0.55rem 0.9rem;
   }
+}
 
-  .shelf-header-action {
-    right: 1.5rem;
+.shelf-header-seg--meta {
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 0.4rem;
+  padding: 0.4rem 0.55rem;
+  cursor: default;
+}
+
+@media (min-width: 768px) {
+  .shelf-header-seg--meta {
+    gap: 0.55rem;
+    padding: 0.45rem 0.75rem;
+  }
+}
+
+.shelf-header-seg--prelaunch {
+  padding: 0.45rem 0.7rem;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.shelf-header-seg--prelaunch:hover {
+  opacity: 1;
+  filter: brightness(1.05);
+}
+
+@media (min-width: 768px) {
+  .shelf-header-seg--prelaunch {
+    padding: 0.55rem 0.9rem;
+  }
+}
+
+.shelf-header-seg-label {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .shelf-header-seg-label {
+    display: inline;
+  }
+}
+
+.shelf-header-divider {
+  width: 1px;
+  align-self: stretch;
+  margin-block: 0.45rem;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.shelf-header-meta-main {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.shelf-header-title {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  max-width: 7.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 0.7s, opacity 0.7s;
+}
+
+@media (min-width: 768px) {
+  .shelf-header-title {
+    font-size: 14px;
+    max-width: 11rem;
+  }
+}
+
+.shelf-header-count {
+  flex-shrink: 0;
+  font-size: 10px;
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.4rem;
+  border: 1px solid;
+  transition: color 0.7s, background-color 0.7s, border-color 0.7s;
+}
+
+@media (min-width: 768px) {
+  .shelf-header-count {
+    font-size: 12px;
+    padding: 0.15rem 0.45rem;
+  }
+}
+
+.shelf-header-meta-tools {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+  flex-shrink: 0;
+  margin-left: 0.1rem;
+}
+
+.shelf-header-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: transparent;
+  cursor: pointer;
+  transition: color 0.15s ease, opacity 0.15s ease, background-color 0.15s ease;
+}
+
+.shelf-header-icon-btn:disabled {
+  cursor: not-allowed;
+}
+
+.shelf-header-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 9px;
+  margin-left: 0.15rem;
+  transition: color 0.7s;
+}
+
+@media (min-width: 768px) {
+  .shelf-header-live {
+    font-size: 10px;
+  }
+}
+
+.shelf-header-live-dot {
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+}
+
+@media (min-width: 768px) {
+  .shelf-header-live-dot {
+    width: 6px;
+    height: 6px;
   }
 }
 
@@ -91,10 +244,10 @@ html[data-tauri-overlay] .desktop-shelf-page .shelf-header-root {
 html[data-tauri-overlay] .desktop-shelf-page .shelf-header-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   width: 100%;
   height: 100%;
-  padding-inline: 1rem;
+  padding: 0 1rem;
   padding-left: var(--desktop-traffic-light-width);
   box-sizing: border-box;
   pointer-events: auto;
@@ -102,29 +255,10 @@ html[data-tauri-overlay] .desktop-shelf-page .shelf-header-bar {
   app-region: drag;
 }
 
-html[data-tauri-overlay] .desktop-shelf-page .shelf-header-bar:has(.shelf-header-exit) {
-  justify-content: flex-end;
-}
-
-html[data-tauri-overlay] .desktop-shelf-page .shelf-header-back,
-html[data-tauri-overlay] .desktop-shelf-page .shelf-header-action,
-html[data-tauri-overlay] .desktop-shelf-page .shelf-header-exit {
-  position: static;
-  top: auto;
-  left: auto;
-  right: auto;
-  transform: none;
-  flex-shrink: 0;
+html[data-tauri-overlay] .desktop-shelf-page .shelf-header-cluster {
+  max-width: min(640px, calc(100% - var(--desktop-traffic-light-width) - 1.5rem));
   -webkit-app-region: no-drag;
-}
-
-html[data-tauri-overlay] .desktop-shelf-page .shelf-header-center {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  max-width: min(520px, calc(100% - 22rem));
-  -webkit-app-region: no-drag;
+  app-region: no-drag;
 }
 
 /* 播放层不遮挡顶栏，避免吞掉拖拽/点击 */
