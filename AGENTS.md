@@ -23,23 +23,25 @@ This project is a monorepo managed with `pnpm` and `turborepo`. To ensure consis
 
 ## Project Structure
 
-- `apps/web`: The main web application. See [README.md](apps/web/README.md)
+- `apps/web`: The main web application (SPA). See [README.md](apps/web/README.md)
   - **Asset Management**: Do NOT put any files that need modification (like images, icons, or translation files) in the `public` folder.
   - **i18n**: Translation files MUST be placed in `apps/web/app/locales`.
   - **Assets**: Images and other static assets that are part of the source code should be placed in `apps/web/app/assets`.
   - **App icon source**: `apps/web/app/assets/icons/SpinDeckLogo.svg` is the canonical logo for web favicon and desktop (Tauri) icons.
-- `apps/desktop`: Tauri 2 desktop shell for macOS / Windows / Linux. The Tauri project lives at `apps/desktop/src-tauri` only — do NOT create a root-level `src-tauri` directory.
-  - **Dev**: `pnpm --filter @spindeck/desktop dev` (loads `@spindeck/web` via `http://localhost:5173`; the web dev server must be running or started by Tauri’s `beforeDevCommand`).
-  - **Build**: `pnpm --filter @spindeck/desktop build` (builds web, bundles runtime resources, then runs `tauri build`).
+  - **API**: The web app calls `/api/*` only; there is no Node SSR API. Playlist import / playback require the desktop Rust server.
+- `apps/desktop`: Tauri 2 desktop shell for macOS / Windows / Linux. See [README.md](apps/desktop/README.md). The Tauri project lives at `apps/desktop/src-tauri` only — do NOT create a root-level `src-tauri` directory.
+  - **Dev**: `pnpm --filter @spindeck/desktop dev` (loads `@spindeck/web` via `http://localhost:5173` with Vite proxy to Rust API on `:17345`; the web dev server must be running or started by Tauri’s `beforeDevCommand`).
+  - **Build**: `pnpm --filter @spindeck/desktop build` (builds web SPA, copies `build/client` into Tauri `resources/web`, then runs `tauri build`). The embedded Rust HTTP server serves static UI + `/api/*` — no Node.js runtime on the user machine.
+  - **Rust layout** (`apps/desktop/src-tauri/src`): `app/` (Tauri shell), `server/` (HTTP lifecycle + SPA), `api/` (route handlers), `playlist/` (import providers), `playback/` (local music-app control), `util/` (shared helpers), `types.rs` (DTOs).
   - **Icons**: Desktop icons reuse `SpinDeckLogo.svg` with transparent padding (`CONTENT_RATIO` in `apps/desktop/scripts/generate-icons.mjs`, default `0.78`). Run `pnpm desktop:icons` after logo or ratio changes.
   - **Generated output**: `apps/desktop/src-tauri/resources/` and `apps/desktop/.cache/` are build artifacts — do not commit.
-- `packages/`: Shared libraries and components.
-  - `packages/core`: Core logic and utilities. See [README.md](packages/core/README.md)
-  - `packages/player`: Music player integration logic. See [README.md](packages/player/README.md)
+- `packages/`: Shared libraries and components. There is **no** `@spindeck/core` — import/providers live in desktop Rust.
+  - `packages/player`: Browser playback client (deep links, session, calls `/api`). See [README.md](packages/player/README.md)
   - `packages/vinyl-ui`: Specialized UI components for the vinyl player. See [README.md](packages/vinyl-ui/README.md)
   - `packages/ui`: General-purpose UI components. See [README.md](packages/ui/README.md)
-  - `packages/picker`: Media picker functionality. See [README.md](packages/picker/README.md)
+  - `packages/picker`: Cover color extraction. See [README.md](packages/picker/README.md)
   - `packages/eslint-config`: Shared linting configurations. See [README.md](packages/eslint-config/README.md)
+- `docs/`: VitePress docs (en/zh), including [Architecture](docs/en/guide/architecture.md).
 
 ## Coding Standards
 
@@ -47,6 +49,9 @@ This project is a monorepo managed with `pnpm` and `turborepo`. To ensure consis
 - Use the shared ESLint configurations provided in `packages/eslint-config`.
 - Prefer using existing components from `packages/vinyl-ui` or `packages/ui` before creating new ones.
 - **Mandatory Linting**: After completing any task (including all sub-steps), you MUST run `pnpm lint` (or `pnpm lint --filter <package>`) to check for and fix any introduced errors.
+  - TypeScript/React packages use ESLint via Turborepo.
+  - Desktop Rust (`apps/desktop`) uses `cargo fmt --check` + `cargo clippy -D warnings` via `pnpm --filter @spindeck/desktop lint`.
+  - Pre-commit (`husky` + `lint-staged`) blocks commits when staged `*.{js,jsx,ts,tsx}` fail ESLint or when staged `apps/desktop/src-tauri/**/*.{rs,toml}` fail the desktop Rust lint.
 
 ## Internationalization (i18n)
 
@@ -82,5 +87,5 @@ All AI-generated commits MUST follow the [Conventional Commits](https://www.conv
   - `ci`: Changes to CI configuration files and scripts
   - `chore`: Other changes that don't modify src or test files
   - `revert`: Reverts a previous commit
-- **Scope**: The scope should be the name of the package or app affected (e.g., `web`, `core`, `ui`, `player`, etc.).
+- **Scope**: The scope should be the name of the package or app affected (e.g., `web`, `desktop`, `ui`, `player`, etc.).
 - **Description**: Use the imperative, present tense: "change" not "changed" nor "changes".

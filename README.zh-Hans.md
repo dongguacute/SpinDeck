@@ -15,6 +15,7 @@
 <p align="center">
   <a href="https://github.com/dongguacute/SpinDeck/releases"><img src="https://img.shields.io/github/v/release/dongguacute/SpinDeck?label=latest%20release" alt="Latest release" /></a>
   <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/node-%3E%3D18-339933?logo=node.js&logoColor=white" alt="Node.js >= 18" /></a>
+  <a href="https://www.rust-lang.org/"><img src="https://img.shields.io/badge/rust-stable-DEA584?logo=rust&logoColor=white" alt="Rust stable" /></a>
   <a href="https://pnpm.io/"><img src="https://img.shields.io/badge/pnpm-9.x-F69220?logo=pnpm&logoColor=white" alt="pnpm 9.x" /></a>
 </p>
 
@@ -45,6 +46,7 @@
 - Three.js 渲染的 3D 专辑架 — 像真实唱片架一样翻阅封面
 - 点击唱片播放；通过上一首/下一首或滑动手势切歌
 - 封面驱动的动态背景；可上传自定义背景并调节模糊
+- 视口按需加载 — 仅在滚动中心附近挂载 mesh 与封面，控制内存占用
 
 ### 🎛️ 黑胶唱臂
 
@@ -94,12 +96,12 @@
 
 ## 💻 运行方式
 
-可在 **浏览器** 或 **Tauri 桌面应用** 中运行 SpinDeck（macOS 桌面端推荐，以获得完整播放控制体验）。
+SpinDeck 是 **SPA 前端** + **仅桌面端提供的 Rust 本地 API**。浏览器可用于 UI 预览；完整能力请用 **Tauri 桌面应用**（macOS 推荐，以获得完整播放控制）。
 
 | 环境 | 说明 |
 |------|------|
-| 浏览器 | 任意现代浏览器（Chrome、Safari、Firefox、Edge 等）— 需本地 Node 服务提供 API 路由（`pnpm --filter @spindeck/web dev` 或 `start`） |
-| **桌面端（Tauri）** | macOS / Windows / Linux 原生窗口；发布版打包 Web UI 与内嵌本地服务 |
+| 浏览器 | 任意现代浏览器 — UI 预览。歌单导入与本地播放 API 需要本机 Rust 服务监听 `127.0.0.1:17345`（例如同时跑桌面开发） |
+| **桌面端（Tauri）** | macOS / Windows / Linux；发布版打包 SPA 与内嵌 **Rust** HTTP 服务（`/api/*` + 静态 UI）。**用户机器不需要 Node.js** |
 | 桌面端（macOS / Windows） | 完整 QQ 音乐体验；网易云播放控制亦在此可用 |
 | 移动端（iOS / Android） | QQ 音乐通过深链接；网易云播放控制不支持 |
 
@@ -121,9 +123,9 @@ node -p "require('./package.json').version"
 
 | 工具 | 版本 | 用途 |
 |------|------|------|
-| [Node.js](https://nodejs.org/) | **≥ 18** | Web 开发、API 服务、桌面端内嵌服务 |
+| [Node.js](https://nodejs.org/) | **≥ 18** | 仅 Web / 文档开发与前端构建 |
 | [pnpm](https://pnpm.io/) | **9.x**（仓库锁定 `9.0.0`） | 安装依赖及所有 `pnpm` 脚本 |
-| [Rust](https://rustup.rs/) | stable | 仅桌面端（Tauri）开发与构建 |
+| [Rust](https://rustup.rs/) | stable | 桌面端（Tauri）开发与发布构建（内嵌 HTTP API） |
 | 平台工具链 | — | 如 macOS 上的 Xcode Command Line Tools |
 
 以上要求见根目录 [`package.json`](package.json)（`engines.node`、`packageManager`）。CI 使用 **Node 20** 与 **pnpm 9**。
@@ -144,7 +146,7 @@ node -v   # 应显示 v18 或更高
 
 见上方 **[版本与依赖](#-版本与依赖)**。简要来说：**Node.js ≥ 18**、**pnpm 9.x**；桌面端开发还需 **Rust（stable）**。
 
-### 本地开发（Web）
+### 本地开发（Web UI）
 
 ```bash
 # 克隆仓库
@@ -154,11 +156,11 @@ cd SpinDeck
 # 安装依赖
 pnpm install
 
-# 启动开发服务器
+# 启动 Web SPA 开发服务（仅 UI；Vite 将 /api 代理到 :17345）
 pnpm dev
 ```
 
-在终端输出的本地 URL 中打开应用。
+在终端输出的本地 URL 中打开应用。若需歌单导入与播放 API，请同时运行下方桌面应用以启动 Rust 服务。
 
 ### 桌面应用（Tauri）
 
@@ -167,60 +169,68 @@ pnpm dev
 - [Rust](https://rustup.rs/)（stable）
 - 平台工具链（如 macOS 上的 Xcode Command Line Tools）
 
-**开发模式** — Tauri 加载 Web 开发服务器：
+**开发模式** — Tauri 启动 Web Vite 服务与 `:17345` 上的 Rust API：
 
 ```bash
 pnpm --filter @spindeck/desktop dev
 ```
 
-会运行 `@spindeck/web` 开发服务并打开 SpinDeck 窗口。应用图标与 `apps/web/app/assets/icons/SpinDeckLogo.svg` 一致。
+通过 `http://localhost:5173` 加载 `@spindeck/web`（Vite 将 `/api` 代理到 Rust 服务）并打开 SpinDeck 窗口。应用图标与 `apps/web/app/assets/icons/SpinDeckLogo.svg` 一致。
 
-**生产构建** — 打包 Web 构建产物与内嵌 Node 运行时：
+**生产构建** — 构建 SPA，复制到 Tauri `resources/web`，再执行 `tauri build`。打包后的应用由内嵌 Rust 服务提供静态 UI 与 `/api/*`：
 
 ```bash
 pnpm --filter @spindeck/desktop build
 ```
 
-输出目录：`apps/desktop/src-tauri/target/release/bundle/`（macOS 为 `.app`，Windows 为 `.msi` / `.exe` 等）。
+输出目录：`apps/desktop/src-tauri/target/release/bundle/`（macOS 为 `.app`，Windows 为 `.msi` / `.exe` 等）。**终端用户不需要 Node.js。**
 
-当前发布版仍要求用户机器上安装 **Node.js** 以运行内嵌服务。Logo 变更后需重新生成桌面图标（编辑含 macOS 安全区内边距的 `apps/desktop/assets/app-icon.svg`）：
+Logo 变更后重新生成桌面图标：
 
 ```bash
 pnpm desktop:icons
 ```
 
-### 构建与生产（仅 Web）
+### 构建（仅 Web SPA）
 
 ```bash
-pnpm build
-pnpm --filter @spindeck/web start
+pnpm --filter @spindeck/web build
 ```
+
+静态产物：`apps/web/build/client`（供桌面打包使用）。
 
 ### 其他命令
 
 ```bash
-pnpm lint          # 代码检查
+pnpm lint          # 代码检查（ESLint + 桌面端 Clippy/fmt）
 pnpm check-types   # 类型检查
 pnpm format        # 代码格式化
+pnpm dev:docs      # 文档站（VitePress）
 ```
+
+预提交（`husky` + `lint-staged`）会对暂存的 JS/TS 跑 ESLint；若暂存了 `apps/desktop/src-tauri` 下的 Rust/`Cargo.toml`，还会跑 `pnpm --filter @spindeck/desktop lint`。
 
 ---
 
 ## 📁 项目结构
 
-pnpm + Turborepo 单体仓库：
+pnpm + Turborepo 单体仓库。**UI 在 TypeScript；歌单导入与本地播放控制在桌面端 Rust 中。**
 
-| 路径 | 说明 |
+| 路径 | 职责 |
 |------|------|
-| [`apps/web`](apps/web) | SpinDeck Web 应用 |
-| [`apps/desktop`](apps/desktop) | Tauri 2 桌面壳（`src-tauri/` 位于此目录） |
-| [`packages/core`](packages/core) | 核心逻辑（歌单拉取等） |
-| [`packages/player`](packages/player) | 第三方音乐应用控制与深链接 |
+| [`apps/web`](apps/web) | SPA 前端（React Router，`ssr: false`），通过 `fetch` 调用 `/api/*` |
+| [`apps/desktop`](apps/desktop) | Tauri 2 壳；Rust 代码在 `src-tauri/`（`app/`、`server/`、`api/`、`playlist/`、`playback/`、`util/`） |
+| [`packages/player`](packages/player) | 前端播放策略、深链接、会话（调用桌面 `/api`） |
 | [`packages/vinyl-ui`](packages/vinyl-ui) | 黑胶唱臂 UI 组件 |
 | [`packages/ui`](packages/ui) | 共享 UI 组件与主题 |
 | [`packages/picker`](packages/picker) | 封面取色与背景 |
+| [`docs`](docs) | VitePress 文档站 |
 
-各 package 另有独立 README，细节见对应目录。
+**开发：** Vite（`apps/web`）将 `/api` 代理到 `127.0.0.1:17345`。**生产桌面：** 同源 Rust 服务同时提供 SPA 与 `/api/*`。
+
+**本地 API（桌面）：** `POST /api/import`、`GET /api/image`、`POST /api/play-song` / `stop-song` / `resume-song` / `playback-status` / `set-play-mode`。
+
+更完整的说明见 [架构](docs/zh/guide/architecture.md)（English：[Architecture](docs/en/guide/architecture.md)）。各 app 与共享 package 另有独立 README。
 
 ---
 

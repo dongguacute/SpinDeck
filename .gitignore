@@ -1,73 +1,141 @@
-# Dependencies
-node_modules
+# =============================================================================
+# SpinDeck — root .gitignore
+# Monorepo: pnpm + Turborepo + Tauri (Rust) + VitePress
+# =============================================================================
+
+# ----- Dependencies -----
+node_modules/
 .pnp
 .pnp.js
+.pnpm-store/
+.yarn/
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
 
-# Local env files
+# Accidental alternate lockfiles (pnpm is mandatory)
+package-lock.json
+yarn.lock
+npm-shrinkwrap.json
+
+# ----- Environment -----
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-*.env.[!example]*
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
 
-# Testing
-coverage
-.nyc_output
+# ----- Logs & debug -----
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.dbg/
+*.ndjson
 
-# Turbo
-.turbo
+# ----- Tests & coverage -----
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
 
-# Vercel
-.vercel
+# ----- Caches -----
+.turbo/
+.cache/
+**/.cache/
+.parcel-cache/
+.eslintcache
+.stylelintcache
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+.vite/
+vite.config.*.timestamp-*
 
-# Build Outputs
+# ----- Build outputs -----
 .next/
 out/
 build/
 dist/
 .react-router/
-.cache/
-.eslintcache
-.stylelintcache
+storybook-static/
+tmp/
+temp/
+*.tmp
+*.temp
 
 # VitePress (docs/)
 docs/.vitepress/cache/
 docs/.vitepress/dist/
 docs/.vitepress/.temp/
 
-# Debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-.dbg/
-*.ndjson
+# ----- Rust / Cargo -----
+# Canonical Tauri crate (also listed under apps/desktop/.gitignore)
+apps/desktop/src-tauri/target/
+apps/desktop/src-tauri/gen/
+**/target/
+**/*.rs.bk
+*.pdb
 
-# IDEs
+# ----- Tauri desktop -----
+# Bundled SPA + prepared resources (prepare-resources / prepare-dev-resources)
+apps/desktop/src-tauri/resources/
+apps/desktop/.cache/
+# Generated icon intermediate (pnpm desktop:icons)
+apps/desktop/assets/app-icon.png
+# Do not invent a root-level src-tauri
+/src-tauri/
+
+# Accidental installer dumps at repo root
+/*.dmg
+/*.AppImage
+/*.msi
+/*.deb
+/*.rpm
+/*.exe
+/*.app/
+
+# ----- Vercel / deploy -----
+.vercel/
+.netlify/
+
+# ----- IDEs & editors -----
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 .idea/
+*.sublime-project
+*.sublime-workspace
 *.swp
 *.swo
+*~
+.history/
+.ionide/
+
+# ----- OS junk -----
 .DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
 Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
 
-# Misc
-*.pem
-*.log
-.pnpm-store/
+# ----- Misc / tooling -----
 .husky/_/
-
-# Tauri desktop (canonical: apps/desktop/src-tauri)
-apps/desktop/src-tauri/target/
-apps/desktop/src-tauri/gen/
-apps/desktop/src-tauri/resources/
-apps/desktop/.cache/
-apps/desktop/assets/app-icon.png
-
-# Stray Tauri output at repo root
-/src-tauri
+.direnv/
+.venv/
+venv/
+__pycache__/
+*.py[cod]

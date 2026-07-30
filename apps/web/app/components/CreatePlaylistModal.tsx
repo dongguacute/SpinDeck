@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from "react";
-import { useFetcher } from "react-router";
 import { X, Music, ChevronDown, Plus, Link, LoaderCircle, Check, Clock } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import type { PlatformType, SongInfo } from "../lib/types";
 import { PLATFORM_CONFIG } from "../lib/types";
+import { importPlaylist } from "../lib/import-api";
+import { translateApiError } from "../lib/api-errors";
 import QQMusicIcon from "../assets/icons/QQMusicIcon.svg?react";
 import NetEaseMusicIcon from "../assets/icons/NetEaseMusicIcon.svg?react";
 import KugouMusicIcon from "../assets/icons/KugouMusicIcon.svg?react";
@@ -42,17 +43,8 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
   const { t } = useTranslation('common');
   const [mode, setMode] = useState<Mode>("manual");
   const [animState, setAnimState] = useState<"in" | "out" | "hidden">("hidden");
-  const importFetcher = useFetcher<{
-    results?: Array<{
-      url: string;
-      name?: string;
-      cover?: string;
-      songCount?: number;
-      songs?: SongInfo[];
-      error?: string;
-    }>;
-    error?: string;
-  }>();
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState("");
 
   const [name, setName] = useState("");
   const [platform, setPlatform] = useState<PlatformType>("QQMusic");
@@ -139,15 +131,6 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
     document.addEventListener("mousedown", h); return () => document.removeEventListener("mousedown", h);
   }, [refreshDropdownOpen]);
 
-  useEffect(() => {
-    if (importFetcher.data && importFetcher.state === "idle" && !importFetcher.data.error) {
-      setImported(true);
-      if (importFetcher.data.results) {
-        setPreviewResults(importFetcher.data.results.map(r => ({ ...r, added: false })));
-      }
-    }
-  }, [importFetcher.data, importFetcher.state]);
-
   if (animState === "hidden") return null;
 
   const resetAll = () => {
@@ -155,6 +138,7 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
     setImportUrl(""); setImportPlatform("QQMusic"); setImported(false);
     setRefreshInterval(0); setRefreshDropdownOpen(false);
     setPreviewResults([]);
+    setImportError("");
     setMode("manual");
   };
 
@@ -172,11 +156,36 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
   };
 
   const handleImport = () => {
-    if (!importUrl.trim()) return;
-    importFetcher.submit(
-      { url: importUrl.trim(), platform: importPlatform, metaOnly: "true", offset: "0", limit: "0" },
-      { method: "POST", action: "/api/import" },
-    );
+    if (!importUrl.trim() || importing) return;
+    setImporting(true);
+    setImportError("");
+    setImported(false);
+    void importPlaylist({
+      url: importUrl.trim(),
+      platform: importPlatform,
+      metaOnly: true,
+      offset: 0,
+      limit: 0,
+    }).then((data) => {
+      if (data.error || data.code) {
+        setImportError(translateApiError(t, data.error, data.code));
+        return;
+      }
+      setImported(true);
+      if (data.results) {
+        setPreviewResults(
+          data.results.map((r) => ({
+            ...r,
+            url: r.url || "",
+            added: false as const,
+          })),
+        );
+      }
+    }).catch((err) => {
+      setImportError(translateApiError(t, err instanceof Error ? err.message : undefined, "IMPORT_FAILED"));
+    }).finally(() => {
+      setImporting(false);
+    });
   };
 
   const handleImportCreate = (e?: React.MouseEvent) => {
@@ -238,9 +247,7 @@ export default function CreatePlaylistModal({ open, onClose, onCreate }: Props) 
 
   const selectedCfg = PLATFORM_CONFIG[platform];
   const importSelectedCfg = PLATFORM_CONFIG[importPlatform];
-  const importing = importFetcher.state !== "idle";
   const hasValidResults = previewResults.some(r => !r.error && !r.added);
-  const importError = importFetcher.data?.error || "";
   const refreshOptions = REFRESH_OPTIONS(t);
   const selectedRefresh = refreshOptions.find(opt => opt.value === refreshInterval) || refreshOptions[0];
 

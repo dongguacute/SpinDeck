@@ -1,14 +1,15 @@
+# App-local ignores (root .gitignore also covers these)
+
 # Rust / Tauri build
 src-tauri/target/
-
-# Tauri CLI generated schemas
 src-tauri/gen/
+**/*.rs.bk
 
-# Bundled web runtime (prepare-resources.mjs output)
+# Bundled web runtime (prepare-resources.mjs / prepare-dev-resources.mjs)
 src-tauri/resources/
 
-# pnpm deploy cache for desktop bundle
+# pnpm deploy / prepare cache for desktop bundle
 .cache/
 
-# Generated from assets/app-icon.svg (pnpm desktop:icons)
+# Generated from SpinDeckLogo.svg (pnpm desktop:icons)
 assets/app-icon.png

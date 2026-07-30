@@ -56,8 +56,3 @@ export interface PlaybackStatus extends SystemPlaybackStatus {
   sameSongInSession: boolean;
   canResume: boolean;
 }
-
-export type ExecFileAsync = (
-  file: string,
-  args: string[],
-) => Promise<{ stdout: string | Buffer }>;

@@ -20,11 +20,13 @@ weight: 30
 
 | 环境 | 说明 |
 | --- | --- |
-| 浏览器 | 现代浏览器；API 路由需要本地 Node 服务 |
-| **桌面端（Tauri）** | macOS / Windows / Linux；捆绑 Web UI 与内嵌本地服务 |
+| 浏览器 | 现代浏览器 — UI 预览。歌单导入 / 本地播放 API 需要本机 Rust 服务监听 `127.0.0.1:17345` |
+| **桌面端（Tauri）** | macOS / Windows / Linux；打包 SPA 与内嵌 **Rust** HTTP 服务。用户机器不需要 Node.js |
 | 桌面端（macOS / Windows） | QQ 音乐完整体验；网易云播放控制可用 |
 | 移动端（iOS / Android） | QQ 音乐通过深链接；网易云播放控制不支持 |
 
 ::: tip
 QQ 音乐集成最完整：歌单导入、播放控制与跨设备深链接均可用。
 :::
+
+SPA 与 Rust API 如何连接，见 [架构](./architecture)。

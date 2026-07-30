@@ -17,7 +17,8 @@ import {
 interface SceneState {
   scene: THREE.Scene;
   groups: THREE.Group[];
-  meshes: THREE.Mesh[];
+  /** Null when the book mesh is culled (outside window or song not loaded yet). */
+  meshes: (THREE.Mesh | null)[];
   mainGroup: THREE.Group;
   originalPositions: { x: number; y: number; z: number }[];
   totalW: number;
@@ -25,6 +26,7 @@ interface SceneState {
   lookTarget: THREE.Vector3;
   roundedGeo: THREE.BufferGeometry;
   sharpGeo: THREE.BufferGeometry;
+  syncCovers: (center: number, force?: boolean) => void;
 }
 
 /* ============================================================
@@ -40,6 +42,16 @@ const CLEAR_LEFT = 3.0;
 /** 从 resting 向右摆入，轻触光碟左缘 */
 const COVER_X = 0.95;
 const COVER_Z = 0.18;
+/**
+ * Visible + preload band around scroll center.
+ * ~12 on each side covers typical desktop FOV without mounting the whole shelf.
+ */
+const COVER_WINDOW = 24;
+/** Match typical platform CDN sizes; downscale only oversized originals */
+const COVER_TEX_MAX = 512;
+/** Spine canvas — same resolution as before (sharp spine text) */
+const SPINE_W = 40;
+const SPINE_H = 1024;
 
 const _pivotEuler = new THREE.Euler();
 const _pivotQuat = new THREE.Quaternion();
@@ -178,8 +190,70 @@ const COLORS = [
 /* ============================================================
    图片代理
    ============================================================ */
+/** Prefer CDN sizes ≤ COVER_TEX_MAX so we never decode multi‑MB originals. */
+function compactCoverUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    const host = u.hostname;
+    if (host.includes("126.net") || host.includes("163.com")) {
+      u.search = "";
+      u.searchParams.set("param", `${COVER_TEX_MAX}y${COVER_TEX_MAX}`);
+      return u.toString();
+    }
+    if (host.includes("gtimg.cn") || host.includes("y.qq.com")) {
+      // QQ CDN path size segment — never upscale, only clamp oversized
+      return url.replace(/\/(\d{2,4})(?=\?|$)/, (_m, size: string) => {
+        const n = Number(size);
+        const next = Number.isFinite(n) ? Math.min(n, COVER_TEX_MAX) : COVER_TEX_MAX;
+        return `/${next}`;
+      });
+    }
+  } catch {
+    /* keep original */
+  }
+  return url;
+}
+
 function px(url: string) {
-  return `/api/image?url=${encodeURIComponent(url)}`;
+  return `/api/image?url=${encodeURIComponent(compactCoverUrl(url))}`;
+}
+
+function disposeMeshMaterials(mesh: THREE.Mesh) {
+  const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+  const seen = new Set<THREE.Texture>();
+  for (const mat of mats) {
+    const m = mat as THREE.MeshBasicMaterial;
+    if (m.map && !seen.has(m.map)) {
+      seen.add(m.map);
+      m.map.dispose();
+    }
+    m.map = null;
+    m.dispose();
+  }
+}
+
+function prepareCoverTexture(t: THREE.Texture): THREE.Texture {
+  t.colorSpace = THREE.SRGBColorSpace;
+
+  const img = t.image as { width?: number; height?: number } | undefined;
+  const w = img?.width ?? 0;
+  const h = img?.height ?? 0;
+  const longest = Math.max(w, h);
+  if (longest > COVER_TEX_MAX && img && w > 0 && h > 0) {
+    const scale = COVER_TEX_MAX / longest;
+    const c = document.createElement("canvas");
+    c.width = Math.max(1, Math.round(w * scale));
+    c.height = Math.max(1, Math.round(h * scale));
+    const ctx = c.getContext("2d");
+    if (ctx) {
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(img as CanvasImageSource, 0, 0, c.width, c.height);
+      t.image = c;
+      t.needsUpdate = true;
+    }
+  }
+  return t;
 }
 
 function textColorForBg(hex: string): string {
@@ -198,7 +272,7 @@ function spineCanvas(
   accent: string,
   gradient: RGBAColor[] | null,
 ): THREE.CanvasTexture {
-  const w = 40, h = 1024;
+  const w = SPINE_W, h = SPINE_H;
   const c = document.createElement("canvas");
   c.width = w; c.height = h;
   const ctx = c.getContext("2d")!;
@@ -289,6 +363,8 @@ interface Props {
   lockDeselect?: boolean;
   /** 所有封面加载完成的回调 */
   onAllLoaded?: () => void;
+  /** 当前视口内是否还有未就绪的书本（数据或 mesh） */
+  onLoadingChange?: (loading: boolean) => void;
   /** 初始滚动位置 */
   initialScrollX?: number;
   /** 滚动位置变化回调 */
@@ -311,7 +387,8 @@ function placeholderSong(index: number): SongInfo {
 
 function scrollToCenterIndex(scrollX: number, totalW: number, count: number): number {
   const bookStep = SPINE_THICK + GAP;
-  const raw = Math.round((scrollX + totalW / 2 - SPINE_THICK / 2) / bookStep);
+  // worldX(i) = scrollX + (-totalW/2 + i*step + SPINE/2); solve worldX=0 for i
+  const raw = Math.round((-scrollX + totalW / 2 - SPINE_THICK / 2) / bookStep);
   return Math.max(0, Math.min(count - 1, raw));
 }
 
@@ -326,6 +403,7 @@ export default function PlaylistShelf({
   coverOverlay = false,
   lockDeselect = false,
   onAllLoaded,
+  onLoadingChange,
   initialScrollX = 0,
   onScrollXChange,
   onScrollCenter,
@@ -341,6 +419,7 @@ export default function PlaylistShelf({
   const onSongSelectRef = useRef(onSongSelect);
   const onSelectionAnimationCompleteRef = useRef(onSelectionAnimationComplete);
   const onAllLoadedRef = useRef(onAllLoaded);
+  const onLoadingChangeRef = useRef(onLoadingChange);
   const onScrollXChangeRef = useRef(onScrollXChange);
   const onScrollCenterRef = useRef(onScrollCenter);
   const scrollXRef = useRef(initialScrollX);
@@ -389,6 +468,10 @@ export default function PlaylistShelf({
   }, [onAllLoaded]);
 
   useEffect(() => {
+    onLoadingChangeRef.current = onLoadingChange;
+  }, [onLoadingChange]);
+
+  useEffect(() => {
     onScrollXChangeRef.current = onScrollXChange;
   }, [onScrollXChange]);
 
@@ -417,7 +500,6 @@ export default function PlaylistShelf({
     }
 
     coverLoadStartedRef.current = 0;
-    console.log(`[Shelf] 开始构建 ${count} 本书（已加载 ${songsRef.current.length} 首）`);
 
     const w = container.clientWidth;
     const h = container.clientHeight;
@@ -467,10 +549,13 @@ export default function PlaylistShelf({
     }
     scrollXRef.current = initialScroll;
 
+    let syncCovers: (center: number, force?: boolean) => void = () => {};
     const persistScroll = (val: number) => {
       scrollXRef.current = val;
       onScrollXChangeRef.current?.(val);
-      onScrollCenterRef.current?.(scrollToCenterIndex(val, totalW, count));
+      const center = scrollToCenterIndex(val, totalW, count);
+      onScrollCenterRef.current?.(center);
+      syncCovers(center);
     };
     mainGroup.visible = true; // 立即显示，不再等待封面加载
     scene.add(mainGroup);
@@ -481,60 +566,21 @@ export default function PlaylistShelf({
     const sharpGeo = new THREE.BoxGeometry(SPINE_THICK, ALBUM_TALL, ALBUM_DEEP);
     const roundedGeo = new RoundedBoxGeometry(SPINE_THICK, ALBUM_TALL, ALBUM_DEEP, 2, 0.5);
 
-    const meshes: THREE.Mesh[] = [];
+    const meshes: (THREE.Mesh | null)[] = [];
     const groups: THREE.Group[] = [];
     const originalPositions: { x: number; y: number; z: number }[] = [];
     for (let i = 0; i < count; i++) {
-      const song = songsRef.current[i] ?? placeholderSong(i);
-      const color = "#222"; // 初始使用中性深色，避免彩色块闪烁
+      const song = songsRef.current[i];
+      const color = "#222";
       const group = new THREE.Group();
       const posX = -totalW / 2 + i * (SPINE_THICK + GAP) + SPINE_THICK / 2;
       group.position.set(posX, 0, 0);
-      group.userData = { index: i, color, song };
+      group.userData = { index: i, color, song: song ?? placeholderSong(i) };
       originalPositions.push({ x: posX, y: 0, z: 0 });
-      const spine = spineCanvas(song.name, song.artist, color, null);
-
-      // 6 面材质：[+X, -X, +Y, -Y, +Z书脊, -Z]
-      const mats: THREE.MeshBasicMaterial[] = [
-        new THREE.MeshBasicMaterial({ color }),
-        new THREE.MeshBasicMaterial({ color }),
-        new THREE.MeshBasicMaterial({ color }),
-        new THREE.MeshBasicMaterial({ color }),
-        new THREE.MeshBasicMaterial({ map: spine }),
-        new THREE.MeshBasicMaterial({ color: "#1a1a1a" }),
-      ];
-      const mesh = new THREE.Mesh(sharpGeo, mats);
-      group.add(mesh);
-      meshes.push(mesh);
+      // Slot only — mesh mounts when song data is ready AND inside COVER_WINDOW.
+      meshes.push(null);
       groups.push(group);
       mainGroup.add(group);
-
-      // 立即开始载入时的弹出动画，不再等待所有封面
-      if (selectedIndexRef.current === null || selectedIndexRef.current === undefined) {
-        const originalY = 0;
-        group.position.y = originalY - 0.4;
-        group.scale.set(0.9, 0.9, 0.9);
-        group.visible = false;
-
-        // 优化延迟算法：前 20 本书保持原有节奏，后面的书逐渐加快，总时长控制在 2s 内
-        const delay = i < 20 ? i * 0.035 : 20 * 0.035 + (i - 20) * (1.3 / (count - 20));
-
-        gsap.to(group.position, {
-          y: originalY,
-          duration: 0.4,
-          delay,
-          ease: "back.out(1.2)",
-          onStart: () => { group.visible = true; }
-        });
-        gsap.to(group.scale, {
-          x: 1,
-          y: 1,
-          z: 1,
-          duration: 0.4,
-          delay,
-          ease: "back.out(1.2)",
-        });
-      }
     }
 
     // 存储场景引用
@@ -549,6 +595,7 @@ export default function PlaylistShelf({
       lookTarget,
       roundedGeo,
       sharpGeo,
+      syncCovers: () => {},
     };
 
     // 如果场景重建时仍有选中状态，立即应用（无动画）
@@ -557,7 +604,6 @@ export default function PlaylistShelf({
       const selGroup = groups[curSel];
       selGroup.rotation.y = -Math.PI / 2;
       selGroup.rotation.order = "ZYX";
-      meshes[curSel].geometry = roundedGeo; // 翻开时切换为圆角几何体
       const overlay = coverOverlayRef.current;
       const mainPos = mainGroup.position.clone();
       const coverX = computeCoverSelectedWorldX(w, h);
@@ -601,7 +647,8 @@ export default function PlaylistShelf({
       mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
       mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
       raycaster.setFromCamera(mouse, camera);
-      const intersects = raycaster.intersectObjects(meshes);
+      const live = meshes.filter((m): m is THREE.Mesh => m !== null);
+      const intersects = raycaster.intersectObjects(live);
       return intersects.length > 0 ? meshes.indexOf(intersects[0].object as THREE.Mesh) : -1;
     };
 
@@ -632,7 +679,7 @@ export default function PlaylistShelf({
           }
         } else {
           const song = songsRef.current[idx];
-          if (!song || song.platformSongId.startsWith("placeholder-")) return;
+          if (!song || song.platformSongId?.startsWith("placeholder-")) return;
           const bookColor = (groups[idx].userData.color as string) || COLORS[idx % COLORS.length];
           onSongSelectRef.current?.(song, idx);
           onBookThemeColorRef.current?.(bookColor);
@@ -843,10 +890,21 @@ export default function PlaylistShelf({
     };
     renderer.domElement.addEventListener("wheel", onWheel, { passive: false });
 
-    // --- 渲染循环 ---
+    // --- 渲染循环（后台标签页跳过绘制，前台保持满帧以保证观感一致） ---
     let animId = 0;
+    const textureLoader = new THREE.TextureLoader();
+    const coverLoaded = new Set<number>();
+    let coverCenter = scrollToCenterIndex(scrollXRef.current, totalW, count);
+    let syncGen = 0;
+    let windowFrom = -1;
+    let windowTo = -1;
+
     const animate = () => {
       animId = requestAnimationFrame(animate);
+
+      if (document.visibilityState === "hidden") {
+        return;
+      }
 
       // 非选中态下，保持书本正面朝向相机，不进行弧形弯曲或倾斜
       if (selectedIndexRef.current === null || selectedIndexRef.current === undefined) {
@@ -860,6 +918,7 @@ export default function PlaylistShelf({
       // 衰减速度，确保停止滑动后书本恢复平直
       if (!dragging) {
         vel *= 0.92;
+        if (Math.abs(vel) < 0.0005) vel = 0;
       }
 
       renderer.render(scene, camera);
@@ -871,6 +930,7 @@ export default function PlaylistShelf({
       camera.aspect = cw / ch;
       camera.updateProjectionMatrix();
       renderer.setSize(cw, ch);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       if (selectedIndexRef.current !== null && selectedIndexRef.current !== undefined) {
         camera.position.z = shelfCoverPlaybackCamZ(cw, ch);
         camera.lookAt(lookTarget);
@@ -878,49 +938,120 @@ export default function PlaylistShelf({
     };
     window.addEventListener("resize", onResize);
 
-    // --- 异步加载封面 + picker ---
-    async function loadOne(i: number) {
-      const song = songsRef.current[i];
-      if (!song || song.platformSongId.startsWith("placeholder-")) return;
+    function isSongReady(song: SongInfo | undefined): song is SongInfo {
+      return !!song && !song.platformSongId?.startsWith("placeholder-");
+    }
+
+    function reportViewportLoading() {
+      const from = Math.max(0, windowFrom);
+      const to = windowTo < 0 ? 0 : windowTo;
+      let pending = false;
+      for (let i = from; i < to; i++) {
+        if (!isSongReady(songsRef.current[i]) || !meshes[i] || !coverLoaded.has(i)) {
+          pending = true;
+          break;
+        }
+      }
+      onLoadingChangeRef.current?.(pending);
+      return pending;
+    }
+
+    function popInBook(group: THREE.Group, index: number) {
+      if (selectedIndexRef.current !== null && selectedIndexRef.current !== undefined) {
+        group.visible = true;
+        group.scale.set(1, 1, 1);
+        return;
+      }
+      gsap.killTweensOf(group.position);
+      gsap.killTweensOf(group.scale);
+      const restY = originalPositions[index]?.y ?? 0;
+      group.position.y = restY - 0.4;
+      group.scale.set(0.9, 0.9, 0.9);
+      group.visible = false;
+      gsap.to(group.position, {
+        y: restY,
+        duration: 0.35,
+        ease: "back.out(1.2)",
+        onStart: () => {
+          group.visible = true;
+        },
+      });
+      gsap.to(group.scale, {
+        x: 1,
+        y: 1,
+        z: 1,
+        duration: 0.35,
+        ease: "back.out(1.2)",
+      });
+    }
+
+    /** Drop mesh + materials entirely (not just cover textures). */
+    function unloadBook(i: number) {
       const mesh = meshes[i];
-      const fb = COLORS[i % COLORS.length];
-      console.log(`[Shelf] #${i} 加载 "${song.name}" cover=${!!song.cover}`);
+      if (!mesh) {
+        coverLoaded.delete(i);
+        return;
+      }
+      const group = groups[i];
+      gsap.killTweensOf(group.position);
+      gsap.killTweensOf(group.scale);
+      disposeMeshMaterials(mesh);
+      group.remove(mesh);
+      meshes[i] = null;
+      coverLoaded.delete(i);
+      // Keep slot rest pose for scroll layout; hide empty group.
+      if (selectedIndexRef.current !== i) {
+        group.visible = false;
+        group.scale.set(1, 1, 1);
+        group.position.y = originalPositions[i]?.y ?? 0;
+      }
+      reportViewportLoading();
+    }
 
-      if (!song.cover) return;
+    function ensureMesh(i: number): THREE.Mesh | null {
+      const existing = meshes[i];
+      if (existing) return existing;
+      const song = songsRef.current[i];
+      if (!isSongReady(song)) return null;
 
-      const proxied = px(song.cover);
-      let coverTex: THREE.Texture | null = null;
-      let mainColor = fb;
+      const group = groups[i];
+      group.userData.song = song;
+      const color = (group.userData.color as string) || "#222";
+      const mats: THREE.MeshBasicMaterial[] = [
+        new THREE.MeshBasicMaterial({ color }),
+        new THREE.MeshBasicMaterial({ color }),
+        new THREE.MeshBasicMaterial({ color }),
+        new THREE.MeshBasicMaterial({ color }),
+        new THREE.MeshBasicMaterial({ color }),
+        new THREE.MeshBasicMaterial({ color: "#1a1a1a" }),
+      ];
+      const useRounded =
+        selectedIndexRef.current === i;
+      const mesh = new THREE.Mesh(useRounded ? roundedGeo : sharpGeo, mats);
+      group.add(mesh);
+      meshes[i] = mesh;
+      popInBook(group, i);
+      return mesh;
+    }
 
-      // 并行加载封面 + 取主色
-      const [texR, colR] = await Promise.allSettled([
-        new Promise<THREE.Texture>((res, rej) => {
-          new THREE.TextureLoader().load(proxied,
-            (t) => { t.colorSpace = THREE.SRGBColorSpace; res(t); },
-            undefined, () => rej(new Error("fail")),
-          );
-        }),
-        (async () => {
-          const toHex = (cl: RGBAColor) =>
-            `#${[cl.r, cl.g, cl.b].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
-          const [{ pickEdgeColors }] = await Promise.all([
-            import("@spindeck/picker"),
-          ]);
-          const e = await pickEdgeColors({ content: proxied });
-          return toHex(e.top);
-        })(),
-      ]);
-
-      if (texR.status === "fulfilled") coverTex = texR.value;
-      if (colR.status === "fulfilled") mainColor = colR.value;
-
+    function applyBookLook(
+      i: number,
+      song: SongInfo,
+      mainColor: string,
+      coverTex: THREE.Texture | null,
+    ) {
+      const mesh = ensureMesh(i);
+      if (!mesh) {
+        coverTex?.dispose();
+        return;
+      }
       const group = groups[i];
       group.userData.color = mainColor;
       if (selectedIndexRef.current === i) {
         onBookThemeColorRef.current?.(mainColor);
       }
 
-      // 重建书脊（用主色）
+      disposeMeshMaterials(mesh);
       const newSpine = spineCanvas(song.name, song.artist, mainColor, null);
       const coverMat = coverTex
         ? new THREE.MeshBasicMaterial({ map: coverTex })
@@ -934,40 +1065,151 @@ export default function PlaylistShelf({
         new THREE.MeshBasicMaterial({ map: newSpine }),
         coverMat,
       ];
-
-      console.log(`[Shelf] #${i} 完成 cover=${!!coverTex} mainColor=${mainColor}`);
+      coverLoaded.add(i);
+      reportViewportLoading();
     }
 
-    const startCoverLoad = (from: number, to: number) => {
+    async function loadOne(i: number, gen: number) {
+      if (gen !== syncGen) return;
+      const song = songsRef.current[i];
+      // Song payload not ready yet — leave the slot empty (no mesh).
+      if (!isSongReady(song)) {
+        reportViewportLoading();
+        return;
+      }
+      if (coverLoaded.has(i) && meshes[i]) {
+        reportViewportLoading();
+        return;
+      }
+
+      const mesh = ensureMesh(i);
+      if (!mesh) return;
+
+      const fb = (groups[i].userData.color as string) || COLORS[i % COLORS.length];
+
+      if (!song.cover) {
+        applyBookLook(i, song, fb === "#222" ? COLORS[i % COLORS.length] : fb, null);
+        return;
+      }
+
+      const proxied = px(song.cover);
+      let coverTex: THREE.Texture | null = null;
+      let mainColor = fb === "#222" ? COLORS[i % COLORS.length] : fb;
+
+      const [texR, colR] = await Promise.allSettled([
+        new Promise<THREE.Texture>((res, rej) => {
+          textureLoader.load(
+            proxied,
+            (t) => res(prepareCoverTexture(t)),
+            undefined,
+            () => rej(new Error("fail")),
+          );
+        }),
+        (async () => {
+          const toHex = (cl: RGBAColor) =>
+            `#${[cl.r, cl.g, cl.b].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+          const [{ pickEdgeColors }] = await Promise.all([
+            import("@spindeck/picker"),
+          ]);
+          const e = await pickEdgeColors({ content: proxied });
+          return toHex(e.top);
+        })(),
+      ]);
+
+      // Stale request after scroll / newer sync — drop textures, don't mount off-window.
+      if (gen !== syncGen || i < windowFrom || i >= windowTo) {
+        if (texR.status === "fulfilled") texR.value.dispose();
+        if (gen === syncGen && (i < windowFrom || i >= windowTo)) {
+          unloadBook(i);
+        }
+        return;
+      }
+      if (!isSongReady(songsRef.current[i])) {
+        if (texR.status === "fulfilled") texR.value.dispose();
+        return;
+      }
+      if (coverLoaded.has(i) && meshes[i]) {
+        if (texR.status === "fulfilled") texR.value.dispose();
+        return;
+      }
+
+      if (texR.status === "fulfilled") coverTex = texR.value;
+      if (colR.status === "fulfilled") mainColor = colR.value;
+
+      applyBookLook(i, song, mainColor, coverTex);
+    }
+
+    syncCovers = (center: number, force = false) => {
+      coverCenter = center;
+      const half = Math.floor(COVER_WINDOW / 2);
+      const from = Math.max(0, center - half);
+      const to = Math.min(count, center + half + 1);
+
+      // Skip only when the mounted window is unchanged and not forced.
+      if (!force && from === windowFrom && to === windowTo) {
+        reportViewportLoading();
+        return;
+      }
+
+      const gen = ++syncGen;
+      windowFrom = from;
+      windowTo = to;
+
+      // Always keep the selected book mounted.
+      const keep = new Set<number>();
+      for (let i = from; i < to; i++) keep.add(i);
+      const sel = selectedIndexRef.current;
+      if (sel !== null && sel !== undefined) keep.add(sel);
+
+      for (let i = 0; i < count; i++) {
+        if (!keep.has(i) && (meshes[i] || coverLoaded.has(i))) {
+          unloadBook(i);
+        }
+      }
+
+      // Mount solid meshes synchronously for ready songs; textures load async.
+      for (const i of keep) {
+        if (isSongReady(songsRef.current[i])) {
+          ensureMesh(i);
+        }
+      }
+
       const CONC = 2;
       let idx = from;
       let done = from;
+      const firstPaintAt = Math.min(from + 5, to);
       const worker = async () => {
-        while (idx < to) {
+        while (idx < to && gen === syncGen) {
           const i = idx++;
-          await loadOne(i);
+          await loadOne(i, gen);
+          if (gen !== syncGen) return;
           done++;
-          console.log(`[Shelf] 进度 ${done}/${to}`);
-
-          if (done === Math.min(from + 5, to)) {
-            onAllLoadedRef.current?.();
-          }
-          if (done === to) {
-            console.log(`[Shelf] 封面批次加载完成 (${from}-${to})`);
+          const stillPending = reportViewportLoading();
+          if (done === firstPaintAt || done === to || !stillPending) {
             onAllLoadedRef.current?.();
           }
         }
       };
+      if (to <= from) {
+        reportViewportLoading();
+        onAllLoadedRef.current?.();
+        return;
+      }
+      reportViewportLoading();
       for (let n = 0; n < Math.min(CONC, to - from); n++) worker();
+      if (sel !== null && sel !== undefined && (sel < from || sel >= to)) {
+        void loadOne(sel, gen).then(() => {
+          if (gen === syncGen) reportViewportLoading();
+        });
+      }
     };
 
-    const initialCoverEnd = Math.min(songsRef.current.length, count);
-    coverLoadStartedRef.current = initialCoverEnd;
-    if (initialCoverEnd > 0) {
-      startCoverLoad(0, initialCoverEnd);
-    } else {
-      onAllLoadedRef.current?.();
+    if (sceneRef.current) {
+      sceneRef.current.syncCovers = syncCovers;
     }
+
+    coverLoadStartedRef.current = Math.min(songsRef.current.length, count);
+    syncCovers(coverCenter, true);
 
     // --- 清理 ---
     return () => {
@@ -979,6 +1221,11 @@ export default function PlaylistShelf({
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
       window.removeEventListener("resize", onResize);
+      for (const mesh of meshes) {
+        if (mesh) disposeMeshMaterials(mesh);
+      }
+      sharpGeo.dispose();
+      roundedGeo.dispose();
       renderer.dispose();
       scene.clear();
       if (container.contains(renderer.domElement)) {
@@ -986,12 +1233,13 @@ export default function PlaylistShelf({
       }
       sceneRef.current = null;
       prevIndexRef.current = null;
+      onLoadingChangeRef.current?.(false);
     };
     // 网易云：totalSongCount 确定书架长度；QQ/酷狗：随 songs.length 一次性构建
     // songsFingerprint：歌单内容变化（刷新）时重建，即使数量未变
   }, [shelfBookCount, songsFingerprint]);
 
-  // 按需加载的新歌曲到达后，更新书脊并加载封面
+  // 按需加载的新歌曲到达后，更新元数据；纹理由滚动窗口加载
   useEffect(() => {
     const state = sceneRef.current;
     if (!state || songs.length <= coverLoadStartedRef.current) return;
@@ -1008,78 +1256,20 @@ export default function PlaylistShelf({
       group.userData.song = song;
       const color = (group.userData.color as string) || "#222";
       const mesh = state.meshes[i];
-      const newSpine = spineCanvas(song.name, song.artist, color, null);
+      if (!mesh) continue;
       const mats = mesh.material as THREE.MeshBasicMaterial[];
-      if (Array.isArray(mats) && mats[4]) {
-        mats[4].map = newSpine;
+      // Only refresh spine text if this book already has detail textures resident.
+      if (Array.isArray(mats) && mats[4]?.map) {
+        const prev = mats[4].map;
+        mats[4].map = spineCanvas(song.name, song.artist, color, null);
         mats[4].needsUpdate = true;
+        prev.dispose();
       }
     }
-
-    const CONC = 2;
-    let idx = start;
-    async function loadOneIncremental(i: number) {
-      const song = songs[i];
-      if (!song || song.platformSongId.startsWith("placeholder-")) return;
-      const mesh = state!.meshes[i];
-      const fb = COLORS[i % COLORS.length];
-      if (!song.cover) return;
-
-      const proxied = px(song.cover);
-      let coverTex: THREE.Texture | null = null;
-      let mainColor = fb;
-
-      const [texR, colR] = await Promise.allSettled([
-        new Promise<THREE.Texture>((res, rej) => {
-          new THREE.TextureLoader().load(proxied,
-            (t) => { t.colorSpace = THREE.SRGBColorSpace; res(t); },
-            undefined, () => rej(new Error("fail")),
-          );
-        }),
-        (async () => {
-          const toHex = (cl: RGBAColor) =>
-            `#${[cl.r, cl.g, cl.b].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
-          const [{ pickEdgeColors }] = await Promise.all([
-            import("@spindeck/picker"),
-          ]);
-          const e = await pickEdgeColors({ content: proxied });
-          return toHex(e.top);
-        })(),
-      ]);
-
-      if (texR.status === "fulfilled") coverTex = texR.value;
-      if (colR.status === "fulfilled") mainColor = colR.value;
-
-      const group = state!.groups[i];
-      group.userData.color = mainColor;
-      if (selectedIndexRef.current === i) {
-        onBookThemeColorRef.current?.(mainColor);
-      }
-
-      const newSpine = spineCanvas(song.name, song.artist, mainColor, null);
-      const coverMat = coverTex
-        ? new THREE.MeshBasicMaterial({ map: coverTex })
-        : new THREE.MeshBasicMaterial({ color: mainColor });
-
-      mesh.material = [
-        coverMat,
-        coverMat,
-        new THREE.MeshBasicMaterial({ color: mainColor }),
-        new THREE.MeshBasicMaterial({ color: mainColor }),
-        new THREE.MeshBasicMaterial({ map: newSpine }),
-        coverMat,
-      ];
-    }
-
-    const worker = async () => {
-      while (idx < end) {
-        const i = idx++;
-        await loadOneIncremental(i);
-      }
-    };
-    for (let n = 0; n < Math.min(CONC, end - start); n++) worker();
 
     coverLoadStartedRef.current = end;
+    const center = scrollToCenterIndex(scrollXRef.current, state.totalW, state.groups.length);
+    state.syncCovers(center, true);
   }, [songs]);
 
   // --- 响应选中状态变化，执行 3D 动画 ---
@@ -1103,6 +1293,7 @@ export default function PlaylistShelf({
     const slideDist = Math.max(totalW + 8, 14);
 
     if (next !== null && next !== undefined) {
+      state.syncCovers(next, true);
       // 如果是切歌（已经在播放态），跳过大部分动画，直接定位
       const isSwitching = prev !== null && prev !== undefined;
 
@@ -1111,12 +1302,12 @@ export default function PlaylistShelf({
         const prevGroup = groups[prev];
         prevGroup.rotation.set(0, 0, 0);
         prevGroup.position.set(originalPositions[prev].x, 0, 0);
-        state.meshes[prev].geometry = state.sharpGeo;
+        if (state.meshes[prev]) state.meshes[prev]!.geometry = state.sharpGeo;
 
         const group = groups[next];
         group.rotation.order = "ZYX";
         group.rotation.y = -Math.PI / 2;
-        state.meshes[next].geometry = state.roundedGeo;
+        if (state.meshes[next]) state.meshes[next]!.geometry = state.roundedGeo;
 
         const container = containerRef.current;
         const vw = container?.clientWidth ?? window.innerWidth;
@@ -1205,7 +1396,7 @@ export default function PlaylistShelf({
         onUpdate: () => {
           // 翻转到侧面时（约 -45°），趁看不到封面偷偷换成圆角
           if (!swapped && group.rotation.y < -Math.PI / 4) {
-            state.meshes[next].geometry = state.roundedGeo;
+            if (state.meshes[next]) state.meshes[next]!.geometry = state.roundedGeo;
             swapped = true;
           }
           // 同步移动位置：让书脊边缘保持固定，形成以边缘为轴的翻页效果
@@ -1318,7 +1509,7 @@ export default function PlaylistShelf({
             // 翻回侧面时，切回直角几何体
             if (!swappedBack && groups[i].rotation.y > -Math.PI / 4) {
               for (const m of state.meshes) {
-                m.geometry = state.sharpGeo;
+                if (m) m.geometry = state.sharpGeo;
               }
               swappedBack = true;
             }

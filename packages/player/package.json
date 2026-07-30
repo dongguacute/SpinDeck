@@ -1,7 +1,7 @@
 {
   "name": "@spindeck/player",
   "version": "0.0.1",
-  "description": "Music player integration logic for SpinDeck",
+  "description": "Browser playback client for SpinDeck — deep links, session state, and desktop /api bridge",
   "author": "Cherry Fu <https://github.com/dongguacute>",
   "license": "Apache-2.0",
   "repository": {
@@ -21,11 +21,6 @@
       "types": "./src/index.ts",
       "import": "./src/index.ts",
       "default": "./src/index.ts"
-    },
-    "./server": {
-      "types": "./src/server/index.ts",
-      "import": "./src/server/index.ts",
-      "default": "./src/server/index.ts"
     }
   },
   "scripts": {

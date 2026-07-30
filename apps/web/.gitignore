@@ -1,7 +1,14 @@
+# App-local ignores (root .gitignore also covers these)
+
 .DS_Store
 .env
+.env.*
+!.env.example
+
 /node_modules/
 
-# React Router
+# React Router / Vite
 /.react-router/
 /build/
+.vite/
+*.tsbuildinfo

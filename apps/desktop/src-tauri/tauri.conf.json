@@ -50,8 +50,7 @@
       "icons/icon.ico"
     ],
     "resources": {
-      "resources/web-runtime/": "web-runtime/",
-      "resources/scripts/": "scripts/"
+      "resources/web/": "web/"
     },
     "macOS": {
       "minimumSystemVersion": "10.15",

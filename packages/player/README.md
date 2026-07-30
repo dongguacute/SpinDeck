@@ -1,54 +1,60 @@
-# @spindeck/player
+# `@spindeck/player`
 
-The core playback engine for SpinDeck, providing a unified interface for multiple music platforms.
+Browser-side playback client for SpinDeck. It builds deep links / play URLs, tracks session state for the tonearm UI, and calls the **desktop Rust** `/api/*` endpoints when local control is available.
 
-## Features
+## Scope
 
-- **Multi-platform Support**: Integrated support for:
-  - Apple Music
-  - QQ Music
-  - Netease Cloud Music
-  - Spotify
-  - Kugou Music
-- **Unified Playback Control**: Standardized commands for play, pause, resume, and stop across all platforms.
-- **Session Management**: Track playback sessions and song states.
-- **Deep Linking**: Support for platform-specific deep links and app pre-launching.
-- **Client & Server Support**: Includes both browser-compatible client logic and Node.js-compatible server utilities.
+| Included | Not included |
+| --- | --- |
+| Client helpers: `playSong`, `pauseSong`, `resumeSong`, `stopSong`, `getPlaybackStatus`, … | Server-side AppleScript / Node playback (moved to `apps/desktop` Rust) |
+| Deep links & app pre-launch helpers | Playlist import (Rust `playlist/` providers) |
+| Session / shelf session state | UI components (see `@spindeck/vinyl-ui`) |
+
+Supported control depth still varies by platform — see the [Supported Platforms](../../docs/en/guide/platforms.md) guide. QQ Music is the most complete today; NetEase local control is desktop-oriented; Kugou is import-only at the product level.
 
 ## Installation
 
+Inside the monorepo workspace (preferred):
+
 ```bash
-pnpm add @spindeck/player
+pnpm add @spindeck/player --filter @spindeck/web
 ```
 
 ## Usage
 
-### Basic Playback
-
 ```typescript
-import { playSong, pauseSong } from '@spindeck/player';
+import {
+  playSong,
+  pauseSong,
+  getPlaybackStatus,
+  beginShelfSession,
+  buildSongPlayUrls,
+} from "@spindeck/player";
 
-// Play a song on a specific platform
+await beginShelfSession({ platform: "QQMusic" });
+
 await playSong({
-  platform: 'qqmusic',
-  songId: '...',
-  // ... other options
+  platform: "QQMusic",
+  song: {
+    name: "Example",
+    artist: "Artist",
+    cover: "",
+    album: "",
+    platformSongId: "…",
+  },
 });
 
-// Pause playback
-await pauseSong();
+const status = await getPlaybackStatus({ platform: "QQMusic" });
+await pauseSong({ platform: "QQMusic" });
+
+const urls = buildSongPlayUrls(songInfo, "QQMusic");
 ```
 
-### Platform-specific URLs
-
-```typescript
-import { buildSongPlayUrls } from '@spindeck/player';
-
-const urls = buildSongPlayUrls(songInfo, 'spotify');
-```
+Configure native openers / accessibility hooks from the desktop shell when needed (`setAppUrlOpener`, `setAccessibilityMissingHandler`, …).
 
 ## Development
 
-- `pnpm build`: Build the package.
-- `pnpm dev`: Build with watch mode.
-- `pnpm lint`: Lint the codebase.
+```bash
+pnpm --filter @spindeck/player build
+pnpm --filter @spindeck/player lint
+```

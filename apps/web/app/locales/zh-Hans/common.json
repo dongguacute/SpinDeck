@@ -161,5 +161,29 @@
     "title": "404 - 页面未找到",
     "description": "哎呀！您寻找的页面已经转飞了。",
     "back_home": "返回首页"
+  },
+  "api_errors": {
+    "unknown": "出错了",
+    "MISSING_PARAMS": "缺少必要参数",
+    "INVALID_URL": "请输入有效的歌单链接",
+    "IMPORT_FAILED": "获取歌单失败",
+    "BATCH_IMPORT_FAILED": "批量获取歌单失败",
+    "UNSUPPORTED_PLATFORM": "不支持的平台",
+    "PLAYLIST_FETCH_FAILED": "获取歌单失败",
+    "METHOD_NOT_ALLOWED": "请求方法不允许",
+    "INVALID_JSON": "请求体无效",
+    "MISSING_SONG": "缺少 platform 或 song",
+    "MISSING_SONG_ID": "缺少歌曲 ID，请重新导入歌单",
+    "PLAY_FAILED": "唤起本地应用失败",
+    "PAUSE_FAILED": "暂停失败",
+    "RESUME_FAILED": "继续播放失败",
+    "SET_PLAY_MODE_FAILED": "设置播放模式失败",
+    "MACOS_ONLY": "仅 macOS 支持服务端控制",
+    "NEEDS_ACCESSIBILITY": "需要辅助功能权限",
+    "KUGOU_STUB": "酷狗音乐对接层已移除",
+    "REDIRECT_FAILED": "短链重定向失败",
+    "PARSE_ID_FAILED": "无法解析歌单 ID",
+    "RATE_LIMITED": "请求过于频繁，请稍后再试",
+    "UPSTREAM_ERROR": "上游服务错误"
   }
 }

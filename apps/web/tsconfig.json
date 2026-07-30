@@ -5,6 +5,11 @@
     "**/.client/**/*",
     ".react-router/types/**/*"
   ],
+  "exclude": [
+    "eslint.config.ts",
+    "build",
+    "node_modules"
+  ],
   "compilerOptions": {
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
     "types": ["node", "vite/client"],
@@ -15,10 +20,8 @@
     "rootDirs": [".", "./.react-router/types"],
     "paths": {
       "~/*": ["./app/*"],
-      "@spindeck/core": ["../../packages/core/src/index.ts"],
       "@spindeck/picker": ["../../packages/picker/src/index.ts"],
       "@spindeck/player": ["../../packages/player/src/index.ts"],
-      "@spindeck/player/server": ["../../packages/player/src/server/index.ts"],
       "@spindeck/vinyl-ui": ["../../packages/vinyl-ui/src/index.ts"]
     },
     "esModuleInterop": true,

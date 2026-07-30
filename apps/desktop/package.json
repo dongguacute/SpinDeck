@@ -1,7 +1,7 @@
 {
   "name": "@spindeck/desktop",
   "version": "0.1.0",
-  "description": "SpinDeck desktop application (Tauri)",
+  "description": "SpinDeck Tauri desktop shell with embedded Rust HTTP API (SPA + /api/*)",
   "author": "Cherry Fu <https://github.com/dongguacute>",
   "license": "Apache-2.0",
   "private": true,
@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "node ./scripts/prepare-dev-resources.mjs && tauri dev",
     "build": "tauri build",
+    "lint": "cargo fmt --manifest-path ./src-tauri/Cargo.toml -- --check && cargo clippy --manifest-path ./src-tauri/Cargo.toml -- -D warnings",
     "generate:icons": "node ./scripts/generate-icons.mjs",
     "prepare:resources": "node ./scripts/prepare-resources.mjs"
   },

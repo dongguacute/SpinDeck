@@ -5,7 +5,19 @@ weight: 20
 
 # Desktop App
 
-SpinDeck ships a [Tauri 2](https://v2.tauri.app/) desktop shell for macOS, Windows, and Linux. The desktop build bundles the web UI and is recommended on macOS for full playback control.
+SpinDeck ships a [Tauri 2](https://v2.tauri.app/) desktop shell for macOS, Windows, and Linux. The desktop build bundles the web SPA and an embedded **Rust** HTTP server — recommended on macOS for full playback control.
+
+## Architecture (desktop)
+
+| Piece | Responsibility |
+| --- | --- |
+| Tauri WebView | Hosts the SPA |
+| Rust `server/` | Binds `127.0.0.1:17345`, serves static UI in production |
+| Rust `api/` | `/api/import`, `/api/image`, playback routes |
+| Rust `playlist/` | QQ / NetEase / Kugou import providers |
+| Rust `playback/` | Local music-app control (macOS AppleScript / `open`) |
+
+See [Architecture](./architecture) for the monorepo diagram and full `/api` table. App package notes: [`apps/desktop/README.md`](https://github.com/dongguacute/SpinDeck/blob/main/apps/desktop/README.md).
 
 ## Download
 
@@ -13,7 +25,7 @@ Download pre-built desktop installers from GitHub Releases:
 
 **[v1.0.0-beta.5](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.5)** (latest)
 
-Pick the asset for your platform (`.dmg` / `.app` on macOS, `.msi` / `.exe` on Windows, etc.). Release builds currently require **Node.js** on the user's machine to run the embedded server.
+Pick the asset for your platform (`.dmg` / `.app` on macOS, `.msi` / `.exe` on Windows, etc.). Release builds embed a Rust HTTP server and static frontend assets — **Node.js is no longer required** on the user's machine.
 
 ### What's new in v1.0.0-beta.5
 
@@ -21,7 +33,7 @@ Pick the asset for your platform (`.dmg` / `.app` on macOS, `.msi` / `.exe` on W
 - **macOS QQ Music control** — Fixed AppleScript pause/resume; keyboard fallback when menu control fails; idempotent pause avoids accidental resume when leaving the shelf; pause no longer triggers play when nothing is playing
 - **Pre-launch & external links** — Pre-launch opens local clients via Tauri `shell.open`; settings and playlist links open in the system browser
 - **Playlist refresh** — Manual refresh bypasses QQ Music server cache; 3D shelf rebuilds when song data changes
-- **Desktop dev & runtime** — Tauri dev resources, WebView capabilities, and Vite SSR compatibility fixes
+- **Desktop dev & runtime** — Tauri dev resources, WebView capabilities, and Vite compatibility fixes
 
 Previous release: [v1.0.0-beta.4](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.4)
 
@@ -34,14 +46,13 @@ The following builds are **not recommended** due to a white-screen issue in pack
 
 ## Installation & Common Issues
 
-SpinDeck desktop builds are **not yet signed** with Apple or Microsoft certificates, and they require **Node.js** on your machine to run the embedded local server. You may hit platform-specific issues when installing or opening the app for the first time.
+SpinDeck desktop builds are **not yet signed** with Apple or Microsoft certificates. You may hit platform-specific issues when installing or opening the app for the first time.
 
 ### All platforms
 
 | Symptom | Cause | What to do |
 |---------|-------|------------|
-| White screen or immediate quit | Node.js missing, or embedded server failed to start | Install [Node.js 20+](https://nodejs.org/) and relaunch; if it persists, check the log paths below |
-| `node` not found | GUI apps on some systems have a minimal `PATH` | Ensure Node is installed; on macOS, Homebrew is recommended (see below) |
+| White screen or immediate quit | Embedded local server failed to start | Relaunch; if it persists, check the log paths below |
 
 **Log locations (when startup fails):**
 
@@ -81,15 +92,6 @@ SpinDeck controls local music clients (QQ Music, NetEase, etc.) on macOS via App
 If the toggle is on but the prompt still appears, try: **System Settings → Privacy & Security → Accessibility** → select SpinDeck → click **「–」** to remove → restart SpinDeck → authorize again when prompted. This is a known occasional issue with the macOS TCC database.
 :::
 
-**Recommended Node.js install (macOS):**
-
-```bash
-# Homebrew
-brew install node
-```
-
-Verify with `node -v` (20 or newer).
-
 ::: tip
 If the app still won’t open, do not run it directly from the mounted DMG. Copy it to **Applications** first, then follow the Gatekeeper steps above.
 :::
@@ -99,8 +101,7 @@ If the app still won’t open, do not run it directly from the mounted DMG. Copy
 | Symptom | Cause | What to do |
 |---------|-------|------------|
 | SmartScreen: “Windows protected your PC” | Installer is not EV-signed | Click **More info** → **Run anyway** |
-| App won’t start after install | Node.js not installed | Install LTS from [nodejs.org](https://nodejs.org/); enable **Add to PATH** during setup, then restart SpinDeck |
-| Blocked by antivirus | The app spawns a local Node.js server process | Add the SpinDeck install folder or `.exe` to your allowlist |
+| Blocked by antivirus | The app listens on a local port for its API | Add the SpinDeck install folder or `.exe` to your allowlist |
 
 ### Linux
 
@@ -109,7 +110,6 @@ If the app still won’t open, do not run it directly from the mounted DMG. Copy
 | AppImage won’t run | Missing execute permission | `chmod +x spindeck-*.AppImage`, then run it |
 | AppImage FUSE error | FUSE not installed | Ubuntu/Debian: `sudo apt install libfuse2`; or use the `.deb` package instead |
 | `.deb` missing dependencies | WebKit / graphics libraries | Install WebKit GTK and related packages (see build-from-source Linux deps) |
-| White screen after launch | Node.js not installed | Install Node.js 20+ via your package manager or [nvm](https://github.com/nvm-sh/nvm) |
 
 ## Build from Source
 
@@ -120,19 +120,21 @@ If the app still won’t open, do not run it directly from the mounted DMG. Copy
 
 ### Development
 
-Tauri loads the web dev server during development:
+Tauri starts the web Vite server and the Rust API on `:17345`. Vite proxies `/api` to that port:
 
 ```bash
 pnpm --filter @spindeck/desktop dev
 ```
 
-This runs `@spindeck/web` dev and opens the SpinDeck window.
+This runs `@spindeck/web` and opens the SpinDeck window.
 
 ### Production Build
 
 ```bash
 pnpm --filter @spindeck/desktop build
 ```
+
+Builds the SPA, copies `apps/web/build/client` into Tauri `resources/web`, then runs `tauri build`. The packaged app serves static UI + `/api/*` from the embedded Rust server — **no Node.js on the user’s machine**.
 
 Output is written to `apps/desktop/src-tauri/target/release/bundle/` (`.app` on macOS, `.msi` / `.exe` on Windows, etc.).
 

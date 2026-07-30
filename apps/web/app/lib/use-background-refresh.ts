@@ -34,21 +34,17 @@ export function useBackgroundRefresh() {
       const performRefresh = async () => {
         try {
           console.log(`[BackgroundRefresh] 正在刷新歌单: ${playlist.name} (${playlist.id})`);
-          const formData = new FormData();
-          formData.append("url", playlist.importUrl);
-          formData.append("platform", playlist.platform);
-          formData.append("metaOnly", "true");
-          formData.append("offset", "0");
-          formData.append("limit", "0");
-
-          const response = await fetch("/api/import", {
-            method: "POST",
-            body: formData,
+          const { importPlaylist } = await import("./import-api");
+          const data = await importPlaylist({
+            url: playlist.importUrl,
+            platform: playlist.platform,
+            metaOnly: true,
+            offset: 0,
+            limit: 0,
           });
 
-          if (!response.ok) throw new Error("刷新失败");
+          if (data.error || data.code) throw new Error(data.code || data.error || "IMPORT_FAILED");
 
-          const data = await response.json();
           const result = data.results?.[0];
           if (!result) return;
 

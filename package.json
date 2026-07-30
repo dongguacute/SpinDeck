@@ -1,7 +1,7 @@
 {
   "name": "spindeck",
   "version": "0.1.0",
-  "description": "Cross-platform vinyl visualization player that syncs & controls third-party music apps with playlist import support",
+  "description": "Cross-platform vinyl visualization player — SPA UI + desktop Rust local API for playlist import and playback control",
   "author": "Cherry Fu <https://github.com/dongguacute>",
   "license": "Apache-2.0",
   "repository": {
@@ -36,9 +36,6 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
     "prepare": "husky"
-  },
-  "lint-staged": {
-    "*.{js,jsx,ts,tsx}": "eslint --fix"
   },
   "devDependencies": {
     "@eslint/js": "^9.16.0",

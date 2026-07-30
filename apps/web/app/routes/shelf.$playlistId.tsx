@@ -54,12 +54,13 @@ export default function ShelfPage() {
   const [autoPlayNext, setAutoPlayNext] = useState(false);
   const [autoPlayToken, setAutoPlayToken] = useState(0);
   const [coversLoading, setCoversLoading] = useState(true); // 默认开启，直到 PlaylistShelf 报告完成
+  const [booksLoading, setBooksLoading] = useState(true);
   const playbackWrapperRef = useRef<HTMLDivElement>(null);
 
   const [showLoadingMsg, setShowLoadingMsg] = useState(false);
-  const isSyncing = isPaginatedShelf
-    ? loading || (coversLoading && songs.length > 0)
-    : loading || coversLoading;
+  /** Full-screen block only for initial fetch / first viewport books */
+  const isBlockingLoader = loading || (coversLoading && booksLoading);
+  const isSyncing = isBlockingLoader || booksLoading;
 
   useEffect(() => {
     if (isSyncing) {
@@ -89,11 +90,12 @@ export default function ShelfPage() {
   useEffect(() => {
     if (!isPaginatedShelf || !totalCount || !initialScrollX) return;
     const totalW = totalCount * BOOK_STEP - 0.8;
+    // Match PlaylistShelf: worldX(i)=scrollX+(-totalW/2+i*step+spine/2)
     const centerIndex = Math.max(
       0,
       Math.min(
         totalCount - 1,
-        Math.round((initialScrollX + totalW / 2 - 0.09) / BOOK_STEP),
+        Math.round((-initialScrollX + totalW / 2 - 0.09) / BOOK_STEP),
       ),
     );
     ensureLoadedUpTo(centerIndex + 20);
@@ -113,11 +115,13 @@ export default function ShelfPage() {
   // 切换歌单时重置封面加载状态
   useEffect(() => {
     setCoversLoading(true);
+    setBooksLoading(true);
   }, [playlistId]);
 
   useEffect(() => {
     if (loading) {
       setCoversLoading(true);
+      setBooksLoading(true);
     }
   }, [loading]);
 
@@ -125,6 +129,7 @@ export default function ShelfPage() {
   useEffect(() => {
     if (error) {
       setCoversLoading(false);
+      setBooksLoading(false);
     }
   }, [error]);
 
@@ -262,25 +267,44 @@ export default function ShelfPage() {
         refreshing={isFetching}
       />
 
-      {/* 加载中 */}
-      {isSyncing && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center" style={{ background: "var(--bg-primary)" }}>
+      {/* 初始加载：遮罩 + 转圈 + 文字 */}
+      {isBlockingLoader && (
+        <div
+          className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4"
+          style={{ background: "var(--bg-primary)" }}
+          role="status"
+          aria-live="polite"
+        >
           <Loader2 className="w-10 h-10 animate-spin" style={{ color: "var(--text-muted)" }} />
+          <p
+            className="text-sm font-medium tracking-wide"
+            style={{ color: "var(--text-muted)" }}
+          >
+            {t('shelf.loading')}
+          </p>
         </div>
       )}
 
-      {/* 加载提示文字 */}
+      {/* 视口内仍有书本未就绪时的轻量提示（可滚动，不挡操作） */}
       <div 
         className={`fixed bottom-24 left-1/2 -translate-x-1/2 z-30 transition-all duration-700 ease-in-out ${
           showLoadingMsg ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8 pointer-events-none"
         }`}
+        role="status"
+        aria-live="polite"
       >
-        <div className="text-[10px] uppercase tracking-[0.2em] font-medium"
+        <div
+          className="flex items-center gap-2 rounded-full px-4 py-2 text-[10px] uppercase tracking-[0.2em] font-medium"
           style={{ 
             color: "var(--text-muted)",
-            textShadow: "0 0 20px rgba(0,0,0,0.1)"
+            backgroundColor: "color-mix(in srgb, var(--bg-primary) 82%, transparent)",
+            border: "1px solid var(--border-color)",
+            boxShadow: "var(--shadow-card)",
           }}
         >
+          {isSyncing && (
+            <Loader2 className="w-3 h-3 animate-spin" aria-hidden />
+          )}
           {isSyncing ? t('shelf.loading') : t('playlists.sync_completed')}
         </div>
       </div>
@@ -377,6 +401,7 @@ export default function ShelfPage() {
           onCoverToggle={() => setCoverOverlay((v) => !v)}
           onBookThemeColor={setBookThemeColor}
           onAllLoaded={() => setCoversLoading(false)}
+          onLoadingChange={setBooksLoading}
           selectedIndex={selectedIndex}
           coverOverlay={coverOverlay}
           lockDeselect={inPlayback}

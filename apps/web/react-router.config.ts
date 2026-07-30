@@ -1,9 +1,8 @@
 import type { Config } from "@react-router/dev/config";
 
 export default {
-  // Config options...
-  // Server-side render by default, to enable SPA mode set this to `false`
-  ssr: true,
+  // SPA only — backend APIs live in the Tauri Rust server
+  ssr: false,
   future: {
     v8_middleware: true,
     v8_passThroughRequests: true,

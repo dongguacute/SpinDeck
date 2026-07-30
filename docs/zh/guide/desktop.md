@@ -5,7 +5,19 @@ weight: 20
 
 # 桌面应用
 
-SpinDeck 提供适用于 macOS、Windows 和 Linux 的 [Tauri 2](https://v2.tauri.app/) 桌面壳。桌面版捆绑 Web UI，在 macOS 上推荐用于完整播放控制。
+SpinDeck 提供适用于 macOS、Windows 和 Linux 的 [Tauri 2](https://v2.tauri.app/) 桌面壳。桌面版捆绑 Web SPA 与内嵌 **Rust** HTTP 服务 — 在 macOS 上推荐用于完整播放控制。
+
+## 架构（桌面端）
+
+| 部分 | 职责 |
+| --- | --- |
+| Tauri WebView | 托管 SPA |
+| Rust `server/` | 绑定 `127.0.0.1:17345`，生产环境提供静态 UI |
+| Rust `api/` | `/api/import`、`/api/image`、播放相关路由 |
+| Rust `playlist/` | QQ / 网易云 / 酷狗导入 |
+| Rust `playback/` | 本地音乐应用控制（macOS AppleScript / `open`） |
+
+完整 monorepo 图示与 `/api` 表见 [架构](./architecture)。应用包说明：[`apps/desktop/README.md`](https://github.com/dongguacute/SpinDeck/blob/main/apps/desktop/README.md)。
 
 ## 下载
 
@@ -13,7 +25,7 @@ SpinDeck 提供适用于 macOS、Windows 和 Linux 的 [Tauri 2](https://v2.taur
 
 **[v1.0.0-beta.5](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.5)**（最新）
 
-按平台选择对应资源（macOS 为 `.dmg` / `.app`，Windows 为 `.msi` / `.exe` 等）。发布构建目前要求用户机器上安装 **Node.js** 以运行内嵌服务器。
+按平台选择对应资源（macOS 为 `.dmg` / `.app`，Windows 为 `.msi` / `.exe` 等）。发布构建内嵌 Rust HTTP 服务与前端静态资源，**不再依赖本机 Node.js**。
 
 ### v1.0.0-beta.5 更新内容
 
@@ -21,7 +33,7 @@ SpinDeck 提供适用于 macOS、Windows 和 Linux 的 [Tauri 2](https://v2.taur
 - **macOS QQ 音乐控制** — 修复 AppleScript 暂停/继续；菜单控制失败时空格键兜底；离开歌单页时不再误触播放；未播放时暂停不再误触播放
 - **预启动与外链** — 预启动通过 Tauri `shell.open` 唤起本地客户端；设置页与歌单外链在系统浏览器打开
 - **歌单刷新** — 手动刷新跳过 QQ 音乐服务端缓存；歌曲数据变化时重建 3D 书架
-- **桌面开发与运行** — Tauri 开发资源、WebView 权限与 Vite SSR 兼容性修复
+- **桌面开发与运行** — Tauri 开发资源、WebView 权限与 Vite 兼容性修复
 
 上一版本：[v1.0.0-beta.4](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.4)
 
@@ -34,14 +46,13 @@ SpinDeck 提供适用于 macOS、Windows 和 Linux 的 [Tauri 2](https://v2.taur
 
 ## 安装与常见问题
 
-SpinDeck 桌面版目前**未经过 Apple / Microsoft 官方签名**，且依赖本机已安装的 **Node.js** 运行内嵌服务器。不同系统在安装或首次打开时可能遇到以下情况。
+SpinDeck 桌面版目前**未经过 Apple / Microsoft 官方签名**。不同系统在安装或首次打开时可能遇到以下情况。
 
 ### 所有平台
 
 | 现象 | 原因 | 处理方式 |
 |------|------|----------|
-| 打开后白屏或闪退 | 未安装 Node.js，或内嵌服务器启动失败 | 安装 [Node.js 20+](https://nodejs.org/) 后重新打开；仍失败请查看下方日志路径 |
-| 提示找不到 `node` | 从图形界面启动时系统 `PATH` 不完整 | 确认 Node 已安装；macOS 用户可优先用 Homebrew 安装（见下文） |
+| 打开后白屏或闪退 | 内嵌本地服务启动失败 | 重新打开；仍失败请查看下方日志路径 |
 
 **日志位置（启动失败时排查）：**
 
@@ -81,15 +92,6 @@ SpinDeck 在 macOS 上通过 AppleScript 控制本地音乐客户端（QQ 音乐
 若已开启开关仍提示权限缺失，尝试：**系统设置 → 隐私与安全性 → 辅助功能** → 选中 SpinDeck → 点 **「–」** 移除 → 重启 SpinDeck → 再次按提示授权。这是 macOS TCC 数据库偶发的已知问题。
 :::
 
-**推荐安装 Node.js（macOS）：**
-
-```bash
-# Homebrew
-brew install node
-```
-
-安装后可在终端执行 `node -v` 确认版本 ≥ 20。
-
 ::: tip
 若仍无法打开，请勿仅双击 DMG 内的应用；先复制到「应用程序」再按上述 Gatekeeper 步骤操作。
 :::
@@ -99,8 +101,7 @@ brew install node
 | 现象 | 原因 | 处理方式 |
 |------|------|----------|
 | SmartScreen：「Windows 已保护你的电脑」 | 安装包未购买 Extended Validation 签名 | 点 **更多信息** → **仍要运行** |
-| 安装后无法启动 | 未安装 Node.js | 从 [nodejs.org](https://nodejs.org/) 安装 LTS 版本，安装时勾选 **Add to PATH**，完成后重启 SpinDeck |
-| 杀毒软件拦截 | 本地应用会启动 Node 子进程 | 将 SpinDeck 安装目录或 `.exe` 加入白名单 |
+| 杀毒软件拦截 | 本地应用会监听本机端口提供 API | 将 SpinDeck 安装目录或 `.exe` 加入白名单 |
 
 ### Linux
 
@@ -109,7 +110,6 @@ brew install node
 | AppImage 无法运行 | 缺少执行权限 | `chmod +x spindeck-*.AppImage` 后再运行 |
 | AppImage 提示 FUSE 相关错误 | 系统未安装 FUSE | Ubuntu/Debian：`sudo apt install libfuse2`；或使用 `.deb` 包安装 |
 | `.deb` 依赖缺失 | 缺少 WebKit / 图形库 | Debian/Ubuntu：`sudo apt install libwebkit2gtk-4.1-0` 等（从源码构建文档中的依赖列表参考） |
-| 启动后白屏 | 未安装 Node.js | 用系统包管理器或 [nvm](https://github.com/nvm-sh/nvm) 安装 Node.js 20+ |
 
 ## 从源码构建
 
@@ -120,19 +120,21 @@ brew install node
 
 ### 开发
 
-开发时 Tauri 会加载 Web 开发服务器：
+Tauri 会启动 Web Vite 服务与 `:17345` 上的 Rust API。Vite 将 `/api` 代理到该端口：
 
 ```bash
 pnpm --filter @spindeck/desktop dev
 ```
 
-该命令会运行 `@spindeck/web` 开发服务器并打开 SpinDeck 窗口。
+该命令会运行 `@spindeck/web` 并打开 SpinDeck 窗口。
 
 ### 生产构建
 
 ```bash
 pnpm --filter @spindeck/desktop build
 ```
+
+构建 SPA，将 `apps/web/build/client` 复制到 Tauri `resources/web`，再执行 `tauri build`。打包后的应用由内嵌 Rust 服务提供静态 UI 与 `/api/*` — **用户机器不需要 Node.js**。
 
 产物输出至 `apps/desktop/src-tauri/target/release/bundle/`（macOS 为 `.app`，Windows 为 `.msi` / `.exe` 等）。
 

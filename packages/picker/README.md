@@ -1,30 +1,33 @@
-# @spindeck/picker
+# `@spindeck/picker`
 
-A utility package for extracting prominent colors from images, designed for dynamic UI theming in SpinDeck.
+Lightweight cover-art color helpers for SpinDeck theming (edge midpoints and left-column gradients).
 
 ## Features
 
-- **Edge Color Extraction**: Extract colors from the edges of an image.
-- **Column Color Extraction**: Extract colors from the left column of an image.
-- **Lightweight**: Minimal dependencies, focused on color processing.
+- **Edge colors** — sample top / bottom / left / right midpoints
+- **Left column** — full vertical column for spine / gradient UIs
+- **Downsampled sampling** — draws to a small canvas before reading pixels (keeps memory low on large covers)
 
 ## Installation
 
 ```bash
-pnpm add @spindeck/picker
+pnpm add @spindeck/picker --filter @spindeck/web
 ```
 
 ## Usage
 
 ```typescript
-import { pickEdgeColors, pickLeftColumnColors } from '@spindeck/picker';
+import { pickEdgeColors, pickLeftColumnColors } from "@spindeck/picker";
 
-// Example: Extract colors from an image
-const edgeColors = await pickEdgeColors(imageInput);
-const leftColumnColors = await pickLeftColumnColors(imageInput);
+const edges = await pickEdgeColors({ content: imageUrlOrDataUrl });
+const column = await pickLeftColumnColors({ content: imageUrlOrDataUrl });
 ```
+
+`content` accepts a normal image URL (use the desktop `/api/image` proxy when CORS matters) or a data URL.
 
 ## Development
 
-- `pnpm build`: Build the package.
-- `pnpm lint`: Lint the codebase.
+```bash
+pnpm --filter @spindeck/picker build
+pnpm --filter @spindeck/picker lint
+```

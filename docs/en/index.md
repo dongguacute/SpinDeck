@@ -18,13 +18,13 @@ hero:
 
 features:
   - title: Playlist Management
-    details: Create, import, and auto-refresh playlists from QQ Music, NetEase Cloud Music, and Kugou Music. Data stays in your browser.
+    details: Create, import, and auto-refresh playlists from QQ Music, NetEase Cloud Music, and Kugou Music. Data stays in your browser; import runs through the desktop Rust API.
   - title: 3D Album Shelf
-    details: Browse album artwork on a Three.js-rendered shelf. Tap a record to play and swipe to skip tracks.
+    details: Browse album artwork on a Three.js-rendered shelf with viewport-aware loading. Tap a record to play and swipe to skip tracks.
   - title: Vinyl Tonearm
     details: Drop the needle to play or lift it to pause — tactile turntable-style interaction synced with your music app.
-  - title: Cross-Platform
-    details: Run in the browser or as a Tauri desktop app on macOS, Windows, and Linux.
+  - title: Desktop-first Runtime
+    details: Use the Tauri desktop app for the full experience (embedded Rust HTTP on localhost). Browser mode is for UI preview.
 ---
 
 ::: warning Disclaimer

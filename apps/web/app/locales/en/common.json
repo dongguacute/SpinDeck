@@ -161,5 +161,29 @@
     "title": "404 - Page Not Found",
     "description": "Oops! The page you are looking for has spun away.",
     "back_home": "Back to Home"
+  },
+  "api_errors": {
+    "unknown": "Something went wrong",
+    "MISSING_PARAMS": "Missing required parameters",
+    "INVALID_URL": "Please enter a valid playlist link",
+    "IMPORT_FAILED": "Failed to fetch playlist",
+    "BATCH_IMPORT_FAILED": "Failed to fetch playlists",
+    "UNSUPPORTED_PLATFORM": "Unsupported platform",
+    "PLAYLIST_FETCH_FAILED": "Failed to fetch playlist",
+    "METHOD_NOT_ALLOWED": "Method not allowed",
+    "INVALID_JSON": "Invalid request body",
+    "MISSING_SONG": "Missing platform or song",
+    "MISSING_SONG_ID": "Missing song id — re-import the playlist",
+    "PLAY_FAILED": "Failed to open the local music app",
+    "PAUSE_FAILED": "Failed to pause",
+    "RESUME_FAILED": "Failed to resume",
+    "SET_PLAY_MODE_FAILED": "Failed to set play mode",
+    "MACOS_ONLY": "Server-side control is only supported on macOS",
+    "NEEDS_ACCESSIBILITY": "Accessibility permission is required",
+    "KUGOU_STUB": "Kugou macOS control is not available",
+    "REDIRECT_FAILED": "Short link redirect failed",
+    "PARSE_ID_FAILED": "Could not parse playlist id",
+    "RATE_LIMITED": "Too many requests — try again later",
+    "UPSTREAM_ERROR": "Upstream service error"
   }
 }

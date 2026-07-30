@@ -87,3 +87,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
 export default function App() {
   return <Outlet />;
 }
+
+/** SPA build-time shell while client hydrates */
+export function HydrateFallback() {
+  return null;
+}

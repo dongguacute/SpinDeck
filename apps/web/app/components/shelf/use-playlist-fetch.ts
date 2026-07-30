@@ -1,26 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useFetcher } from "react-router";
 import type { SongInfo } from "@spindeck/player";
-import { isPaginatedPlaylistPlatform } from "@spindeck/core";
 import type { PlatformType } from "../../lib/types";
 import { usePlaylistStore } from "../../lib/playlist-store";
+import {
+  importPlaylist,
+  isPaginatedPlaylistPlatform,
+  type ImportResult,
+} from "../../lib/import-api";
 
 const PAGE_SIZE = 30;
 const LOAD_AHEAD = 20;
 
-type FetchResult = {
-  url?: string;
-  name?: string;
-  cover?: string;
-  songCount?: number;
-  songs?: SongInfo[];
-  offset?: number;
-  limit?: number;
-  hasMore?: boolean;
-  paginated?: boolean;
-  platformPlaylistId?: string;
-  error?: string;
-};
+type FetchResult = ImportResult;
 
 function isPaginated(platform: PlatformType | undefined): boolean {
   if (!platform) return false;
@@ -42,17 +33,16 @@ export function usePlaylistFetch(playlistId: string | undefined) {
   const playlist = playlists.find((p) => p.id === playlistId);
   const paginated = isPaginated(playlist?.platform);
 
-  const fetcher = useFetcher<{ results?: FetchResult[]; error?: string }>();
-  const fetcherRef = useRef(fetcher);
-  fetcherRef.current = fetcher;
+  const [fetchData, setFetchData] = useState<{ results?: FetchResult[]; error?: string } | null>(null);
+  const [fetchState, setFetchState] = useState<"idle" | "loading">("idle");
 
   const playlistRef = useRef(playlist);
   playlistRef.current = playlist;
 
-  const expectedImportUrlRef = useRef<string>();
+  const expectedImportUrlRef = useRef<string | undefined>(undefined);
   const activeKeyRef = useRef("");
+  const requestIdRef = useRef(0);
 
-  // --- 网易云：分页状态 ---
   const [pagedSongs, setPagedSongs] = useState<SongInfo[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -61,7 +51,7 @@ export function usePlaylistFetch(playlistId: string | undefined) {
   const loadedCountRef = useRef(0);
   const loadingRef = useRef(false);
   const hasMoreRef = useRef(true);
-  const platformPlaylistIdRef = useRef<string>();
+  const platformPlaylistIdRef = useRef<string | undefined>(undefined);
   const pendingIndexRef = useRef<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -97,27 +87,34 @@ export function usePlaylistFetch(playlistId: string | undefined) {
     if (!pl?.importUrl || !pl?.platform) return;
     loadingRef.current = true;
     expectedImportUrlRef.current = pl.importUrl.trim();
-    const form: Record<string, string> = {
+    const requestId = ++requestIdRef.current;
+    setFetchState("loading");
+
+    void importPlaylist({
       url: pl.importUrl,
       platform: pl.platform,
-    };
-    if (paginated) {
-      form.offset = String(offset);
-      form.limit = String(limit);
-      if (platformPlaylistIdRef.current) {
-        form.platformPlaylistId = platformPlaylistIdRef.current;
-      }
-    }
-    if (metaOnly) form.metaOnly = "true";
-    fetcherRef.current.submit(form, { method: "POST", action: "/api/import" });
+      metaOnly,
+      offset: paginated ? offset : undefined,
+      limit: paginated ? limit : undefined,
+      platformPlaylistId: paginated ? platformPlaylistIdRef.current : undefined,
+    }).then((data) => {
+      if (requestId !== requestIdRef.current) return;
+      setFetchData(data);
+      setFetchState("idle");
+    }).catch((err) => {
+      if (requestId !== requestIdRef.current) return;
+      setFetchData({ error: err instanceof Error ? err.message : "IMPORT_FAILED" });
+      setFetchState("idle");
+      loadingRef.current = false;
+    });
   }, [paginated]);
 
   const submitFetch = runImport;
 
   const loadMore = useCallback(() => {
-    if (!paginated || !hasMoreRef.current || loadingRef.current || fetcherRef.current.state !== "idle") return;
+    if (!paginated || !hasMoreRef.current || loadingRef.current || fetchState !== "idle") return;
     submitFetch(loadedCountRef.current, PAGE_SIZE);
-  }, [paginated, submitFetch]);
+  }, [paginated, submitFetch, fetchState]);
 
   const loadMoreRef = useRef(loadMore);
   loadMoreRef.current = loadMore;
@@ -166,25 +163,14 @@ export function usePlaylistFetch(playlistId: string | undefined) {
     }
 
     try {
-      const body = new FormData();
-      body.set("url", pl.importUrl);
-      body.set("platform", pl.platform);
-      body.set("forceRefresh", "true");
-      if (paginated) {
-        body.set("offset", "0");
-        body.set("limit", String(PAGE_SIZE));
-        if (platformPlaylistIdRef.current) {
-          body.set("platformPlaylistId", platformPlaylistIdRef.current);
-        }
-      }
-
-      const res = await fetch("/api/import", { method: "POST", body });
-      if (!res.ok) {
-        console.warn("[Refresh] import failed:", res.status);
-        return;
-      }
-
-      const data = (await res.json()) as { results?: FetchResult[]; error?: string };
+      const data = await importPlaylist({
+        url: pl.importUrl,
+        platform: pl.platform,
+        forceRefresh: true,
+        offset: paginated ? 0 : undefined,
+        limit: paginated ? PAGE_SIZE : undefined,
+        platformPlaylistId: paginated ? platformPlaylistIdRef.current : undefined,
+      });
       const next = data.results?.[0];
       if (!next || !isResultForPlaylist(next, pl.importUrl)) return;
 
@@ -222,7 +208,6 @@ export function usePlaylistFetch(playlistId: string | undefined) {
     }
   }, [paginated, resetPagedState, syncPlaylistMeta]);
 
-  // 切换歌单：发起请求
   useEffect(() => {
     const pl = playlistRef.current;
     const key = `${playlistId ?? ""}:${pl?.importUrl ?? ""}:${pl?.platform ?? ""}`;
@@ -230,30 +215,39 @@ export function usePlaylistFetch(playlistId: string | undefined) {
     activeKeyRef.current = key;
     setOverrideResult(null);
     setSongsRevision(0);
+    setFetchData(null);
 
     if (isPaginated(pl?.platform) && pl?.importUrl) {
       startPagedFetch();
     } else if (pl?.importUrl && pl?.platform) {
       expectedImportUrlRef.current = pl.importUrl.trim();
-      fetcherRef.current.submit(
-        { url: pl.importUrl, platform: pl.platform },
-        { method: "POST", action: "/api/import" },
-      );
+      const requestId = ++requestIdRef.current;
+      setFetchState("loading");
+      void importPlaylist({
+        url: pl.importUrl,
+        platform: pl.platform,
+      }).then((data) => {
+        if (requestId !== requestIdRef.current) return;
+        setFetchData(data);
+        setFetchState("idle");
+      }).catch((err) => {
+        if (requestId !== requestIdRef.current) return;
+        setFetchData({ error: err instanceof Error ? err.message : "IMPORT_FAILED" });
+        setFetchState("idle");
+      });
     }
   }, [playlistId, playlist?.importUrl, playlist?.platform, startPagedFetch]);
 
-  // 网易云：处理分页结果
   useEffect(() => {
     if (!paginated) return;
 
     const pl = playlistRef.current;
-    const result = fetcher.data?.results?.[0];
+    const result = fetchData?.results?.[0];
     if (!result) return;
 
     if (!isResultForPlaylist(result, expectedImportUrlRef.current ?? pl?.importUrl)) return;
     if (result.paginated !== true) return;
 
-    // metaOnly 刷新：只更新元数据，不动已加载歌曲
     if ((result.songs?.length ?? 0) === 0 && result.limit === 0) {
       loadingRef.current = false;
       if (result.songCount != null) setTotalCount(result.songCount);
@@ -300,18 +294,16 @@ export function usePlaylistFetch(playlistId: string | undefined) {
     } else if (pending != null && pending < loadedCountRef.current) {
       pendingIndexRef.current = null;
     }
-  }, [paginated, fetcher.data, fetcher.state, syncPlaylistMeta]);
+  }, [paginated, fetchData, fetchState, syncPlaylistMeta]);
 
-  // 全量平台：同步元数据
   useEffect(() => {
     if (paginated) return;
-    const result = fetcher.data?.results?.[0];
+    const result = fetchData?.results?.[0];
     if (result && isResultForPlaylist(result, expectedImportUrlRef.current ?? playlistRef.current?.importUrl)) {
       syncPlaylistMeta(result);
     }
-  }, [paginated, fetcher.data, syncPlaylistMeta]);
+  }, [paginated, fetchData, syncPlaylistMeta]);
 
-  // 定时刷新元数据（首屏完成后再启用，避免空响应覆盖）
   useEffect(() => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -332,12 +324,12 @@ export function usePlaylistFetch(playlistId: string | undefined) {
     };
   }, [paginated, initialLoadDone, playlist?.refreshInterval, playlist?.importUrl, playlist?.platform, submitFetch]);
 
-  const fetcherResult = fetcher.data?.results?.[0];
+  const fetcherResult = fetchData?.results?.[0];
   const result = overrideResult
     && isResultForPlaylist(overrideResult, expectedImportUrlRef.current ?? playlist?.importUrl)
     ? overrideResult
     : fetcherResult;
-  const isFetching = fetcher.state !== "idle" || directFetching;
+  const isFetching = fetchState !== "idle" || directFetching;
 
   if (!paginated) {
     const fullSongs = isResultForPlaylist(result ?? {}, expectedImportUrlRef.current ?? playlist?.importUrl)
@@ -350,7 +342,7 @@ export function usePlaylistFetch(playlistId: string | undefined) {
       loadingMore: false,
       isFetching,
       songsRevision,
-      error: fetcher.data?.error || result?.error,
+      error: fetchData?.error || result?.error,
       songs: fullSongs,
       totalCount: fullSongs.length,
       ensureLoadedUpTo: () => {},
@@ -369,7 +361,7 @@ export function usePlaylistFetch(playlistId: string | undefined) {
     loadingMore: initialLoadDone && isFetching,
     isFetching,
     songsRevision,
-    error: fetcher.data?.error || result?.error,
+    error: fetchData?.error || result?.error,
     songs: pagedSongs,
     totalCount: totalCount || pagedSongs.length,
     ensureLoadedUpTo,

@@ -1,6 +1,5 @@
 export type {
   DeviceOS,
-  ExecFileAsync,
   PlatformType,
   PlayMode,
   PlaybackStatus,

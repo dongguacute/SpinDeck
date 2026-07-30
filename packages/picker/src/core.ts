@@ -63,21 +63,23 @@ function parseColumnFromImageData(
 export async function pickEdgeColors(input: ImageInput): Promise<EdgeColors> {
     const img = await loadImage(input.content);
 
-    // 创建 Canvas 并绘制图片
+    // Downscale — edge midpoints only need coarse sampling (avoids full-res canvas).
+    const maxSide = 64;
+    const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight, 1));
+    const width = Math.max(1, Math.round(img.naturalWidth * scale));
+    const height = Math.max(1, Math.round(img.naturalHeight * scale));
+
     const canvas = document.createElement('canvas');
-    canvas.width = img.naturalWidth;
-    canvas.height = img.naturalHeight;
+    canvas.width = width;
+    canvas.height = height;
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
     if (!ctx) {
         throw new Error('Failed to get 2D rendering context');
     }
 
-    ctx.drawImage(img, 0, 0);
+    ctx.drawImage(img, 0, 0, width, height);
 
-    const { width, height } = canvas;
-
-    // 取四条边中间位置的像素颜色
     const top = getPixelColor(ctx, width / 2, 0);
     const bottom = getPixelColor(ctx, width / 2, height - 1);
     const left = getPixelColor(ctx, 0, height / 2);
@@ -111,20 +113,25 @@ export async function pickLeftColumnColors(
 ): Promise<RGBAColor[]> {
     const img = await loadImage(input.content);
 
+    // Cap height for column sampling — spine gradients don't need multi-kpx.
+    const maxH = 256;
+    const scale = Math.min(1, maxH / Math.max(img.naturalHeight, 1));
+    const width = Math.max(1, Math.round(img.naturalWidth * scale));
+    const height = Math.max(1, Math.round(img.naturalHeight * scale));
+    const x = Math.min(Math.round(columnIndex * scale), width - 1);
+
     const canvas = document.createElement('canvas');
-    canvas.width = img.naturalWidth;
-    canvas.height = img.naturalHeight;
+    canvas.width = width;
+    canvas.height = height;
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
     if (!ctx) {
         throw new Error('Failed to get 2D rendering context');
     }
 
-    ctx.drawImage(img, 0, 0);
+    ctx.drawImage(img, 0, 0, width, height);
 
-    const { height } = canvas;
-    // 一次性读取整列 1px 宽的 ImageData，避免逐行调用
-    const imageData = ctx.getImageData(columnIndex, 0, 1, height);
+    const imageData = ctx.getImageData(x, 0, 1, height);
 
     return parseColumnFromImageData(imageData.data, height);
 }
