@@ -363,8 +363,14 @@ export default function SongVinylOverlay({
       const withinGrace = Date.now() - lastLocalActionAtRef.current < PLAY_SYNC_GRACE_MS;
 
       if (status.playing) {
-        if (canResume) return;
-        if (!inSession && !armDown) return;
+        // 用户刚抬臂时，音乐 App 可能仍短暂报 playing；宽限期内不自动落针。
+        // 宽限期外若系统已恢复播放，则同步落针（含控制中心 / 耳机键 resume）。
+        if (canResume) {
+          if (withinGrace || !inSession) return;
+          markSongStarted(song);
+        } else if (!inSession && !armDown) {
+          return;
+        }
 
         if (!armDown) {
           progressRef.current = 1;
@@ -384,6 +390,7 @@ export default function SongVinylOverlay({
         progressRef.current = 0;
         setProgress(0);
         setPlaying(false);
+        setSpinActive(false);
         if (inSession && localPlaying && canResume) return;
         if (inSession && localPlaying) {
           markSongPausedByArm(song);

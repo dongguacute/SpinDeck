@@ -353,17 +353,18 @@ export async function stopSong(
   platform: PlatformType,
   api?: PlayerApiConfig,
 ): Promise<void> {
-  const wasActivelyPlaying = isArmActivelyPlaying();
-  resetArmSession();
   if (usesQQMusicClientDeepLink(platform)) {
-    if (wasActivelyPlaying) pauseQQMusicRemote();
+    // 深链 pause 可能是 toggle：仅在本地认为正在播时发送，避免误恢复。
+    // 必须在 resetArmSession 之前调用（pauseQQMusicRemote 依赖会话状态）。
+    pauseQQMusicRemote();
+    resetArmSession();
     return;
   }
+  resetArmSession();
   if (!usesMacServer(platform)) return;
-  // 已抬臂暂停时勿再发暂停，避免 QQ 音乐等客户端 toggle 成播放
-  if (wasActivelyPlaying) {
-    await pauseSong(platform, api);
-  }
+  // Desktop pause 会先查 is_playing，已暂停时不会 toggle。
+  // 不能只看唱臂会话：系统播控 resume 后可能仍标着 pausedByArm，导致退回书架停不掉。
+  await pauseSong(platform, api);
 }
 
 export { prelaunchApp, getDeviceOS, buildSongPlayUrls };
