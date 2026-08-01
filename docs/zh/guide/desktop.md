@@ -23,19 +23,16 @@ SpinDeck 提供适用于 macOS、Windows 和 Linux 的 [Tauri 2](https://v2.taur
 
 从 GitHub Releases 下载预构建的桌面安装包：
 
-**[v1.0.0-beta.7](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.7)**（最新）
+**[v1.0.0-beta.8](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.8)**（最新）
 
 按平台选择对应资源（macOS 为 `.dmg` / `.app`，Windows 为 `.msi` / `.exe` 等）。发布构建打包 SPA 与 Rust 桌面能力，**不再依赖本机 Node.js**。
 
-### v1.0.0-beta.7 更新内容
+### v1.0.0-beta.8 更新内容
 
-- **纯 invoke 桌面壳** — 移除本地 HTTP `server/` 与旧 HTTP API 封装；封面走 `cover://`，导入 / 播放只走 Tauri `invoke`
-- **会话日志** — 原生层与前端关键错误写入按次启动的会话日志，便于白屏 / 闪退排查
-- **网易云导入缓存** — 完善歌单详情与曲目请求缓存，减少重复拉取
-- **书架播放层** — 修正封面叠层 / 唱臂 portal 层级；统一顶栏退出与导航按钮交互
-- **文档与工具链** — 新增 [性能与观感](./performance)、[系统要求](./system-requirements)；开发需 Node.js ≥ 22.13 / pnpm 11.x
+- **系统播控与唱臂同步** — 控制中心 / 耳机键暂停后再恢复时，唱臂会重新落针，不再卡在抬起状态
+- **退回书架可靠停止** — 离开播放页时始终向桌面端发送暂停；修复系统播控与本地会话不同步时音乐停不掉的问题
 
-上一版本：[v1.0.0-beta.6](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.6)
+上一版本：[v1.0.0-beta.7](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.7)
 
 ::: warning 不可用版本
 以下版本因打包后存在**白屏问题**，**不建议使用**：

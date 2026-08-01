@@ -23,19 +23,16 @@ See [Architecture](./architecture) for the monorepo diagram and IPC table, [Perf
 
 Download pre-built desktop installers from GitHub Releases:
 
-**[v1.0.0-beta.7](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.7)** (latest)
+**[v1.0.0-beta.8](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.8)** (latest)
 
 Pick the asset for your platform (`.dmg` / `.app` on macOS, `.msi` / `.exe` on Windows, etc.). Release builds bundle the SPA and Rust desktop features — **Node.js is no longer required** on the user's machine.
 
-### What's new in v1.0.0-beta.7
+### What's new in v1.0.0-beta.8
 
-- **Pure invoke desktop shell** — Remove the local HTTP `server/` and legacy HTTP API wrappers; cover art via `cover://`, import / playback via Tauri `invoke` only
-- **Session logs** — Native layer and critical frontend errors write per-launch session logs for white-screen / crash triage
-- **NetEase import cache** — Fuller playlist detail and track request caching
-- **Shelf playback layer** — Fix cover-overlay / tonearm portal stacking; unify header exit and navigation controls
-- **Docs & tooling** — Add [Performance & Visuals](./performance) and [System Requirements](./system-requirements); developers need Node.js ≥ 22.13 / pnpm 11.x
+- **System media controls ↔ tonearm sync** — After pause then resume via Control Center / headset controls, the tonearm lowers again instead of staying raised
+- **Reliable stop when leaving playback** — Always send pause on desktop when exiting to the shelf; fixes music continuing after system controls desynced the local session
 
-Previous release: [v1.0.0-beta.6](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.6)
+Previous release: [v1.0.0-beta.7](https://github.com/dongguacute/SpinDeck/releases/tag/v1.0.0-beta.7)
 
 ::: warning Unavailable releases
 The following builds are **not recommended** due to a white-screen issue in packaged desktop apps:
